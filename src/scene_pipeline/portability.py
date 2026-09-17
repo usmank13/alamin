@@ -1,6 +1,7 @@
 """URDF scene package and independent PyBullet articulation verification."""
 import math
 from pathlib import Path
+import time
 import xml.etree.ElementTree as ET
 
 import mujoco
@@ -103,7 +104,7 @@ def export_urdf(root,output=None):
 
 def verify_urdf(output):
     import pybullet as p
-    output=Path(output).resolve();manifest=read_json(output/'package.json');client=p.connect(p.DIRECT)
+    started=time.perf_counter();output=Path(output).resolve();manifest=read_json(output/'package.json');client=p.connect(p.DIRECT)
     records=[];loaded=[];physical=[]
     try:
         p.setGravity(0,0,-9.81,physicsClientId=client);p.setTimeStep(.002,physicsClientId=client)
@@ -131,7 +132,7 @@ def verify_urdf(output):
                     for _ in range(1500): p.stepSimulation(physicsClientId=client)
                     errors.append(abs(p.getJointState(body,j,physicsClientId=client)[0]-target))
                 records.append(dict(joint=item['source'],endpoint_errors=errors,passed=max(errors)<.005))
-        report=dict(engine='PyBullet DIRECT',passed=all(x['passed'] for x in records+physical) and bool(loaded),joints=records,physical_roundtrip=physical,
+        report=dict(engine='PyBullet DIRECT',seconds=time.perf_counter()-started,passed=all(x['passed'] for x in records+physical) and bool(loaded),joints=records,physical_roundtrip=physical,
                     verification_scope='load_and_articulated_dynamics' if records else 'static_package_load_only',
                     articulation_verified=bool(records) and all(x['passed'] for x in records),
                     caveats=['Endpoint dynamics are not a cross-engine force/contact equivalence proof','See package.json fidelity losses'])
