@@ -1,6 +1,6 @@
 .venv/
 .uv-cache/
-vendor/
+vendor
 outputs/
 __pycache__/
 .pytest_cache/
