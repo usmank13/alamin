@@ -1,0 +1,86 @@
+{
+  "rows": [
+    {
+      "artifact": "kitchen",
+      "stage": "generate/layout",
+      "wall_s": 0.39429806399857625
+    },
+    {
+      "artifact": "kitchen",
+      "stage": "generate/compile",
+      "wall_s": 0.2051191980135627
+    },
+    {
+      "artifact": "kitchen",
+      "stage": "generate/validation",
+      "wall_s": 3.449787016012124
+    },
+    {
+      "artifact": "kitchen",
+      "stage": "generate/agent+io",
+      "wall_s": 3.0317676849663258,
+      "attempts": 1,
+      "status": "validated",
+      "tokens": null,
+      "api_spend_usd": null
+    },
+    {
+      "artifact": "kitchen",
+      "stage": "render/cycles",
+      "wall_s": 42.956747905001976
+    },
+    {
+      "artifact": "kitchen",
+      "stage": "export/urdf+pybullet",
+      "wall_s": 33.30010096001206
+    },
+    {
+      "artifact": "kitchen_mapping",
+      "stage": "flow/mapping",
+      "wall_s": 559.9625706349907,
+      "sim_s": 60.00000000002736,
+      "passed": true
+    },
+    {
+      "artifact": "kitchen_interaction",
+      "stage": "flow/interaction",
+      "wall_s": 407.88013666300685,
+      "sim_s": 60.00000000002736,
+      "passed": true
+    },
+    {
+      "artifact": "kitchen_nav",
+      "stage": "flow/navigate",
+      "wall_s": 33.1487555539934,
+      "sim_s": 3.999999999999781,
+      "passed": true
+    },
+    {
+      "artifact": "kitchen_nav_shelf",
+      "stage": "flow/navigate",
+      "wall_s": 245.10555910300172,
+      "sim_s": 26.999999999995914,
+      "passed": true
+    },
+    {
+      "artifact": "kitchen_nav_prep",
+      "stage": "flow/navigate",
+      "wall_s": 326.9288168359926,
+      "sim_s": 35.99999999999803,
+      "passed": true
+    },
+    {
+      "artifact": "kitchen_nav_vlm",
+      "stage": "flow/navigate",
+      "wall_s": 333.01280045900785,
+      "sim_s": 19.999999999999794,
+      "passed": true
+    }
+  ],
+  "total_wall_s": 1989.3764600779978,
+  "table": "docs/cost-table.md",
+  "usd_per_mtok": {
+    "input": null,
+    "output": null
+  }
+}
