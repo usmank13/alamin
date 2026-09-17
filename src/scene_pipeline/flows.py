@@ -316,7 +316,7 @@ def vlm_chunk(mapper,manifest,goal,ranges,frame,work,K,timeout=180):
             f'Set arrived=true only when within {REACH} m of the goal. Output only JSON matching the schema.')
     command=['codex','exec','--sandbox','read-only','--skip-git-repo-check','--ignore-user-config','--ephemeral','--json',
              '--output-schema',str((work/'chunk.schema.json').resolve()),'--output-last-message',str((work/'chunk.json').resolve()),'--cd',str(work.resolve())]
-    if frame is not None:Image.fromarray(frame).save(work/'frame.png');command+=['-i',str((work/'frame.png').resolve())]
+    if frame is not None:Image.fromarray(frame).save(work/'frame.png');command[2:2]=['-i',str((work/'frame.png').resolve())]
     try:result=subprocess.run(command+[prompt],capture_output=True,text=True,timeout=timeout)
     except (FileNotFoundError,subprocess.TimeoutExpired) as exc:raise PipelineError('AGENT_UNAVAILABLE',str(exc)) from exc
     (work/'trajectory.jsonl').write_text(result.stdout);(work/'agent.stderr.log').write_text(result.stderr)
@@ -405,7 +405,7 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
     renderer=mujoco.Renderer(model,height=240,width=320) if tier=='full' else None
     opt=mujoco.MjvOption();opt.geomgroup[3]=0
     ranges=np.full(72,8.);warnings=np.zeros(len(data.warning),dtype=int)
-    frames=[];chunk=np.zeros((0,3));k=0;arrived=False;arrival_time=None;frame=None;chunks=0
+    frames=[];chunk=np.zeros((0,3));k=0;arrived=False;arrival_time=None;frame=None;chunks=0;policy_failures=[]
     try:
         for tick in range(round(seconds/model.opt.timestep)+1):
             mujoco.mj_forward(model,data)
@@ -420,8 +420,13 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
                     if flow=='mapping':local=mapper.control(t,ranges)
                     else:
                         if k>=len(chunk):
-                            chunk,arrived=(planner_chunk(mapper,t,ranges,goal_box,K) if policy=='planner'
-                                           else vlm_chunk(mapper,manifest,target,ranges,frame,output/'vlm'/f'{chunks:03d}',K));k=0;chunks+=1
+                            if policy=='planner':chunk,arrived=planner_chunk(mapper,t,ranges,goal_box,K)
+                            else:
+                                try:chunk,arrived=vlm_chunk(mapper,manifest,target,ranges,frame,output/'vlm'/f'{chunks:03d}',K)
+                                except PipelineError as exc:
+                                    # A failed call holds still for one chunk; the failure is reported, not hidden.
+                                    chunk,arrived=np.zeros((K,3)),False;policy_failures.append(dict(time=t,**exc.as_dict()))
+                            k=0;chunks+=1
                             recorder.append('action',t,chunk=chunk,pose=mapper.pose.copy(),goal_xy=np.asarray(target['position'][:2],dtype=float))
                             if arrived and arrival_time is None:arrival_time=t
                         local=chunk[k];k+=1
@@ -468,7 +473,7 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
             from .semantics import snapshot
             bbox=snapshot(model,data,manifest)['objects'][target['id']]['bbox']
             true_d=clearance(positions[-1],*bbox);est_d=clearance(mapper.pose[:2],*goal_box)
-            result.update(goal=target,policy=policy,chunk_ticks=K,chunks=chunks,declared_arrival=bool(arrived),time_to_goal_s=arrival_time,
+            result.update(goal=target,policy=policy,chunk_ticks=K,chunks=chunks,policy_failures=policy_failures,declared_arrival=bool(arrived),time_to_goal_s=arrival_time,
                           estimated_distance_m=est_d,true_distance_m=true_d,reach_m=REACH,path_length_m=actual_travel,reached=bool(true_d<=REACH),passed=bool(true_d<=REACH),
                           acceptance='true final base distance to the goal instance bounds within reach; goal resolved from the semantic manifest, not coordinates')
             result['controller_inputs'].append('goal instance id/position resolved from the semantic manifest')
