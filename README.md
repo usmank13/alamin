@@ -74,6 +74,60 @@ Load your own generated scene, with or without robots:
 wall-clock seconds for diagnostics. The viewer uses native MuJoCo mouse controls
 and actuator sliders. These commands run from the repo root.
 
+## Scene pipeline
+
+`src/scene_pipeline` turns a prompt into a validated MuJoCo scene and runs the robot
+flows. Setup adds the pipeline extras and, optionally, the Blender binary for Cycles:
+
+```bash
+bash scripts/setup_pipeline.sh --blender
+```
+
+One command per brief deliverable, run from the repository root:
+
+```bash
+# Prompt -> validated scene; omit --program to let the Codex agent write the SceneProgram
+.venv/bin/pipeline generate --prompt 'A 60 square metre working prep kitchen ...' \
+  --program examples/rich_kitchen_program.py --seed 17 --output outputs/kitchen
+.venv/bin/pipeline render outputs/kitchen                        # 1024 px CPU Cycles still, same IR
+.venv/bin/pipeline export outputs/kitchen --format urdf --verify  # URDF loaded and actuated in PyBullet
+# Flows write data.h5, report.json and replay.mp4 (ffmpeg); --tier state skips RGB-D
+.venv/bin/pipeline run outputs/kitchen --flow mapping --output outputs/kitchen_mapping --seconds 60
+.venv/bin/pipeline run outputs/kitchen --flow interaction --output outputs/kitchen_interaction --seconds 60
+.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the walk-in fridge' \
+  --output outputs/kitchen_nav --seconds 60
+.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the prep table' --policy vlm \
+  --output outputs/kitchen_nav_vlm --seconds 20
+# Ten randomized variants (layout seed, clutter counts, light, tint, texture repeat); three with RGB-D
+.venv/bin/pipeline dataset outputs/kitchen --output outputs/kitchen_dataset --variants 10 --seconds 60
+# Stage wall-clock and Codex token table from the artifacts above
+.venv/bin/pipeline costs outputs/kitchen outputs/kitchen_mapping outputs/kitchen_interaction \
+  outputs/kitchen_nav outputs/kitchen_dataset --output docs/cost-table.md
+```
+
+Semantic navigation resolves the goal text through the scene's semantic manifest (an
+instance id, or a category alias such as `walk-in`, `refrigerator` or `drawer`), never
+through coordinates. The robot drives the mapping stack (noisy odometry, scan matching,
+online occupancy) behind an action-chunk contract: a policy returns K body-frame
+`[vx, vy, wz]` actions that are executed open-loop before it is queried again, the
+interface a learned VLA fills later. `planner` (default) plans on the online map toward
+the free cell beside the goal; `vlm` sends the base camera frame, the instruction, the
+goal offset and a range summary to the Codex CLI with a strict JSON action schema
+(10-40 s per call, so keep `--seconds` small). Every chunk is recorded in the `action`
+stream with the pose estimate. Success is scored after the rollout from ground truth
+only: true final distance to the goal bounds within 0.6 m.
+
+Read the HDF5 streams by time, not by index:
+
+```python
+from scene_pipeline.dataset import inspect, load_stream
+print(inspect('outputs/kitchen_mapping/data.h5'))
+chunks = load_stream('outputs/kitchen_nav/data.h5', 'action', 0, 10)
+```
+
+Writeup: [docs/writeup.md](docs/writeup.md). Measured stage timings and token usage:
+[docs/cost-table.md](docs/cost-table.md). Design notes live in the ignored `docs/agent/`.
+
 ## Integration contract
 
 - MJCF uses metres and Z-up. It owns gravity, timestep, solver settings, lights,
