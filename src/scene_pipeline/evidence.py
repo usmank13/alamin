@@ -11,9 +11,17 @@ import urllib.request
 
 from .contracts import PipelineError, digest, read_json, write_json
 
-UNITS = {'m': 1., 'cm': .01, 'mm': .001, 'in': .0254, 'inch': .0254, 'inches': .0254}
+UNITS = {'m': 1., 'cm': .01, 'mm': .001, 'in': .0254, 'inch': .0254, 'inches': .0254, 'ft': .3048, 'foot': .3048, 'feet': .3048,
+         '″': .0254, '"': .0254, "''": .0254, '′': .3048, "'": .3048}  # inch/foot marks as spec pages print them
 CACHE = Path(__file__).with_name('dimensions.json')
-QUANTITY = re.compile(r'(\d+(?:\.\d+)?|\d+/\d+)\s*(mm|cm|m|inches|inch|in)(?![\w.])')
+QUANTITY = re.compile(r'(\d+(?:\.\d+)?|\d+/\d+)\s*(mm|cm|m|inches|inch|in|feet|foot|ft|″|"|\'\'|′|\')(?![\w.])')
+
+
+def unit_factor(unit):
+    key = unit.strip().rstrip('.').lower()
+    if key not in UNITS:
+        raise PipelineError('UNIT', f'Unsupported unit: {unit}', dict(supported=sorted(UNITS)))
+    return UNITS[key]
 
 
 class Text(HTMLParser):
@@ -43,15 +51,17 @@ def normalized_text(document):
 
 def measurement(document, *, identity, label, number, unit, url):
     text = normalized_text(document)
-    if unit not in UNITS:
-        raise PipelineError('UNIT', f'Unsupported unit: {unit}')
+    factor = unit_factor(unit)
     if identity not in text:
         raise PipelineError('SOURCE_IDENTITY', 'Product identity absent from evidence')
     # Label/value/unit must occur as one field, not separately anywhere on a page.
+    # Pages print `Width: 144″` as often as `Width 144 in`, so whitespace is optional.
     quote = f'{label} {number} {unit}'
-    if not re.search(re.escape(quote)+r'(?![\w.])', text):
+    match = re.search(re.escape(label)+r'\s*'+re.escape(number)+r'\s*'+re.escape(unit)+r'(?![\w.])', text)
+    if not match:
         raise PipelineError('UNBOUND_MEASUREMENT', f'Field not found: {quote}')
-    value = float(Fraction(number)) * UNITS[unit]
+    quote = match.group(0)
+    value = float(Fraction(number)) * factor
     if value <= 0:
         raise PipelineError('DIMENSION', 'Measurement must be positive')
     return dict(value_m=value, kind='sourced', identity=identity, field=label, quote=quote,
@@ -69,7 +79,7 @@ def fetch(url, timeout=30):
 
 def quoted_values(text):
     """Every number-with-unit in the text, in metres. Numbers without units bind nothing."""
-    return sorted({round(float(Fraction(n))*UNITS[u], 9) for n, u in QUANTITY.findall(text)})
+    return sorted({round(float(Fraction(n))*unit_factor(u), 9) for n, u in QUANTITY.findall(text)})
 
 
 def resolve(item, prompt, *, default=None, cache_path=CACHE, fetcher=fetch):

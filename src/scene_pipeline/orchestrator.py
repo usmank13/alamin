@@ -66,7 +66,7 @@ def _codex(instruction,schema,work,model,timeout,*,name='program',search=False):
     return _strip_null(read_json(work/f'{name}.json'))
 
 
-def source_dimensions(category,prompt,work,model=None,timeout=180):
+def source_dimensions(category,prompt,work,model=None,timeout=180,feedback=None):
     """Web-search call whose output is evidence only; the harness fetches the page and binds every number."""
     schema=obj({'url':{'type':'string','pattern':'^https?://'},'identity':{'type':'string','minLength':1},
                 'fields':obj({'width':FIELD,'depth':FIELD,'height':FIELD}),'family':FAMILY})
@@ -74,8 +74,10 @@ def source_dimensions(category,prompt,work,model=None,timeout=180):
         f'"{category}" as it would appear in this scene: {prompt}\nReturn only JSON matching the schema: the page URL; an identity string that '
         'appears verbatim on the page; and for width, depth and height the label, number and unit as three strings exactly as printed on the '
         'page, e.g. ["Overall Width","30","in"]. The harness fetches the page and rejects any field whose label, number and unit do not occur '
-        'together verbatim, so do not compute, convert, round or estimate. Also pick the closest template family: box (static solid), '
-        'table (top on legs), shelf (open levels), cabinet (hinged door), drawer (sliding drawer).')
+        'together verbatim, so do not compute, convert, round or estimate. Units may be written as printed (in, mm, cm, m, ft, ″, "). '
+        'Prefer a plain HTML specification page over a PDF or a script-rendered page. Also pick the closest template family: box (static solid), '
+        'table (top on legs), shelf (open levels), cabinet (hinged door), drawer (sliding drawer).'
+        +(f'\nThe previous evidence was rejected by the verifier: {feedback}. Choose another page or copy the fields exactly.' if feedback else ''))
     return _codex(instruction,schema,work,model,timeout,name='dimension_evidence',search=True)
 
 
@@ -89,21 +91,31 @@ def resolve_program(program,work,*,model=None,timeout=180,sourcing=source_dimens
     resolved=deepcopy(program);sources={}
     for item in resolved['objects']:
         known=item['category'] in CATALOG
+        if known:item.pop('family',None)  # registry categories own their family; agent noise here must not count as drift
         if item.get('dimension_basis') or (known and item.get('dimension_evidence') is None):continue
         default=CATALOG[item['category']].get('dimensions') if known else None
-        def source():
-            evidence=sourcing(item['category'],program['prompt'],Path(work)/'sourcing'/item['category'],model=model,timeout=timeout)
-            item.setdefault('family',evidence.pop('family'))
-            return evidence
+        def source_and_verify(tries=3):
+            """Verified sourcing with the verifier's rejection fed back; populates the cache for the category."""
+            feedback=None
+            for attempt in range(tries):
+                evidence=sourcing(item['category'],program['prompt'],Path(work)/'sourcing'/f"{item['category']}_{attempt}",model=model,timeout=timeout,feedback=feedback)
+                family=evidence.pop('family',None)
+                try:
+                    found=resolve(dict(item,dimension_evidence=evidence),program['prompt'],cache_path=cache_path,fetcher=fetcher)
+                except PipelineError as exc:
+                    if exc.code not in ('UNIT','UNBOUND_MEASUREMENT','SOURCE_IDENTITY','EVIDENCE_FETCH','DIMENSION'):raise
+                    feedback=exc.as_dict();continue
+                if family:item.setdefault('family',family)
+                return found
+            raise PipelineError('DIMENSION_UNSOURCED',f"No verifiable dimensions for {item['category']} after {tries} sourcing attempts",feedback)
         try:found=resolve(item,program['prompt'],default=default,cache_path=cache_path,fetcher=fetcher)
         except PipelineError as exc:
             # User quoted some axes; source the category once so the rest come from a verified page.
             if known or sourcing is None or exc.code!='UNBOUND_MEASUREMENT' or 'unbound_axes' not in exc.details:raise
-            resolve(dict(item,dimension_evidence=source()),program['prompt'],cache_path=cache_path,fetcher=fetcher)
+            source_and_verify()
             found=resolve(item,program['prompt'],cache_path=cache_path,fetcher=fetcher)
         if found is None and not known and sourcing is not None:
-            item['dimension_evidence']=source()
-            found=resolve(item,program['prompt'],cache_path=cache_path,fetcher=fetcher)
+            found=source_and_verify()
         if found is None:continue
         item['dimensions_m'],record=found;item['dimension_basis']=record['basis'];item.pop('dimension_evidence',None)
         if not known:item.setdefault('family',record.get('family','box'))
