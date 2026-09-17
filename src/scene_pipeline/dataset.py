@@ -1,4 +1,5 @@
 """Append-only HDF5 streams and reproducible variant collection."""
+from copy import deepcopy
 import json
 from pathlib import Path
 
@@ -52,6 +53,18 @@ def load_stream(path,stream,start=None,stop=None):
         return {name:ds[slice(start,stop)] for name,ds in f[stream].items()}
 
 
+CLUTTER=('container','jar','bottle','tray')
+
+
+def randomize_program(program,rng):
+    """Clutter-count axis. Placement re-samples through the layout seed; appearance lives in IR meta."""
+    program=deepcopy(program);counts={}
+    for o in program['objects']:
+        if o['category'] in CLUTTER:
+            o['count']=max(1,int(round(o.get('count',1)*rng.uniform(.7,1.3))));counts[o['id']]=o['count']
+    return program,counts
+
+
 def collect_variants(scene,output,variants=10,seconds=60):
     from .orchestrator import generate
     from .flows import run
@@ -63,24 +76,27 @@ def collect_variants(scene,output,variants=10,seconds=60):
     output.mkdir(parents=True)
     program=read_json(Path(scene)/'program.json');results=[]
     for i in range(variants):
-        target=output/f'variant_{i:03d}'
+        target=output/f'variant_{i:03d}';rng=np.random.default_rng(i+100)
         try:
-            generate(program['prompt'],i+100,target,program=program,preview=False)
+            variant,counts=randomize_program(program,rng)
+            generate(program['prompt'],i+100,target,program=variant,preview=False)
             # Appearance randomization is encoded into IR, not patched in generated MJCF.
-            ir=read_json(target/'ir.json');rng=np.random.default_rng(i+100)
+            ir=read_json(target/'ir.json')
             ir['meta']['appearance']={'light_multiplier':float(rng.uniform(.8,1.2)),
                                       'tint':rng.uniform(.8,1.,3).tolist(),'texture_repeat':float(rng.uniform(5,12))}
+            factors=dict(layout_seed=i+100,clutter_counts=counts,**ir['meta']['appearance'])
             write_json(target/'ir.json',ir);compile_scene(ir,target)
             validation=validate_scene(target)
             if not validation['passed']:
                 raise PipelineError('VARIANT_VALIDATION','Appearance variant failed validation',validation)
             tier='full' if i<3 else 'state'
             report=run(target,'mapping',target/'mapping',seconds=seconds,tier=tier,seed=i)
-            results.append(dict(variant=i,tier=tier,report=report,streams=inspect(target/'mapping'/'data.h5')))
+            results.append(dict(variant=i,tier=tier,factors=factors,report=report,streams=inspect(target/'mapping'/'data.h5')))
         except PipelineError as exc:
             results.append(dict(variant=i,error=exc.as_dict()))
     summary=dict(schema_version=1,variants=results,passed=all(x.get('report',{}).get('passed',False) for x in results),
-                 tier_rationale='Three RGB-D runs; remaining runs avoid rendering overhead while retaining state/range/IMU observations and truth.')
+                 tier_rationale='Three RGB-D runs; remaining runs avoid rendering overhead while retaining state/range/IMU observations and truth.',
+                 randomization='Per variant: layout seed (object placement), clutter counts x0.7-1.3 for containers/jars/bottles/trays, light multiplier 0.8-1.2, material tint, texture repeat; factors recorded per variant.')
     write_json(output/'dataset.json',summary)
-    (output/'DATA_CARD.md').write_text('# Generated kitchen mapping dataset\n\n'+summary['tier_rationale']+'\n\nSynthetic engineering sensor noise; not hardware calibrated. Stock small omnibase; no claim of full-size service-robot dynamics. Fixed category/material vocabulary; kitchen-biased. Failed runs remain explicitly reported. See dataset.json and HDF5 metadata for seeds, timestamps, provenance and acceptance results.\n')
+    (output/'DATA_CARD.md').write_text('# Generated mapping dataset\n\n'+summary['tier_rationale']+'\n\n'+summary['randomization']+' Sequential collection; each variant also carries replay.mp4 when ffmpeg is present.\n\nSynthetic engineering sensor noise; not hardware calibrated. Stock small omnibase; no claim of full-size service-robot dynamics. Fixed category/material vocabulary; kitchen-biased. Failed runs remain explicitly reported. See dataset.json and HDF5 metadata for seeds, timestamps, provenance and acceptance results.\n')
     return summary

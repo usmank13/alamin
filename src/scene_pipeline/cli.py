@@ -39,8 +39,9 @@ def main(argv=None):
     p=sub.add_parser('replay');p.add_argument('rollout',type=Path);p.add_argument('--fps',type=int,default=5)
     p=sub.add_parser('export');p.add_argument('scene',type=Path);p.add_argument('--format',choices=['urdf'],default='urdf');p.add_argument('--verify',action='store_true')
     p=sub.add_parser('assets');p.add_argument('action',choices=['build','inspect','validate','promote']);p.add_argument('target');p.add_argument('--output',type=Path,default=Path('outputs/library'));p.add_argument('--scale',type=float,default=1)
-    p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction'],required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
+    p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction','navigate'],required=True);p.add_argument('--goal');p.add_argument('--policy',choices=['planner','vlm'],default='planner');p.add_argument('--no-video',action='store_true');p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
     p=sub.add_parser('dataset');p.add_argument('scene',type=Path);p.add_argument('--variants',type=int,default=10);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60)
+    p=sub.add_parser('costs');p.add_argument('artifacts',type=Path,nargs='+');p.add_argument('--output',type=Path,required=True);p.add_argument('--usd-per-mtok-in',type=float);p.add_argument('--usd-per-mtok-out',type=float)
     args=parser.parse_args(argv)
     try:
         if args.command=='registry':
@@ -112,10 +113,13 @@ def main(argv=None):
             else: result=validate_asset(args.target,promote=args.action=='promote')
         elif args.command=='run':
             from .flows import run
-            result=run(args.scene,args.flow,args.output,seconds=args.seconds,tier=args.tier,seed=args.seed)
+            result=run(args.scene,args.flow,args.output,seconds=args.seconds,tier=args.tier,seed=args.seed,goal=args.goal,policy=args.policy,video=not args.no_video)
         elif args.command=='dataset':
             from .dataset import collect_variants
             result=collect_variants(args.scene,args.output,args.variants,args.seconds)
+        elif args.command=='costs':
+            from .costs import table
+            result=table(args.artifacts,args.output,args.usd_per_mtok_in,args.usd_per_mtok_out)
         print(json.dumps(result,indent=2,allow_nan=False))
         return 0 if result.get('passed',True) else 1
     except PipelineError as exc:

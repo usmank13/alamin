@@ -12,7 +12,7 @@ def mapper():
     result=Mapper.__new__(Mapper)
     result.res=.1;result.origin=np.zeros(2);result.shape=(20,20)
     result.logodds=np.zeros(result.shape);result.observed=np.zeros(result.shape,dtype=bool)
-    result.pose=np.array([.501,.501,0.]);result.scan_map={};result.scan_match_residual=None
+    result.pose=np.array([.501,.501,0.]);result.scan_map={};result.scan_match_residual=None;result.arrived=False;result.speed=.18;result.path=[];result.last_plan=-1.;result.wheels=np.eye(3)
     return result
 
 
@@ -80,3 +80,37 @@ def test_surface_matching_corrects_translation_and_yaw():
         ranges.append(min(candidates))
     m.observe(np.array(ranges),np.ones(72,dtype=bool))
     np.testing.assert_allclose(m.pose,[1,1,0],atol=.003)
+
+
+def test_goal_resolution_through_semantic_manifest():
+    from scene_pipeline.flows import resolve_goal
+    from scene_pipeline.contracts import PipelineError
+    box=[[0,0,0],[1,1,2]]
+    manifest={'instances':{'cold_storage_0':dict(id='cold_storage_0',category='fridge',position=[5,0,.9],bounds=box),
+                           'cold_storage_1':dict(id='cold_storage_1',category='fridge',position=[1,0,.9],bounds=box),
+                           'drawers_0':dict(id='drawers_0',category='drawer_unit',position=[2,2,0],bounds=box)}}
+    goal=resolve_goal('Go to the walk-in fridge',manifest,(0,0))
+    assert goal['id']=='cold_storage_1' and goal['alternatives']==['cold_storage_0']
+    assert resolve_goal('cold_storage_0',manifest,(0,0))['id']=='cold_storage_0'
+    assert resolve_goal('open the drawer',manifest,(0,0))['category']=='drawer_unit'
+    with pytest.raises(PipelineError) as failure:resolve_goal('go to the sink',manifest,(0,0))
+    assert failure.value.code=='UNKNOWN_GOAL' and 'fridge' in failure.value.details['categories']
+
+
+def test_goal_directed_plan_stops_at_free_cell_beside_goal():
+    from scene_pipeline.flows import clearance,REACH
+    m=mapper();m.observed[:]=True;m.logodds[:]=-1;m.logodds[14:17,8:11]=4
+    lo,hi=np.array([1.4,.8]),np.array([1.7,1.1])
+    ranges=np.full(72,2.);local=m.control(0.,ranges,(lo,hi))
+    assert local[0]>0 and m.path and not m.arrived
+    end=m.path[-1];centre=m.origin+(np.array(end)+.5)*m.res
+    assert m.logodds[end]<=0 and clearance(centre,lo,hi)<=REACH
+    from scipy.ndimage import binary_dilation
+    assert not binary_dilation(m.logodds>0,iterations=2)[end]  # outside the two-cell obstacle dilation
+    assert m.drive(local,ranges).shape==(3,)
+    blocked=ranges.copy();blocked[36]=.1  # ray 36 points along +x, the commanded direction
+    assert not m.drive([.3,0,0],blocked).any()
+    m.pose=np.array([1.2,.95,0.])
+    np.testing.assert_array_equal(m.control(1.,ranges,(lo,hi)),np.zeros(3));assert m.arrived
+    survey=mapper();survey.observed[:]=True;survey.logodds[:]=-1
+    assert survey.control(0.,ranges).shape==(3,) and survey.path  # mapping mode still explores

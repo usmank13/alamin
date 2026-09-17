@@ -5,6 +5,7 @@ os.environ.setdefault('LP_NUM_THREADS','1')
 import collections
 import math
 from pathlib import Path
+import subprocess
 import time
 
 import mujoco
@@ -20,11 +21,36 @@ from .contracts import PipelineError,read_json,write_json
 from .sensors import attach_rig,sensor,noisy_ranges,NOISE,semantic_masks
 from .dataset import Recorder,inspect
 from .validation import aabbs
+from .registry import CATALOG
 
 
 def belongs_to(model, geom, prefix):
     """Stock robot collision geoms can be unnamed; owning bodies are namespaced."""
     return model.body(int(model.geom_bodyid[geom])).name.startswith(prefix)
+
+
+REACH=.6
+GOAL_ALIASES={**{k:k for k in CATALOG},'refrigerator':'fridge','walk-in':'fridge','walk in':'fridge','cold storage':'fridge',
+              'drawer':'drawer_unit','cabinet':'base_cabinet','table':'prep_table','prep':'prep_table','shelves':'shelf'}
+
+
+def clearance(xy,lo,hi):
+    """2D distance from a point to an axis-aligned box footprint; zero inside."""
+    xy=np.asarray(xy,dtype=float)[:2]
+    return float(np.linalg.norm(np.maximum(0,np.maximum(np.asarray(lo)[:2]-xy,xy-np.asarray(hi)[:2]))))
+
+
+def resolve_goal(text,manifest,spawn_xy):
+    """Free text -> one manifest instance through the semantic layer; never coordinates."""
+    instances=manifest['instances'];key=text.strip().lower()
+    if key in instances:matches=[instances[key]]
+    else:
+        alias=next((a for a in sorted(GOAL_ALIASES,key=len,reverse=True) if a in key),None)
+        matches=[e for e in instances.values() if alias and e['category']==GOAL_ALIASES[alias]]
+    if not matches:raise PipelineError('UNKNOWN_GOAL',f'No semantic instance matches {text!r}',{'categories':sorted({e['category'] for e in instances.values()})})
+    matches.sort(key=lambda e:np.linalg.norm(np.asarray(e['position'][:2])-np.asarray(spawn_xy)))
+    chosen=matches[0]
+    return dict(instruction=text,id=chosen['id'],category=chosen['category'],position=chosen['position'],bounds=chosen['bounds'],alternatives=[e['id'] for e in matches[1:]])
 
 
 def mapping_approaches(ir,offset):
@@ -52,7 +78,7 @@ def robot_spec(root,flow):
     """Deterministic approach-pose search, rejecting occupied initial poses."""
     failures=[];ir=read_json(Path(root)/'ir.json')
     for offset in ([.9,1.,1.1,1.2] if flow=='interaction' else [.7,1.,1.3]):
-        for placement in (mapping_approaches(ir,offset) if flow=='mapping' else [None]):
+        for placement in (mapping_approaches(ir,offset) if flow in ('mapping','navigate') else [None]):
             try:
                 return _robot_spec(root,flow,offset,placement)
             except PipelineError as exc:
@@ -69,7 +95,7 @@ def _robot_spec(root,flow,offset,placement=None):
     spec.option.disableflags &= ~int(mujoco.mjtDisableBit.mjDSBL_FILTERPARENT)
     for key in list(spec.keys):spec.delete(key)
     ir=read_json(root/'ir.json');manifest=read_json(root/'manifest.json')
-    if flow=='mapping':
+    if flow in ('mapping','navigate'):
         path=Path('vendor/mujoco_menagerie/robot_soccer_kit/robot_soccer_kit.xml')
         prefix='base/';position,yaw=placement if placement is not None else ([offset,0,0],0.);target=None
         child=_read_spec(path)
@@ -114,7 +140,7 @@ class Mapper:
         self.res=.10;self.shape=tuple(np.ceil((points.max(axis=0)-self.origin+.2)/self.res).astype(int))
         self.logodds=np.zeros(self.shape);self.observed=np.zeros(self.shape,dtype=bool)
         self.initial_xy=np.asarray(initial_xy)
-        self.pose=np.array([*initial_xy,initial_yaw]);self.path=[];self.last_plan=-1.;self.travel=0.
+        self.pose=np.array([*initial_xy,initial_yaw]);self.path=[];self.last_plan=-1.;self.travel=0.;self.arrived=False;self.speed=.18
         self.scan_map={};self.scan_match_residual=None
         base=model.body('base/base').id;R=data.xmat[base].reshape(3,3)
         rows=[]
@@ -202,13 +228,15 @@ class Mapper:
             self.logodds[cell]+=1.2;self.observed[cell]=True
         np.clip(self.logodds,-8,8,out=self.logodds)
 
-    def control(self,time,ranges):
+    def control(self,time,ranges,goal=None):
+        """Body-frame [vx,vy,wz]. With a goal box (lo,hi), drive to the observed-free cell beside it."""
+        if goal is not None and clearance(self.pose[:2],*goal)<=REACH:self.arrived=True;return np.zeros(3)
         if np.count_nonzero(np.isfinite(ranges))<36:return np.zeros(3)
         start=self.cell(self.pose[:2])
         if time-self.last_plan>=1 or not self.path:
             blocked=binary_dilation(self.logodds>0,iterations=2)
             free=self.observed & ~blocked & (self.logodds<=0);free[start]=True
-            queue=collections.deque([start]);parents={start:None};best=start;best_score=-1
+            queue=collections.deque([start]);parents={start:None};best=start;best_score=-np.inf
             while queue:
                 cell=queue.popleft();neighbors=[]
                 for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:
@@ -216,7 +244,10 @@ class Mapper:
                     if 0<=n[0]<self.shape[0] and 0<=n[1]<self.shape[1]:neighbors.append(n)
                 frontier=any(not self.observed[n] for n in neighbors)
                 distance=np.linalg.norm(np.array(cell)-start)
-                score=distance if frontier else distance*.2
+                if goal is None:score=distance if frontier else distance*.2
+                else:
+                    # Nearest known-free cell beside the goal; unexplored frontiers beat dead ends.
+                    d=clearance(self.origin+(np.array(cell)+.5)*self.res,*goal);score=-(d+(0. if d<=REACH or frontier else 1.))
                 if score>best_score:best,best_score=cell,score
                 for n in neighbors:
                     if free[n] and n not in parents:parents[n]=cell;queue.append(n)
@@ -226,8 +257,12 @@ class Mapper:
         while self.path and np.linalg.norm(self.origin+(np.array(self.path[0])+.5)*self.res-self.pose[:2])<.12:self.path.pop(0)
         if not self.path:return np.zeros(3)
         target=self.origin+(np.array(self.path[0])+.5)*self.res;delta=target-self.pose[:2]
-        velocity=delta/max(np.linalg.norm(delta),.01)*.18
-        theta=self.pose[2];local=np.array([math.cos(theta)*velocity[0]+math.sin(theta)*velocity[1],-math.sin(theta)*velocity[0]+math.cos(theta)*velocity[1],np.clip(-theta,-.5,.5)])
+        velocity=delta/max(np.linalg.norm(delta),.01)*self.speed
+        theta=self.pose[2];return np.array([math.cos(theta)*velocity[0]+math.sin(theta)*velocity[1],-math.sin(theta)*velocity[0]+math.cos(theta)*velocity[1],np.clip(-theta,-.5,.5)])
+
+    def drive(self,local,ranges):
+        """Wheel commands from one body-frame action; the range reflex sits beneath any open-loop chunk."""
+        local=np.array(local,dtype=float)
         # Local range safety overrides navigation without ground-truth geometry.
         angles=np.linspace(-math.pi,math.pi,72,endpoint=False);forward=np.cos(angles)*local[0]+np.sin(angles)*local[1]
         if np.any((forward>.08)&(ranges<.20)):local[:2]*=0
@@ -258,6 +293,39 @@ class Mapper:
                     passed=bool(np.any(mask) and np.isfinite(iou)),
                     acceptance='finite reported reconstruction metric with observations; no spec accuracy threshold',
                     evaluation='10 cm cell-intersection occupancy; observed-cell IoU; reachable free-space coverage; collider AABBs at 0.23m; not directly comparable to v1 center metric')
+
+
+def planner_chunk(mapper,t,ranges,goal,K):
+    """Action chunk: K body-frame [vx,vy,wz] actions played open-loop, then re-queried (ACT/pi0 contract)."""
+    return np.tile(mapper.control(t,ranges,goal),(K,1)),mapper.arrived
+
+
+def vlm_chunk(mapper,manifest,goal,ranges,frame,work,K,timeout=180):
+    """Zero-shot VLM policy through the same Codex CLI the generator uses; one image per chunk."""
+    work=Path(work);work.mkdir(parents=True);hold=25;steps=max(1,K//hold)
+    write_json(work/'chunk.schema.json',dict(type='object',additionalProperties=False,required=['actions','arrived'],properties=dict(
+        arrived=dict(type='boolean'),actions=dict(type='array',minItems=1,maxItems=steps,items=dict(type='array',minItems=3,maxItems=3,items=dict(type='number'))))))
+    c,s=math.cos(mapper.pose[2]),math.sin(mapper.pose[2]);R=np.array([[c,s],[-s,c]])
+    rel=lambda p:(R@(np.asarray(p[:2])-mapper.pose[:2])).round(2).tolist()
+    objects=[dict(id=k,category=v['category'],body_xy=rel(v['position'])) for k,v in manifest['instances'].items() if not v.get('dynamic')]
+    sectors=[round(float(np.nanmin(ranges[i*9:(i+1)*9])),2) if np.isfinite(ranges[i*9:(i+1)*9]).any() else None for i in range(8)]
+    prompt=(f'You drive a small omnidirectional robot. Instruction: {goal["instruction"]!r}. Goal instance {goal["id"]} ({goal["category"]}) is at body-frame xy {rel(goal["position"])} m (x forward along the camera axis, y left). '
+            f'Estimated pose [x,y,yaw]: {mapper.pose.round(2).tolist()}. Other static objects (body-frame xy): {objects}. '
+            f'Nearest range per 45-degree sector, starting behind the robot and going counter-clockwise, metres (null = no return): {sectors}. '
+            f'Return up to {steps} actions [vx,vy,wz]; each is held {hold/100:.2f} s; limits |vx|,|vy|<=.3 m/s, |wz|<=1 rad/s. '
+            f'Set arrived=true only when within {REACH} m of the goal. Output only JSON matching the schema.')
+    command=['codex','exec','--sandbox','read-only','--skip-git-repo-check','--ignore-user-config','--ephemeral','--json',
+             '--output-schema',str((work/'chunk.schema.json').resolve()),'--output-last-message',str((work/'chunk.json').resolve()),'--cd',str(work.resolve())]
+    if frame is not None:Image.fromarray(frame).save(work/'frame.png');command+=['-i',str((work/'frame.png').resolve())]
+    try:result=subprocess.run(command+[prompt],capture_output=True,text=True,timeout=timeout)
+    except (FileNotFoundError,subprocess.TimeoutExpired) as exc:raise PipelineError('AGENT_UNAVAILABLE',str(exc)) from exc
+    (work/'trajectory.jsonl').write_text(result.stdout);(work/'agent.stderr.log').write_text(result.stderr)
+    if result.returncode or not (work/'chunk.json').exists():raise PipelineError('AGENT_FAILED','VLM policy call failed',{'returncode':result.returncode,'work':str(work)})
+    reply=read_json(work/'chunk.json')
+    actions=np.clip(np.array(reply['actions'],dtype=float).reshape(-1,3),[-.3,-.3,-1],[.3,.3,1])
+    chunk=np.repeat(actions,hold,axis=0)[:K]
+    # ponytail: open-loop chunk, no ACT-style temporal ensembling; add when a learned policy replaces the VLM.
+    return np.vstack([chunk,np.repeat(chunk[-1:],K-len(chunk),axis=0)]),bool(reply['arrived'])
 
 
 class DrawerController:
@@ -311,12 +379,16 @@ class DrawerController:
                 controller='Position/orientation IK -> native Panda actuators; no object commands; success must be measured')
 
 
-def run(scene,flow,output,*,seconds=60,tier='full',seed=0):
+def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='planner',video=True):
     scene=Path(scene);output=Path(output)
     if output.exists():raise PipelineError('OUTPUT_EXISTS',str(output))
     if not 0<seconds<=60:raise PipelineError('FLOW_DURATION','Flow duration must be (0,60] simulated seconds')
+    if flow=='navigate' and not goal:raise PipelineError('GOAL_REQUIRED','navigate needs --goal text, resolved through the semantic manifest')
+    if policy=='vlm' and tier!='full':raise PipelineError('POLICY_TIER','The VLM policy needs RGB frames: use --tier full')
+    K=25 if policy=='planner' else 200
     output.mkdir(parents=True);started=time.perf_counter()
     spec,model,data,manifest,rig,target=robot_spec(scene,flow)
+    if flow=='navigate':target=resolve_goal(goal,manifest,rig['placement']['position'][:2])
     prefix=rig['placement']['prefix'];sensor_prefix=prefix+'rig_'
     initial=data.qpos.copy();initial_ctrl=data.ctrl.copy()
     spec.add_key(name='harness_initial',qpos=initial,ctrl=initial_ctrl);spec.to_zip(str(output/'rollout_scene.mjz'))
@@ -324,13 +396,16 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0):
     # Rendering must not change the robot's observations or trajectory.
     rng,camera_rng=np.random.default_rng(seed),np.random.default_rng(np.random.SeedSequence([seed,1]))
     recorder=Recorder(output/'data.h5',dict(schema_version=1,rig=rig,scene=manifest,flow=flow,tier=tier,seed=seed,
-                                          semantics=dict(instance_ids={name:i+1 for i,name in enumerate(sorted(manifest['instances']))}),clock='simulation_seconds'))
-    mapper=Mapper(read_json(scene/'ir.json'),model,data,rig['placement']['position'][:2],rig['placement']['yaw']) if flow=='mapping' else None
+                                          semantics=dict(instance_ids={name:i+1 for i,name in enumerate(sorted(manifest['instances']))}),clock='simulation_seconds',
+                                          goal=target if flow=='navigate' else None,policy=policy if flow=='navigate' else None,chunk_ticks=K if flow=='navigate' else None))
+    mapper=Mapper(read_json(scene/'ir.json'),model,data,rig['placement']['position'][:2],rig['placement']['yaw']) if flow in ('mapping','navigate') else None
+    goal_box=(np.array(target['bounds'][0][:2]),np.array(target['bounds'][1][:2])) if flow=='navigate' else None
+    if mapper and flow=='navigate':mapper.speed=.3  # calibration knob; the mapping flow keeps its slower survey speed
     controller=DrawerController(model,data,target,manifest) if flow=='interaction' else None
     renderer=mujoco.Renderer(model,height=240,width=320) if tier=='full' else None
     opt=mujoco.MjvOption();opt.geomgroup[3]=0
     ranges=np.full(72,8.);warnings=np.zeros(len(data.warning),dtype=int)
-    frames=[]
+    frames=[];chunk=np.zeros((0,3));k=0;arrived=False;arrival_time=None;frame=None;chunks=0
     try:
         for tick in range(round(seconds/model.opt.timestep)+1):
             mujoco.mj_forward(model,data)
@@ -342,7 +417,15 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0):
                 if mapper:
                     velocities=np.array([data.joint(f'base/wheel{i}_speed').qvel[0] for i in range(1,4)])+rng.normal(0,NOISE['joint_sigma'],3)
                     if tick:mapper.update_odometry(velocities,float(gyro_obs[2]),.01)
-                    controls=mapper.control(t,ranges)
+                    if flow=='mapping':local=mapper.control(t,ranges)
+                    else:
+                        if k>=len(chunk):
+                            chunk,arrived=(planner_chunk(mapper,t,ranges,goal_box,K) if policy=='planner'
+                                           else vlm_chunk(mapper,manifest,target,ranges,frame,output/'vlm'/f'{chunks:03d}',K));k=0;chunks+=1
+                            recorder.append('action',t,chunk=chunk,pose=mapper.pose.copy(),goal_xy=np.asarray(target['position'][:2],dtype=float))
+                            if arrived and arrival_time is None:arrival_time=t
+                        local=chunk[k];k+=1
+                    controls=mapper.drive(local,ranges)
                     for i,control in enumerate(controls):data.actuator(f'base/wheel{i+1}_speed').ctrl[0]=control
                     recorder.append('odometry',t,pose=mapper.pose.copy(),wheel_velocity=velocities)
                 else:
@@ -360,10 +443,11 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0):
                 renderer.enable_depth_rendering();renderer.update_scene(data,prefix+'rig_rgbd',scene_option=opt);depth=renderer.render().copy();renderer.disable_depth_rendering()
                 renderer.enable_segmentation_rendering();renderer.update_scene(data,prefix+'rig_rgbd',scene_option=opt);seg=renderer.render().copy();renderer.disable_segmentation_rendering()
                 instances,classes=semantic_masks(seg,model,manifest)
-                recorder.append('camera',t,rgb_truth=rgb,rgb=np.clip(rgb.astype(float)+camera_rng.normal(0,2,rgb.shape),0,255).astype('uint8'),
+                frame=np.clip(rgb.astype(float)+camera_rng.normal(0,2,rgb.shape),0,255).astype('uint8')
+                recorder.append('camera',t,rgb_truth=rgb,rgb=frame,
                                 depth_truth=depth,depth=np.maximum(0,depth+camera_rng.normal(0,.005,depth.shape)).astype('float32'),instance=instances,semantic=classes)
                 frames.append(Image.fromarray(rgb))
-            if tick==round(seconds/model.opt.timestep):break
+            if tick==round(seconds/model.opt.timestep) or arrived:break
             mujoco.mj_step(model,data);warnings=np.maximum(warnings,data.warning.number)
             if any(warnings) or not np.isfinite(data.qpos).all():raise PipelineError('PHYSICS_DIVERGED','Flow physics produced warnings/nonfinite state')
     finally:
@@ -380,8 +464,21 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0):
         result['controller_inputs']=['noisy rangefinder readings','noisy wheel angular velocities','noisy IMU gyro',
                                      'known spawn pose','configured map bounds','robot wheel geometry']
         result['ground_truth_usage']='post-rollout scoring only; not localization, scan matching or navigation'
+        if flow=='navigate':
+            from .semantics import snapshot
+            bbox=snapshot(model,data,manifest)['objects'][target['id']]['bbox']
+            true_d=clearance(positions[-1],*bbox);est_d=clearance(mapper.pose[:2],*goal_box)
+            result.update(goal=target,policy=policy,chunk_ticks=K,chunks=chunks,declared_arrival=bool(arrived),time_to_goal_s=arrival_time,
+                          estimated_distance_m=est_d,true_distance_m=true_d,reach_m=REACH,path_length_m=actual_travel,reached=bool(true_d<=REACH),passed=bool(true_d<=REACH),
+                          acceptance='true final base distance to the goal instance bounds within reach; goal resolved from the semantic manifest, not coordinates')
+            result['controller_inputs'].append('goal instance id/position resolved from the semantic manifest')
     result.update(flow=flow,simulated_seconds=float(data.time),wall_seconds=time.perf_counter()-started,warnings=warnings.tolist(),streams=inspect(output/'data.h5'))
     if frames:
         frames[0].save(output/'flow.gif',save_all=True,append_images=frames[1:],duration=100,loop=0)
     write_json(output/'report.json',result)
+    if video:
+        from .replay import video as encode
+        try:result['video']=encode(output)['video']
+        except PipelineError as exc:result['video_error']=exc.as_dict()
+        write_json(output/'report.json',result)
     return result

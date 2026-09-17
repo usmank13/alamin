@@ -173,3 +173,41 @@ def test_semantic_mask_is_not_geom_id(generated):
     instances,classes=semantic_masks(raw,m,manifest)
     assert instances[0,0]>0 and classes[0,0]==manifest['instances']['cabinet_0']['class_id']
     assert instances[0,1]==0
+
+
+def test_navigate_smoke(generated,tmp_path):
+    if not Path('vendor/mujoco_menagerie').exists():pytest.skip('Stock robot checkout required')
+    import subprocess
+    import sys
+    from scene_pipeline.dataset import load_stream
+    command=[sys.executable,'-m','scene_pipeline.cli','run',str(generated),'--flow','navigate','--seconds','.1','--seed','42','--output',str(tmp_path/'nav')]
+    result=subprocess.run(command+['--goal','go to the storage shelf'],capture_output=True,text=True)
+    assert result.returncode in (0,1),result.stderr
+    report=json.loads((tmp_path/'nav'/'report.json').read_text())
+    assert report['goal']['category']=='shelf' and report['policy']=='planner'
+    assert {'true_distance_m','estimated_distance_m','declared_arrival','reached','chunks','time_to_goal_s'}<=set(report)
+    assert 'video' in report or 'video_error' in report
+    assert load_stream(tmp_path/'nav'/'data.h5','action')['chunk'].shape[1:]==(25,3)
+    missing=subprocess.run(command+['--goal','go to the fridge','--output',str(tmp_path/'none')],capture_output=True,text=True)
+    assert missing.returncode==2 and 'UNKNOWN_GOAL' in missing.stderr
+
+
+def test_variant_factors_randomize_clutter():
+    from scene_pipeline.dataset import randomize_program
+    program=load('examples/cafe_program.py')
+    a,fa=randomize_program(program,np.random.default_rng(1));b,fb=randomize_program(program,np.random.default_rng(2))
+    assert fa!=fb and set(fa)=={'goods'} and all(v>=1 for v in fa.values())
+    assert program['objects'][-1]['count']==8  # the source program is untouched
+
+
+def test_cost_table_from_artifacts(tmp_path):
+    from scene_pipeline.costs import table
+    env=tmp_path/'env';(env/'attempts'/'0').mkdir(parents=True)
+    write_json(env/'cost.json',dict(status='validated',seconds=7.,api_spend_usd=None,attempts=[dict(layout_seconds=1.,compile_seconds=.5,validation_seconds=2.)]))
+    (env/'attempts'/'0'/'trajectory.jsonl').write_text('{"type":"turn.started"}\n{"type":"turn.completed","usage":{"input_tokens":1000,"output_tokens":500}}\n')
+    flow=tmp_path/'nav';flow.mkdir();write_json(flow/'report.json',dict(flow='navigate',wall_seconds=3.,simulated_seconds=60.,passed=False))
+    result=table([env,flow],tmp_path/'costs.md',usd_in=2.,usd_out=8.)
+    assert result['total_wall_s']==pytest.approx(10.)
+    agent=next(r for r in result['rows'] if r['stage']=='generate/agent+io')
+    assert agent['wall_s']==pytest.approx(3.5) and agent['tokens']=={'input':1000,'output':500} and agent['api_spend_usd']==pytest.approx(.006)
+    assert 'flow/navigate' in (tmp_path/'costs.md').read_text()
