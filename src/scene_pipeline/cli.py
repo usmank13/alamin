@@ -42,6 +42,10 @@ def main(argv=None):
     p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction','navigate'],required=True);p.add_argument('--goal');p.add_argument('--policy',choices=['planner','vlm'],default='planner');p.add_argument('--no-video',action='store_true');p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
     p=sub.add_parser('dataset');p.add_argument('scene',type=Path);p.add_argument('--variants',type=int,default=10);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60)
     p=sub.add_parser('costs');p.add_argument('artifacts',type=Path,nargs='+');p.add_argument('--output',type=Path,required=True);p.add_argument('--usd-per-mtok-in',type=float);p.add_argument('--usd-per-mtok-out',type=float)
+    for command in ('generate','architecture'):
+        p=sub.choices[command];p.add_argument('--materials',choices=['flat','fal'],default='flat',help='PBR material sets from fal PATINA (needs FAL_KEY)')
+        p.add_argument('--clutter',choices=['off','fal'],default='off',help='Offer fal-generated visual-only decor categories to the agent')
+        p.add_argument('--max-fal-usd',type=float,help='List-price cap on new fal jobs; cache hits are free')
     args=parser.parse_args(argv)
     try:
         if args.command=='registry':
@@ -53,7 +57,8 @@ def main(argv=None):
             result=generate(args.prompt,args.seed,args.output,program=load(args.program) if args.program else None,model=args.model,
                             max_iterations=args.max_iterations,timeout=args.timeout,preview=not args.no_preview,
                             layout_backend=args.layout_backend,priors=read_json(args.priors) if args.priors else None,allow_prior_backoff=args.allow_prior_backoff,
-                            robot_radius=args.robot_radius,access_margin=args.access_margin)
+                            robot_radius=args.robot_radius,access_margin=args.access_margin,
+                            materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd)
         elif args.command=='architecture-fit':
             from .architecture_priors import build_bundle
             result=build_bundle(args.sample,args.output)
@@ -75,7 +80,8 @@ def main(argv=None):
             result=generate(args.prompt,args.seed,args.output,program=load(args.program) if args.program else None,
                 model=args.model,max_iterations=args.max_iterations,timeout=args.timeout,preview=not args.no_preview,
                 layout_backend='architecture',priors=read_json(args.priors),allow_prior_backoff=args.allow_prior_backoff,
-                robot_radius=args.robot_radius,access_margin=args.access_margin,architecture_only=True)
+                robot_radius=args.robot_radius,access_margin=args.access_margin,architecture_only=True,
+                materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd)
         elif args.command=='architecture-evaluate':
             from .architecture_evaluation import evaluate_batch
             from .dsl import load

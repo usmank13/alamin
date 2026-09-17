@@ -16,9 +16,31 @@ POLICY = {
     'slide_drift_m': .005, 'hinge_drift_rad': .008726646259971648,
     'joint_damping': 2., 'joint_frictionloss': .2,
     'retrieved_shell_proxy_kg_m3': 180.,
+    'materials_version': 'fal-patina-v1',
     'robot_radius_m': .25, 'robot_radius_note': 'Default access disc for a compact mobile base (Stretch-class footprint); override per robot.',
     'retrieved_shell_note': 'Effective bulk density for hollow appliance collider volumes, not material density or measured appliance mass. Explicit engineering proxy; original source remains archived.',
 }
+
+# Finish vocabulary. Entries with a `prompt` become fal PATINA PBR sets under `generate --materials fal`; rgba,
+# shininess and reflectance are the flat fallback and the MuJoCo material scalars. tile_m is the declared physical
+# size of one seamless tile, which sets the metric texture repeat in both MuJoCo and Cycles.
+MATERIALS = {
+    'floor_tile': dict(prompt='commercial kitchen quarry tile floor, matte red-brown ceramic tiles with grey grout lines', tile_m=.6, rgba=[.36, .38, .40, 1.], shininess=.1, reflectance=.1),
+    'wall_paint': dict(prompt='painted plaster wall, off-white eggshell finish with subtle roller texture', tile_m=1., rgba=[.75, .74, .70, 1.], shininess=.2, reflectance=.02),
+    'paint': dict(prompt='painted MDF cabinet panel, light grey satin lacquer with faint orange-peel texture', tile_m=.5, rgba=[.78, .80, .75, 1.], shininess=.2, reflectance=.02),
+    'stainless': dict(prompt='brushed stainless steel sheet with fine horizontal grain', tile_m=.5, rgba=[.62, .65, .68, 1.], shininess=.65, reflectance=.65),
+    'wood': dict(prompt='oak veneer wood grain, natural satin finish', tile_m=.6, rgba=[.55, .42, .27, 1.], shininess=.15, reflectance=.05),
+    'cream': dict(rgba=[.85, .77, .57, 1.], shininess=.2, reflectance=.02),
+    'amber': dict(rgba=[.48, .24, .07, 1.], shininess=.2, reflectance=.02),
+    'blue': dict(rgba=[.12, .29, .46, 1.], shininess=.2, reflectance=.02),
+}
+
+
+def decor(prompt, low, high):
+    """Visual-only dressing (route G6): a fal-generated mesh, static, no contact geometry, sized to the band midpoint
+    of its largest extent. Needs `generate --clutter fal`; otherwise the request is dropped with a reason."""
+    return dict(route='G6', prompt=prompt, size_m=[low, high], placement='support', dynamic=False, support_height_m=[.3, 1.6])
+
 
 # Geometric family dimensions are design defaults; no fabricated manufacturer citations.
 CATALOG = {
@@ -36,6 +58,16 @@ CATALOG = {
     'microwave': dict(route='G3', source='microwaves/Microwave075', articulated=True,placement='support',support_height_m=[.7,1.2]),
     'dishwasher': dict(route='G3', source='dishwashers/Dishwasher051', articulated=True),
     'fridge': dict(route='G3', source='fridges/Refrigerator055', articulated=True),
+    'mug': decor('a ceramic coffee mug with a handle', .09, .12),
+    'potted_plant': decor('a small potted green herb plant in a terracotta pot', .25, .40),
+    'cutting_board': decor('a rectangular wooden cutting board', .35, .45),
+    'fruit_bowl': decor('a wooden bowl filled with apples and oranges', .25, .32),
+    'paper_towel_roll': decor('a paper towel roll on a stainless steel holder', .30, .36),
+    'kettle': decor('a stainless steel electric kettle', .22, .28),
+    'tissue_box': decor('a rectangular cardboard tissue box with a tissue showing', .22, .26),
+    'hand_sanitizer_bottle': decor('a pump bottle of hand sanitizer', .18, .24),
+    'knife_block': decor('a wooden knife block holding kitchen knives', .22, .30),
+    'stack_of_plates': decor('a neat stack of white ceramic dinner plates', .26, .30),
 }
 
 # Brief-facing plausibility bands, checked on the compiled model. Wide by design: these catch
@@ -48,7 +80,10 @@ MASS_BANDS_KG={'base_cabinet':(15,80),'drawer_unit':(15,80),'wall_cabinet':(8,50
 
 # Persistent taxonomy: append entries; never derive IDs from one scene's inventory.
 CLASS_IDS = {'base_cabinet':1,'drawer_unit':2,'wall_cabinet':3,'prep_table':4,
-             'counter':5,'shelf':6,'door':7,'container':8,'microwave':9,'dishwasher':10,'fridge':11,'jar':12,'bottle':13,'tray':14}
+             'counter':5,'shelf':6,'door':7,'container':8,'microwave':9,'dishwasher':10,'fridge':11,'jar':12,'bottle':13,'tray':14,
+             'mug':15,'potted_plant':16,'cutting_board':17,'fruit_bowl':18,'paper_towel_roll':19,'kettle':20,'tissue_box':21,
+             'hand_sanitizer_bottle':22,'knife_block':23,'stack_of_plates':24}
+PROVENANCE_KIND={'G1':'engineering_default','G3':'retrieved_source','G6':'generated_visual_only_decor'}
 
 
 def class_id(category):
@@ -58,9 +93,9 @@ def class_id(category):
     return CLASS_IDS.get(category) or 1000+int(digest(category)[:8],16)%9000
 
 
-def search(category=None):
-    return {k: {**v, 'provenance_kind': 'engineering_default' if v['route']=='G1' else 'retrieved_source',
-                'policy': POLICY['version']} for k, v in CATALOG.items() if category is None or category in k}
+def search(category=None, routes=None):
+    return {k: {**v, 'provenance_kind': PROVENANCE_KIND[v['route']], 'policy': POLICY['version']} for k, v in CATALOG.items()
+            if (category is None or category in k) and (routes is None or v['route'] in routes)}
 
 
 def lookup(category):

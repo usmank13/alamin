@@ -26,7 +26,8 @@ def inventory(manifest,path):
     objects={key:value['source_classification'] for key,value in manifest['instances'].items()}
     result=dict(schema_version=1,objects=objects,counts=dict(Counter(v['origin'] for v in objects.values())),
                 architecture=dict(origin='procedural',provider='scene_pipeline.floorplan',dimension_basis='program_area_and_engineering_defaults'),
-                note='Origin is not evidence of contact suitability; validation and capability are separate. No fal calls are made.')
+                materials=manifest.get('materials'),
+                note='Origin is not evidence of contact suitability; validation and capability are separate. fal jobs, when used, are listed under materials and per-instance provenance.')
     layout=manifest.get('layout_provenance',{})
     if layout.get('generator')=='reference':
         result['architecture']=dict(origin='retrieved_2d_procedurally_extruded',provider=layout['source']['dataset'],

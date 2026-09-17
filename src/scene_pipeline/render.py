@@ -69,18 +69,21 @@ def render_recipe(root, *, view='auto'):
     for t in range(model.ntex):
         h,w,c=map(int,(model.tex_height[t],model.tex_width[t],model.tex_nchannel[t]))
         start=int(model.tex_adr[t]); pixels=model.tex_data[start:start+h*w*c].reshape(h,w,c)
-        path=f'texture_{t}.png';Image.fromarray(pixels).save(output/path);textures[t]=path
+        path=f'texture_{t}.png';Image.fromarray(pixels[...,0] if c==1 else pixels).save(output/path);textures[t]=path
+    # Texture roles are the sync contract: the layers MuJoCo compiled become Principled BSDF inputs, nothing else.
+    roles={int(r):r.name.replace('mjTEXROLE_','').lower() for r in mujoco.mjtTextureRole.__members__.values() if r.name.startswith('mjTEXROLE_')}
+    materials={}
+    for mid in range(model.nmat):
+        maps={roles[i]:textures[int(t)] for i,t in enumerate(model.mat_texid[mid]) if t>=0}
+        materials[model.material(mid).name]=dict(rgba=model.mat_rgba[mid].tolist(),roughness=float(1-model.mat_shininess[mid]),
+                                                metallic=float(model.mat_reflectance[mid]),textures=maps,repeat=model.mat_texrepeat[mid].tolist(),
+                                                texuniform=bool(model.mat_texuniform[mid]))
     geoms=[]
     for i in range(model.ngeom):
         if model.geom_contype[i] or model.geom_conaffinity[i] or model.geom_rgba[i,3]==0: continue
-        kind=int(model.geom_type[i]);mid=int(model.geom_matid[i]); material={}
-        if mid>=0:
-            tids=model.mat_texid[mid]; valid=[int(t) for t in tids if t>=0]
-            material=dict(rgba=model.mat_rgba[mid].tolist(),roughness=float(1-model.mat_shininess[mid]),
-                          metallic=float(model.mat_reflectance[mid]),texture=textures.get(valid[0]) if valid else None,
-                          repeat=model.mat_texrepeat[mid].tolist())
+        kind=int(model.geom_type[i]);mid=int(model.geom_matid[i])
         g=dict(name=model.geom(i).name,kind=kind,size=model.geom_size[i].tolist(),position=data.geom_xpos[i].tolist(),
-               rotation=data.geom_xmat[i].reshape(3,3).tolist(),rgba=model.geom_rgba[i].tolist(),material=material)
+               rotation=data.geom_xmat[i].reshape(3,3).tolist(),rgba=model.geom_rgba[i].tolist(),material=model.material(mid).name if mid>=0 else None)
         if kind==int(mujoco.mjtGeom.mjGEOM_MESH):
             mesh=int(model.geom_dataid[i]);v=int(model.mesh_vertadr[mesh]);n=int(model.mesh_vertnum[mesh]);f=int(model.mesh_faceadr[mesh]);nf=int(model.mesh_facenum[mesh])
             g['vertices']=model.mesh_vert[v:v+n].tolist();g['faces']=model.mesh_face[f:f+nf].tolist()
@@ -90,7 +93,7 @@ def render_recipe(root, *, view='auto'):
         geoms.append(g)
     ir=read_json(root/'ir.json')
     recipe=dict(schema_version=1,source='SceneIR compiled geometry at initial state',scene_ir_sha256=__import__('hashlib').sha256((root/'ir.json').read_bytes()).hexdigest(),
-                geoms=geoms,rooms=ir['rooms'],seed=ir['meta']['seed'],appearance=ir['meta'].get('appearance',{}),
+                geoms=geoms,materials=materials,rooms=ir['rooms'],seed=ir['meta']['seed'],appearance=ir['meta'].get('appearance',{}),
                 camera_view=('overview' if len(ir['rooms'])>1 or 'architecture' in ir else 'interior') if view=='auto' else view)
     write_json(output/'recipe.json',recipe)
     return output/'recipe.json'
@@ -111,5 +114,5 @@ def cycles(root, *, blender=None, samples=32, resolution=1024,view='auto'):
     if result.returncode or not (recipe.parent/'cycles.png').exists():
         raise PipelineError('CYCLES_FAILED','See render/blender.log')
     write_json(recipe.parent/'report.json',dict(engine='Cycles',device='CPU',samples=samples,resolution=resolution,seconds=time.perf_counter()-start,
-                                               geometry_source='same compiled SceneIR',materials='MuJoCo texture and approximate PBR mapping',diffusion=False))
+                                               geometry_source='same compiled SceneIR',materials='MuJoCo material texture layers (rgb/normal/roughness/metallic) mapped one-to-one onto Principled BSDF from the same compiled model; flat finishes use the MuJoCo shininess/reflectance scalars',diffusion=False))
     return recipe.parent/'cycles.png'

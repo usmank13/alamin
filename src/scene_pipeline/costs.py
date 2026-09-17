@@ -28,6 +28,9 @@ def rows(artifacts):
             # Whatever generate() spent outside the deterministic stages: agent calls, previews, file copies.
             stages.append(dict(artifact=path.name,stage='generate/agent+io',wall_s=cost['seconds']-sum(s['wall_s'] for s in stages),
                                attempts=len(cost['attempts']),status=cost.get('status'),tokens=tokens(path),api_spend_usd=cost.get('api_spend_usd')))
+            if cost.get('fal_calls'):
+                # fal wall time is inside generate/agent+io; spend is list price, with cache hits at 0.
+                stages.append(dict(artifact=path.name,stage='generate/fal',wall_s=None,attempts=cost['fal_calls'],api_spend_usd=cost.get('fal_spend_usd'),status=cost.get('fal_spend_basis')))
             out+=stages
             if (path/'render'/'report.json').exists():out.append(dict(artifact=path.name,stage='render/cycles',wall_s=read_json(path/'render'/'report.json')['seconds']))
             if (path/'urdf'/'verification.json').exists():out.append(dict(artifact=path.name,stage='export/urdf+pybullet',wall_s=read_json(path/'urdf'/'verification.json').get('seconds')))
@@ -38,6 +41,8 @@ def rows(artifacts):
             generation=[read_json(p) for p in sorted(path.glob('variant_*/cost.json'))]
             out.append(dict(artifact=path.name,stage=f"dataset/generate x{len(generation)}",wall_s=sum(c['seconds'] for c in generation)))
             out.append(dict(artifact=path.name,stage=f"dataset/flows x{len(runs)} of {len(d['variants'])}",wall_s=sum(r['wall_seconds'] for r in runs),sim_s=sum(r['simulated_seconds'] for r in runs),passed=d['passed']))
+            if (path/'fal_calls.json').exists():
+                calls=read_json(path/'fal_calls.json');out.append(dict(artifact=path.name,stage='dataset/fal',wall_s=None,attempts=len(calls),api_spend_usd=sum(c.get('cost_usd') or 0. for c in calls)))
         else:raise PipelineError('UNKNOWN_ARTIFACT',f'{path} has no cost.json, flow report.json or dataset.json')
     return out
 
@@ -56,7 +61,8 @@ def table(artifacts,output,usd_in=None,usd_out=None):
                                     f"{f'{t['input']}/{t['output']}' if t else 'n/a'} | {fmt(r.get('api_spend_usd'))} | {fmt(r.get('passed'))} |")
     lines.append(f'| **total** | | **{total:.1f}** | | | | | |')
     note=('\n\nWall seconds are measured on this CPU-only machine. `n/a` spend means the Codex CLI reports tokens but no price; '
-          'pass `--usd-per-mtok-in/--usd-per-mtok-out` to price them. Deterministic stages have no API spend.\n')
+          'pass `--usd-per-mtok-in/--usd-per-mtok-out` to price them. Deterministic stages have no API spend. '
+          'fal rows are list price at request time with cache hits at 0, not provider billing.\n')
     output.write_text('# Cost and timing table\n\n'+'\n'.join(lines)+note)
     result=dict(rows=out,total_wall_s=total,table=str(output),usd_per_mtok=dict(input=usd_in,output=usd_out))
     write_json(output.with_suffix('.json'),result)

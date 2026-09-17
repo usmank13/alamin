@@ -9,9 +9,9 @@ import numpy as np
 
 from sim_harness.scene import _read_spec
 from .contracts import PipelineError, digest, write_json, read_json
-from .registry import POLICY, fingerprint, lookup
+from .registry import POLICY, MATERIALS, fingerprint, lookup
 
-ADAPTER_VERSION = 'native-mjcf-v8'  # v8: visual geoms carry no mass in retrieved fixtures
+ADAPTER_VERSION = 'native-mjcf-v9'  # v9: finish-named placeholder materials, rebound to scene PBR materials by the compiler
 
 
 def vec(values):
@@ -34,16 +34,14 @@ def template(family, dimensions, finish='wood'):
     ET.SubElement(xml, 'compiler', angle='radian', inertiagrouprange='3 3')
     option = ET.SubElement(xml, 'option', timestep='.002', integrator='implicitfast')
     ET.SubElement(option, 'flag', filterparent='disable')
+    if finish not in MATERIALS:
+        raise PipelineError('TEMPLATE_DOMAIN', f'Unknown finish {finish}')
     asset = ET.SubElement(xml, 'asset')
-    ET.SubElement(asset, 'texture', name='grain', type='2d', builtin='checker', width='128', height='128', rgb1='.56 .43 .28', rgb2='.53 .40 .25')
-    ET.SubElement(asset, 'material', name='panel', texture='grain', texrepeat='8 1', reflectance='.05', shininess='.15')
-    ET.SubElement(asset, 'material', name='metal', rgba='.65 .68 .7 1', shininess='.6', specular='.7')
-    panel=asset.find("material[@name='panel']")
-    if finish!='wood':
-        panel.attrib.pop('texture',None)
-        colors={'stainless':'.62 .65 .68 1','paint':'.78 .80 .75 1','blue':'.12 .29 .46 1','amber':'.48 .24 .07 1','cream':'.85 .77 .57 1'}
-        panel.set('rgba',colors[finish]);panel.set('shininess','.65' if finish=='stainless' else '.2')
-        panel.set('reflectance','.65' if finish=='stainless' else '.02')
+    for name in sorted({finish, 'stainless'}):
+        # Flat placeholder named by finish. The scene compiler rebinds every `finish_*` geom to the scene-level
+        # PBR material of the same finish when one is realized, so textures are stored once per scene.
+        m = MATERIALS[name]
+        ET.SubElement(asset, 'material', name=f'finish_{name}', rgba=vec(m['rgba']), shininess=str(m['shininess']), reflectance=str(m['reflectance']))
     world = ET.SubElement(xml, 'worldbody')
     root = ET.SubElement(world, 'body', name='root')
     affordances, supports = [], []
@@ -108,6 +106,9 @@ def template(family, dimensions, finish='wood'):
             affordances = [dict(joint='drawer', role='drawer', closed=0., open=travel, requires={}, body='moving', point=[0,-d/2-.028,h*.65])]
     else:
         raise PipelineError('TEMPLATE_DOMAIN', f'Unknown family {family}')
+    for geom in xml.iter('geom'):
+        if geom.get('material') == 'panel': geom.set('material', f'finish_{finish}')
+        elif geom.get('material') == 'metal': geom.set('material', 'finish_stainless')
     return mujoco.MjSpec.from_string(ET.tostring(xml, encoding='unicode')), affordances, supports
 
 
@@ -190,6 +191,15 @@ def instantiate(category, destination, *, vendor=Path('vendor/robocasa_native'),
         provenance = dict(kind='sourced_template' if config.get('open_vocabulary') else 'engineering_default', policy=POLICY['version'], calibrated=False)
         if dimension_basis is not None: provenance['dimension_basis'] = dimension_basis
         dimensions = config['dimensions']
+    elif config['route'] == 'G6':
+        if scale != 1 or dimensions is not None:
+            raise PipelineError('TEMPLATE_DOMAIN', 'Generated decor is sized from its registry band; explicit scale or dimensions are not accepted')
+        from .generated import package as generated_package
+        spec, provenance = generated_package(category, config)
+        affordances, supports = [], []
+        source_hashes = provenance['hashes']
+        model = spec.compile(); data = mujoco.MjData(model); mujoco.mj_forward(model, data)
+        lo, hi = bounds(model, data); dimensions = (hi-lo).tolist()
     else:
         path = Path(vendor)/'fixtures'/config['source']/'model.xml'
         if not path.exists():

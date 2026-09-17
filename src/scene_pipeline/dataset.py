@@ -7,6 +7,8 @@ import h5py
 import numpy as np
 
 from .contracts import PipelineError,write_json,read_json
+from .registry import CATALOG
+from . import fal
 
 
 class Recorder:
@@ -53,7 +55,7 @@ def load_stream(path,stream,start=None,stop=None):
         return {name:ds[slice(start,stop)] for name,ds in f[stream].items()}
 
 
-CLUTTER=('container','jar','bottle','tray')
+CLUTTER=('container','jar','bottle','tray')+tuple(k for k,v in CATALOG.items() if v['route']=='G6')
 
 
 def randomize_program(program,rng):
@@ -74,17 +76,25 @@ def collect_variants(scene,output,variants=10,seconds=60):
     if output.exists(): raise PipelineError('OUTPUT_EXISTS',str(output))
     if not 1<=variants<=100: raise PipelineError('VARIANT_COUNT','Expected 1..100 variants')
     output.mkdir(parents=True)
-    program=read_json(Path(scene)/'program.json');results=[]
+    program=read_json(Path(scene)/'program.json');results=[];fal_records=[]
+    config=read_json(Path(scene)/'generation.json') if (Path(scene)/'generation.json').exists() else {}
+    materials=config.get('materials','flat');clutter=config.get('clutter','off');budget=config.get('max_fal_usd')
     for i in range(variants):
         target=output/f'variant_{i:03d}';rng=np.random.default_rng(i+100)
         try:
             variant,counts=randomize_program(program,rng)
-            generate(program['prompt'],i+100,target,program=variant,preview=False)
+            generate(program['prompt'],i+100,target,program=variant,preview=False,materials=materials,clutter=clutter,max_fal_usd=budget)
             # Appearance randomization is encoded into IR, not patched in generated MJCF.
             ir=read_json(target/'ir.json')
-            ir['meta']['appearance']={'light_multiplier':float(rng.uniform(.8,1.2)),
-                                      'tint':rng.uniform(.8,1.,3).tolist(),'texture_repeat':float(rng.uniform(5,12))}
-            factors=dict(layout_seed=i+100,clutter_counts=counts,**ir['meta']['appearance'])
+            appearance={**ir['meta'].get('appearance',{}),'light_multiplier':float(rng.uniform(.8,1.2)),
+                        'tint':rng.uniform(.8,1.,3).tolist(),'texture_repeat':float(rng.uniform(5,12))}
+            if materials=='fal':
+                # Texture-set axis: three PATINA seeds per finish bound the spend; every seed is cached and recorded per variant.
+                appearance['materials']=dict(source='fal',seed=int(rng.integers(3)))
+                fal_records+=fal.prefetch(fal.material_jobs(appearance['materials']['seed']),budget_usd=budget,spent_usd=sum(r['cost_usd'] for r in fal_records))
+                write_json(output/'fal_calls.json',fal_records)
+            ir['meta']['appearance']=appearance
+            factors=dict(layout_seed=i+100,clutter_counts=counts,**appearance)
             write_json(target/'ir.json',ir);compile_scene(ir,target)
             validation=validate_scene(target)
             if not validation['passed']:
@@ -96,7 +106,7 @@ def collect_variants(scene,output,variants=10,seconds=60):
             results.append(dict(variant=i,error=exc.as_dict()))
     summary=dict(schema_version=1,variants=results,passed=all(x.get('report',{}).get('passed',False) for x in results),
                  tier_rationale='Three RGB-D runs; remaining runs avoid rendering overhead while retaining state/range/IMU observations and truth.',
-                 randomization='Per variant: layout seed (object placement), clutter counts x0.7-1.3 for containers/jars/bottles/trays, light multiplier 0.8-1.2, material tint, texture repeat; factors recorded per variant.')
+                 randomization='Per variant: layout seed (object placement), clutter counts x0.7-1.3 for containers/jars/bottles/trays and decor, light multiplier 0.8-1.2, material tint, texture repeat, and with --materials fal the PBR texture set seed (0-2); factors recorded per variant.')
     write_json(output/'dataset.json',summary)
-    (output/'DATA_CARD.md').write_text('# Generated mapping dataset\n\n'+summary['tier_rationale']+'\n\n'+summary['randomization']+' Sequential collection; each variant also carries replay.mp4 when ffmpeg is present.\n\nSynthetic engineering sensor noise; not hardware calibrated. Stock small omnibase; no claim of full-size service-robot dynamics. Fixed category/material vocabulary; kitchen-biased. Failed runs remain explicitly reported. See dataset.json and HDF5 metadata for seeds, timestamps, provenance and acceptance results.\n')
+    (output/'DATA_CARD.md').write_text('# Generated mapping dataset\n\n'+summary['tier_rationale']+'\n\n'+summary['randomization']+' Sequential collection; each variant also carries replay.mp4 when ffmpeg is present.\n\nSynthetic engineering sensor noise; not hardware calibrated. Stock small omnibase; no claim of full-size service-robot dynamics. Fixed category and finish vocabulary; kitchen-biased; PBR sets and decor meshes, when enabled, are fal generations at declared engineering tile sizes and size bands. Failed runs remain explicitly reported. See dataset.json and HDF5 metadata for seeds, timestamps, provenance and acceptance results.\n')
     return summary

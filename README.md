@@ -89,6 +89,10 @@ One command per brief deliverable, run from the repository root:
 # Prompt -> validated scene; omit --program to let the Codex agent write the SceneProgram
 .venv/bin/pipeline generate --prompt 'A 60 square metre working prep kitchen ...' \
   --program examples/rich_kitchen_program.py --seed 17 --output outputs/kitchen
+# Optional fal layers (export FAL_KEY): PATINA PBR material sets per finish, Hunyuan3D visual-only decor
+.venv/bin/pipeline generate --prompt 'A 60 square metre working prep kitchen ...' \
+  --program examples/pbr_kitchen_program.py --seed 17 --materials fal --clutter fal --max-fal-usd 6 \
+  --output outputs/pbr_kitchen
 .venv/bin/pipeline render outputs/kitchen                        # 1024 px CPU Cycles still, same IR
 .venv/bin/pipeline export outputs/kitchen --format urdf --verify  # URDF loaded and actuated in PyBullet
 # Flows write data.h5, report.json and replay.mp4 (ffmpeg); --tier state skips RGB-D
@@ -98,12 +102,25 @@ One command per brief deliverable, run from the repository root:
   --output outputs/kitchen_nav --seconds 60
 .venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the prep table' --policy vlm \
   --output outputs/kitchen_nav_vlm --seconds 20
-# Ten randomized variants (layout seed, clutter counts, light, tint, texture repeat); three with RGB-D
+# Ten randomized variants (layout seed, clutter counts, light, tint, texture repeat, PBR texture-set seed); three with RGB-D
 .venv/bin/pipeline dataset outputs/kitchen --output outputs/kitchen_dataset --variants 10 --seconds 60
 # Stage wall-clock and Codex token table from the artifacts above
 .venv/bin/pipeline costs outputs/kitchen outputs/kitchen_mapping outputs/kitchen_interaction \
   outputs/kitchen_nav outputs/kitchen_dataset --output docs/cost-table.md
 ```
+
+Materials, clutter and render/sim sync. `--materials fal` asks fal PATINA for one seamless PBR
+set (base colour, normal, roughness, metalness) per registry finish; `--clutter fal` offers the agent
+decor categories (`mug`, `kettle`, `potted_plant`, ...) that Hunyuan3D turns into static, contact-free
+meshes sized to a declared band. Every fal job is cached by request digest under
+`$SCENE_PIPELINE_CACHE` (default `~/.cache/scene-pipeline/fal`), so repairs and variants never pay twice;
+`fal_calls.json` and `cost.json` record list-price spend, with cache hits at zero. The compiler writes each
+map once as MuJoCo material texture layers (`rgb`, `normal`, `roughness`, `metallic`, `texuniform` with a
+metric repeat from the finish's tile size) and rebinds every asset's `finish_*` placeholder to them, so the
+MJZ the simulator loads is the textured scene and its RGB camera sees the albedo. `pipeline render` reads the
+same layers back from the compiled model into Principled BSDF: one scene, two consumers. Without the flags
+or a key, finishes stay the declared flat engineering colours and `manifest.json` says so under `materials`.
+Decor carries no collision geometry, so an arm can sweep through it; it is dressing, not a manipulation target.
 
 Semantic navigation resolves the goal text through the scene's semantic manifest (an
 instance id, or a category alias such as `walk-in`, `refrigerator` or `drawer`), never

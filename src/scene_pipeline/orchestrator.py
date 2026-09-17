@@ -11,6 +11,7 @@ from . import VERSION
 from .contracts import PipelineError,PROGRAM_SCHEMA,PROGRAM_SCHEMA_V2,FAMILY,FIELD,obj,validate_program,write_json,read_json,digest
 from .registry import search,fingerprint,CATALOG
 from .evidence import resolve,fetch,CACHE
+from . import fal
 from .generators import generate_layout
 from .scene_intent import freeze,check_revision
 from .scene_checks import check_scene
@@ -124,8 +125,9 @@ def resolve_program(program,work,*,model=None,timeout=180,sourcing=source_dimens
     return validate_program(resolved)
 
 
-def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_backend='heuristic',architecture_only=False):
+def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_backend='heuristic',architecture_only=False,clutter='off'):
     work=Path(work);work.mkdir(parents=True,exist_ok=True)
+    registry=search(routes=None if clutter=='fal' else ('G1','G3'))  # decor is offered only when its fal route is enabled
     schema=deepcopy(PROGRAM_SCHEMA_V2 if layout_backend=='architecture' else PROGRAM_SCHEMA)
     if layout_backend=='architecture':schema['properties']['architecture']['required'].append('unsupported_requirements')
     schema['properties']['objects']['items']['properties'].pop('dimension_basis')  # harness-owned; the agent supplies evidence only
@@ -140,7 +142,7 @@ def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_back
         +OPEN_VOCABULARY+
         'Use space.area_m2 from the user or the explicit engineering area default of 60. '
         'Do not claim a walk-in or washing station is present by relabeling a cabinet. '
-        f'Registry: {search()}\nPrompt: {prompt}\nLast deterministic failure: {feedback}\n'
+        f'Registry: {registry}\nPrompt: {prompt}\nLast deterministic failure: {feedback}\n'
     )
     if layout_backend=='architecture':
         instruction=(
@@ -156,7 +158,7 @@ def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_back
             'use an empty list when all requirements are expressible. Door/window absolute dimensions and multi-room '
             'requirements are not supported in this version. No room-specific placement rules are supplied. '
             +('This command builds architecture only: objects and relations must be empty. ' if architecture_only else
-              f'For requested furnishings, select asset categories from {search()}. '+OPEN_VOCABULARY)
+              f'For requested furnishings, select asset categories from {registry}. '+OPEN_VOCABULARY)
             +f'Prompt: {prompt}\nLast deterministic failure: {feedback}\n')
     program=_codex(instruction,schema,work,model,timeout)
     for item in program.get('objects',[]):item.pop('dimension_basis',None)
@@ -164,12 +166,16 @@ def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_back
 
 
 def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,timeout=900,preview=True,
-             layout_backend='heuristic',priors=None,allow_prior_backoff=False,robot_radius=None,access_margin=.05,architecture_only=False):
+             layout_backend='heuristic',priors=None,allow_prior_backoff=False,robot_radius=None,access_margin=.05,architecture_only=False,
+             materials='flat',clutter='off',max_fal_usd=None):
     output=Path(output)
+    if materials not in ('flat','fal') or clutter not in ('off','fal'):raise PipelineError('OPTION','materials must be flat|fal and clutter off|fal')
     if output.exists(): raise PipelineError('OUTPUT_EXISTS',f'Refusing to overwrite {output}')
     if not 1<=max_iterations<=20: raise PipelineError('ITERATION_LIMIT','Repair limit must be 1..20')
     if timeout<=0: raise PipelineError('TIME_BUDGET','Generation timeout must be positive')
     output.mkdir(parents=True)
+    write_json(output/'generation.json',dict(schema_version=1,materials=materials,clutter=clutter,max_fal_usd=max_fal_usd))
+    fal_records=[]
     started=time.perf_counter();attempts=[];feedback=None;intent=None;revisions=[]
     status='failed';chosen=None;best=None;previous=None
     for attempt in range(max_iterations if program is None else 1):
@@ -179,7 +185,7 @@ def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,time
             remaining=timeout-(time.perf_counter()-started)
             if remaining<=0: raise PipelineError('BUDGET_EXHAUSTED','Generation wall-time budget exhausted')
             selected=program if program is not None else agent_program(prompt,directory,feedback,model,min(180,remaining),
-                layout_backend=layout_backend,architecture_only=architecture_only)
+                layout_backend=layout_backend,architecture_only=architecture_only,clutter=clutter)
             validate_program(selected)
             if architecture_only and (selected['objects'] or selected['relations']):
                 raise PipelineError('ARCHITECTURE_ONLY','Architecture-only command does not accept furnishing requests')
@@ -195,9 +201,15 @@ def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,time
             if intent.get('architecture')!=selected.get('architecture'):
                 revisions.append(dict(attempt=attempt,reason=feedback,architecture=selected.get('architecture')))
                 write_json(output/'architecture_revisions.json',revisions)
+            # Paid fal jobs happen here, once, before any deterministic stage; repairs and variants hit the cache.
+            jobs=(fal.material_jobs(0) if materials=='fal' else [])+(fal.decor_jobs(selected) if clutter=='fal' else [])
+            if jobs:
+                fal_records+=fal.prefetch(jobs,budget_usd=max_fal_usd,spent_usd=sum(r['cost_usd'] for r in fal_records),deadline_s=max(30.,remaining-60))
+                write_json(directory/'fal_prefetch.json',fal_records)
             t=time.perf_counter();ir=generate_layout(selected,seed+attempt,directory,backend=layout_backend,priors=priors,
                                                     allow_prior_backoff=allow_prior_backoff,robot_radius=robot_radius,
                                                     access_margin=access_margin);layout_seconds=time.perf_counter()-t
+            ir['meta']['appearance']={**ir['meta'].get('appearance',{}),'materials':dict(source=materials,seed=0)}
             scene_report=check_scene(intent,ir,directory)
             write_json(directory/'scene_checks.json',scene_report)
             if not scene_report['passed']:raise PipelineError('SCENE_CHECKS','Independent scene checks failed',scene_report)
@@ -224,7 +236,7 @@ def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,time
         except PipelineError as exc:
             feedback=exc.as_dict();write_json(directory/'failure.json',feedback)
             attempts.append(dict(attempt=attempt,passed=False,error=feedback,seconds=time.perf_counter()-start))
-            if exc.code in ('BUDGET_EXHAUSTED','AGENT_UNAVAILABLE','AGENT_FAILED'): break
+            if exc.code in ('BUDGET_EXHAUSTED','AGENT_UNAVAILABLE','AGENT_FAILED','FAL_CREDENTIALS'): break
             if feedback==previous: break  # The agent cannot move this failure; stop paying for retries.
             previous=feedback
         except Exception as exc:
@@ -250,8 +262,10 @@ def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,time
     result=dict(schema_version=1,status=status,passed=status=='validated',prompt=prompt,seed=seed,attempts=attempts,
                 replay_key=digest(dict(prompt=prompt,seed=seed,registry=fingerprint(),version=VERSION,program=program,
                                       layout_backend=layout_backend,prior_sha256=priors.get('sha256') if priors else None,
-                                      allow_prior_backoff=allow_prior_backoff,robot_radius=robot_radius,access_margin=access_margin)),
+                                      allow_prior_backoff=allow_prior_backoff,robot_radius=robot_radius,access_margin=access_margin,
+                                      materials=materials,clutter=clutter)),
                 seconds=time.perf_counter()-started,api_spend_usd=None,api_spend_note='Not available from CLI; never inferred as zero',
+                materials=materials,clutter=clutter,fal_calls=len(fal_records),fal_spend_usd=sum(r['cost_usd'] for r in fal_records),fal_spend_basis=fal.PRICE_BASIS,
                 program_source='supplied declarative program' if program else 'Codex non-interactive',last_failure=feedback if status!='validated' else None,
                 validation_scope='architecture_geometry_and_scene_physics' if layout_backend=='architecture' else 'implemented_scene_and_physics_checks',
                 distribution_verified=False)
@@ -260,5 +274,6 @@ def generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,time
         result['source_metric_scale_verified']=False
         result['conditioning']=read_json(chosen/'ir.json')['provenance']['architecture_sampling']['conditioning'] if chosen else None
     write_json(output/'cost.json',result)
+    write_json(output/'fal_calls.json',fal_records)
     if not chosen: raise PipelineError('GENERATION_FAILED','No validated scene produced',result)
     return result

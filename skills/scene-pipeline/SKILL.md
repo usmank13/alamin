@@ -22,7 +22,10 @@ stated size verbatim as `dimension_evidence.prompt_quote` or leave dimensions ou
 so the harness sources and verifies them from a fetched page. Never write a
 dimension without evidence. Do not substitute an appliance with an unrelated proxy
 without explicit user permission. A retrieved articulated asset is not verified
-merely because it loads. See `docs/open-vocabulary-and-gates.md`.
+merely because it loads. See `docs/open-vocabulary-and-gates.md`. Decor categories
+(route G6: mug, kettle, potted_plant, ...) are fal-generated, visual-only dressing
+without contact geometry; they appear in the registry only under `--clutter fal`, are
+dropped with a reason otherwise, so request them with `required=False`.
 
 Express the arrangement with relations (against_wall, near, in_row, under); the
 solver optimizes them. Mark a relation required only when the user requires it.

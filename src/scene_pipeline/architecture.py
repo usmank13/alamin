@@ -29,7 +29,7 @@ def compile_architecture(ir,asset,world):
     doors=[Polygon(o['polygon']) for o in ir['openings'] if o['kind']=='door']
     windows=[Polygon(o['polygon']) for o in ir['openings'] if o['kind']=='window']
     floor=unary_union([Polygon(r['polygon']) for r in ir['rooms']]+doors)
-    extrude(asset,world,floor,'floor_reference',-.1,0,'floor_material')
+    extrude(asset,world,floor,'floor_reference',-.1,0,'finish_floor_tile')
     # Reference wall polygons preserve thickness and oblique orientation. Openings
     # are boolean cuts, not decorative doorway props. Heights are explicit assumptions.
     walls=unary_union([Polygon(w['polygon']) for w in architecture['walls']])
@@ -41,7 +41,7 @@ def compile_architecture(ir,asset,world):
         if z0<architecture['door_height']:cuts+=doors
         if z0>=architecture['window_sill'] and z1<=architecture['window_top']:cuts+=windows
         layer=walls.difference(unary_union(cuts))
-        extrude(asset,world,layer,f'wall_reference_{n}',z0,min(z1,architecture['height']),'wall_material')
+        extrude(asset,world,layer,f'wall_reference_{n}',z0,min(z1,architecture['height']),'finish_wall_paint')
 
 
 def compiled_footprints(model,data,prefix,z=None):
