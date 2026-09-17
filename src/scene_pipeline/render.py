@@ -24,7 +24,7 @@ def preview(root, *, cutaway=True):
     camera=mujoco.MjvCamera();mujoco.mjv_defaultFreeCamera(model,camera)
     camera.lookat[:]=[*(low+high)/2,.6];camera.distance=float(np.linalg.norm(high-low)*1.1)
     camera.azimuth=130;camera.elevation=-55
-    opt=mujoco.MjvOption();opt.geomgroup[3]=0
+    opt=mujoco.MjvOption();opt.geomgroup[3]=0;opt.flags[mujoco.mjtVisFlag.mjVIS_RANGEFINDER]=0  # sensor rays are not scene content
     model.vis.quality.shadowsize=1024
     model.vis.headlight.ambient[:]=.5
     # Diagnostic cutaway is labeled; simulation/physics geometry is unchanged.

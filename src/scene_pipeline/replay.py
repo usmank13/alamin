@@ -20,7 +20,7 @@ def video(root,fps=5):
     if not 1<=fps<=30: raise PipelineError('VIDEO_RATE','Expected 1..30 fps')
     model=mujoco.MjSpec.from_zip(str(root/'rollout_scene.mjz')).compile();data=mujoco.MjData(model)
     report=read_json(root/'report.json');camera=mujoco.MjvCamera();mujoco.mjv_defaultFreeCamera(model,camera)
-    option=mujoco.MjvOption();option.geomgroup[3]=0;model.vis.quality.shadowsize=1024
+    option=mujoco.MjvOption();option.geomgroup[3]=0;option.flags[mujoco.mjtVisFlag.mjVIS_RANGEFINDER]=0;model.vis.quality.shadowsize=1024
     # Observer-only cutaway: recorded state and physical geometry are unchanged.
     for i in range(model.ngeom):
         if model.geom(i).name.startswith('wall_'):model.geom_rgba[i,3]=0

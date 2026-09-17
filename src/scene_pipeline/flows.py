@@ -404,7 +404,7 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
     if mapper and flow=='navigate':mapper.speed=.3  # calibration knob; the mapping flow keeps its slower survey speed
     controller=DrawerController(model,data,target,manifest) if flow=='interaction' else None
     renderer=mujoco.Renderer(model,height=240,width=320) if tier=='full' else None
-    opt=mujoco.MjvOption();opt.geomgroup[3]=0
+    opt=mujoco.MjvOption();opt.geomgroup[3]=0;opt.flags[mujoco.mjtVisFlag.mjVIS_RANGEFINDER]=0  # sensor rays are not scene content
     ranges=np.full(72,8.);warnings=np.zeros(len(data.warning),dtype=int)
     frames=[];chunk=np.zeros((0,3));k=0;arrived=False;arrival_time=None;frame=None;chunks=0;policy_failures=[]
     try:
