@@ -230,7 +230,8 @@ class Mapper:
 
     def control(self,time,ranges,goal=None):
         """Body-frame [vx,vy,wz]. With a goal box (lo,hi), drive to the observed-free cell beside it."""
-        if goal is not None and clearance(self.pose[:2],*goal)<=REACH:self.arrived=True;return np.zeros(3)
+        # Declare arrival 10 cm inside the reach so pose-estimate error does not leave the truth just outside it.
+        if goal is not None and clearance(self.pose[:2],*goal)<=REACH-.1:self.arrived=True;return np.zeros(3)
         if np.count_nonzero(np.isfinite(ranges))<36:return np.zeros(3)
         start=self.cell(self.pose[:2])
         if time-self.last_plan>=1 or not self.path:
