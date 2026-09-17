@@ -1,29 +1,3 @@
-# MuJoCo simulation harness
-
-Standalone simulation scaffolding for the [trial brief](trial-task-text-to-simulations.md).
-The scene generator can use any architecture: its handoff is an MJCF file with
-resolvable assets. This package loads it, optionally attaches stock robots, and
-provides a viewer and a physics/render smoke check.
-
-Minimal experiments for the pipeline docs live separately in
-[prototypes/README.md](prototypes/README.md): P4 procedural/agent-authored geometry,
-P5 URDF rescaling/CoACD, and small validation counterexamples.
-
-The hand-authored example remains an installation fixture, **not** a generated
-scene or submission. A decoupled generator now lives in `src/scene_pipeline`:
-templates/retrieval, seeded layout, validation, Codex repair loop, Cycles,
-URDF/PyBullet export, robot sensor flows and HDF5 collection. See the
-[pipeline implementation guide](docs/pipeline-implementation.md) for setup,
-commands, measured evidence and the still-unmet full-brief gates.
-The [richer kitchen and object provenance guide](docs/object-provenance.md)
-documents a complete mixed-source example and how each object's origin is tracked.
-The [scene grounding experiments](docs/scene-grounding-experiments.md) cover real
-floorplan reconstruction, interchangeable layout backends and deterministic
-checks, including where the initial empirical layout sampler still falls short.
-The newer [distribution-conditioned architecture](docs/distribution-conditioned-architecture.md)
-backend samples joint room/opening configurations from real annotations, with
-agent-authored intent, independent checks and held-out diversity/coverage reports.
-
 ## Setup
 
 Requires Linux, Git and [uv](https://docs.astral.sh/uv/getting-started/installation/).
@@ -62,8 +36,6 @@ or invalid renders. It holds the arm at its home controls and leaves wheel targe
 at zero; the integration test additionally drives the wheels and moves an arm joint.
 Physics wall time excludes model compilation and rendering.
 
-See [brief-status.md](docs/brief-status.md) for requirement-by-requirement coverage
-and the remaining work that needs generator, sensor, export or task decisions.
 
 ### Diagnostic capture format
 
@@ -143,12 +115,6 @@ Set `MUJOCO_GL` before importing MuJoCo in Python when rendering. The CLI's
 `--backend` does this for you. `scene.py` has no generation dependency; `cli.py`
   is only a runner, and the `examples/` files can be replaced independently.
 
-## Export boundary
-
-The brief requires a **second independent format with articulation intact**.
-The pipeline now exports URDF scene packages and verifies them in PyBullet; USD
-is deferred. A native MuJoCo bundle alone does not meet that requirement.
-See [docs/export-contract.md](docs/export-contract.md) for fidelity and scope.
 
 For portable MuJoCo inspection/replay now:
 
@@ -166,18 +132,6 @@ placement/control, multiple instances/rotation, invalid names, and export/reload
 Exporters can call `compose_scene(scene, robots)` from `sim_harness.scene` to obtain
 `(spec, model, data)`. Keeping the specification available avoids forcing later
 exporters to reconstruct articulation from rendered images or flattened meshes.
-
-## Graphics on this machine
-
-The machine has an RTX 3070, but `nvidia-smi` currently cannot communicate with
-its driver. `osmesa` provides working CPU offscreen rendering without that driver.
-For Ubuntu hosts missing graphics libraries, install `libosmesa6`, `libegl1`,
-and `libgl1` using the system package manager. They are already present here.
-
-Once the NVIDIA driver works, use `--backend egl` for headless GPU rendering;
-`glfw` is for the desktop viewer. EGL can also select Mesa, so successful EGL
-rendering alone does not prove NVIDIA is in use. CUDA is not required by this
-native MuJoCo harness; accelerated training/MJX is a separate integration.
 
 ## Models and references
 
