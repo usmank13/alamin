@@ -1,0 +1,17 @@
+<mujoco model="harness_test_lab">
+  <option timestep="0.002" integrator="implicitfast" noslip_iterations="1"/>
+  <visual><global offwidth="640" offheight="480"/></visual>
+  <asset>
+    <texture name="checker" type="2d" builtin="checker" rgb1="0.2 0.25 0.3" rgb2="0.3 0.35 0.4" width="512" height="512"/>
+    <material name="floor_mat" texture="checker" texrepeat="6 6" texuniform="true"/>
+  </asset>
+  <worldbody>
+    <light pos="0 0 4" dir="0 0 -1" directional="true"/>
+    <geom name="floor" type="plane" size="3 3 0.1" material="floor_mat"/>
+    <geom name="workbench" type="box" pos="0.6 0.6 0.4" size="0.7 0.5 0.4" rgba="0.55 0.38 0.24 1"/>
+    <body name="test_cube" pos="0.8 0.6 0.85">
+      <freejoint name="cube_free"/>
+      <geom name="cube" type="box" size="0.04 0.04 0.04" mass="0.2" rgba="0.9 0.3 0.1 1"/>
+    </body>
+  </worldbody>
+</mujoco>

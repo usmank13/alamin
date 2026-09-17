@@ -1,0 +1,753 @@
+{
+  "schema_version": 1,
+  "source": {
+    "dataset": "minliu01/ManipGen-PartNet",
+    "revision": "5459c7323a1c04e0207ad30fc28f78e62ff168fc",
+    "url": "https://huggingface.co/datasets/minliu01/ManipGen-PartNet/resolve/5459c7323a1c04e0207ad30fc28f78e62ff168fc/manipgen-partnet.tar.gz",
+    "archive": "vendor/partnet_pilot/manipgen-partnet.tar.gz",
+    "bytes": 552155633,
+    "sha256": "a4120e4eb663f2976f7067547e19c55a09dc839d2fc4e9d06a98731c8448d555",
+    "reviewed_date": "2026-09-16",
+    "readme_url": "https://huggingface.co/datasets/minliu01/ManipGen-PartNet/raw/5459c7323a1c04e0207ad30fc28f78e62ff168fc/README.md",
+    "readme_snapshot": "vendor/partnet_pilot/manipgen_subset/SOURCE_README.md",
+    "readme_sha256": "ab2508634eb364f9962f2c6f5f0fe4efc2ea65a0d0410e1e017d31710e472a49",
+    "declared_license": "MIT (dataset-card metadata)",
+    "license_caveat": "Archive contains no README/LICENSE; upstream PartNet handle terms not independently resolved. Dataset-card MIT is a declaration, not proof of relicensing upstream geometry.",
+    "upstream_handles": "https://partnet.cs.stanford.edu/",
+    "project": "https://mihdalal.github.io/manipgen/",
+    "composition": "Procedurally generated cabinet bodies assembled with PartNet handles; not original PartNet-Mobility scenes or the 15-asset/five-category P5 set."
+  },
+  "extraction": {
+    "archive_members_scanned": 17270,
+    "asset_bytes": 507461,
+    "max_asset_bytes": 67108864,
+    "asset_count": 6,
+    "raw_files_unmodified": true,
+    "graspdata_excluded": true
+  },
+  "assets": [
+    {
+      "id": "door-33507-18-0",
+      "category": "door",
+      "handle_form_observation": "short horizontal handle",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-33507-18-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "revolute",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "1.5707963267948966",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.0047437,
+          -0.24730954,
+          0.05487284
+        ],
+        "max": [
+          0.03507765,
+          -0.14601206,
+          0.07092134
+        ],
+        "extent": [
+          0.030333950000000002,
+          0.10129748,
+          0.0160485
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-33507-18-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "e4f468e243b504a729a5917ecabb84047ba57aa0e42b6cbcefc117d01146a8a3"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-33507-18-0/coacd.urdf",
+          "bytes": 2128,
+          "sha256": "3205c00983dd4ea819b2106b0d9a93fcfd24c7d95de2967afd5bc59a79fcdf43"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-33507-18-0/decomposed.obj",
+          "bytes": 41656,
+          "sha256": "1128fe1166b36877c9adfa4329a98ec841f635b06c0ea5543ebce2ea40e40cb2"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-33507-18-0/meta.yaml",
+          "bytes": 465,
+          "sha256": "bc5db5287f082353c5f1fdcb94e1353ebf5ead12332eaf3af3b96984d9165f25"
+        }
+      ]
+    },
+    {
+      "id": "door-30857-13-0",
+      "category": "door",
+      "handle_form_observation": "compact round handle",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-30857-13-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "revolute",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "1.5707963267948966",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.0028451,
+          -0.25202372,
+          0.22577161
+        ],
+        "max": [
+          0.03466852,
+          -0.21240735,
+          0.26538021
+        ],
+        "extent": [
+          0.03182342,
+          0.03961637000000001,
+          0.039608599999999994
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-30857-13-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "bfc5b5dd3f421c297e8ec2750fb21b7cc30cbea49b5f4d1047ced7d5ba2ffb6d"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-30857-13-0/coacd.urdf",
+          "bytes": 2132,
+          "sha256": "e86b344e97e049ec31995a98127beeffcb8f7c42d7122d2c59a8cf693806938f"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-30857-13-0/decomposed.obj",
+          "bytes": 96472,
+          "sha256": "c10a7cfa315de2cd8f01d04fee07cca780af6f4c6398741b11162702fdc4f1e1"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-30857-13-0/meta.yaml",
+          "bytes": 466,
+          "sha256": "68fe80e913349a1152f5f8ae237e10cea7481278782ffe3ef0e2b5ac66b57988"
+        }
+      ]
+    },
+    {
+      "id": "door-40402-16-0",
+      "category": "door",
+      "handle_form_observation": "slender vertical handle",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-40402-16-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "revolute",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "1.5707963267948966",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.00751969,
+          -0.31030831,
+          0.05866738
+        ],
+        "max": [
+          0.03396589,
+          -0.29990918,
+          0.18085303
+        ],
+        "extent": [
+          0.0264462,
+          0.010399129999999979,
+          0.12218565
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-40402-16-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "26b3412ce169dac1355a324569cf2e779d7350a4f0dc88c30087f986ee6109c0"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-40402-16-0/coacd.urdf",
+          "bytes": 2129,
+          "sha256": "368a427ebf49d9fcdec52b10aae498afadce3c66dad49bc9a198eea5a1a3c3e9"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-40402-16-0/decomposed.obj",
+          "bytes": 62334,
+          "sha256": "428aa864ba174782ebcb67e096172910cb608c700cdf7ddaf793edf047823f0c"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/door-40402-16-0/meta.yaml",
+          "bytes": 465,
+          "sha256": "f74c6b8bc9be42b5efd85f3cd491714b986cdf21f1d3846cd4410883d1c62b47"
+        }
+      ]
+    },
+    {
+      "id": "drawer-46254-5-0",
+      "category": "drawer",
+      "handle_form_observation": "round handle",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "0.3",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "sektion"
+          },
+          "child": {
+            "link": "drawer_top"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0.0",
+            "upper": "0.3",
+            "velocity": "1."
+          },
+          "dynamics": {
+            "damping": "0.01",
+            "friction": "0.01"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "drawer_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.00891703,
+          -0.02824638,
+          0.02914742
+        ],
+        "max": [
+          0.04694534,
+          0.02368414,
+          0.08105322
+        ],
+        "extent": [
+          0.03802831,
+          0.05193052,
+          0.051905799999999995
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [
+        "Duplicate joint name: door_joint",
+        "Joint door_joint has missing parent link: sektion",
+        "Joint door_joint has missing child link: drawer_top"
+      ],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "ed6eb11370b70fa7b17fe15594e27d6ec9a0fe621e87e5687a3a0e97bed74092"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/coacd.urdf",
+          "bytes": 2803,
+          "sha256": "690005c6f7523d203759a61f0c1a64cff3377fde32793634dd1b037d9ae51c55"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/decomposed.obj",
+          "bytes": 151879,
+          "sha256": "74272eee891d6efa1340412917d4e99142f39b3e493622208d95d95cc63ce1d9"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/drawer_body.obj",
+          "bytes": 1691,
+          "sha256": "4ec38d3c22847af2f1c05ad438ad573be27e31ac4d3d2b4314931f71eb346832"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-46254-5-0/meta.yaml",
+          "bytes": 436,
+          "sha256": "35eabb2264cd51086e9aeaf555bc0bd6600e62d3f59c4bcae16c0fabe50381a4"
+        }
+      ]
+    },
+    {
+      "id": "drawer-47167-8-0",
+      "category": "drawer",
+      "handle_form_observation": "wide horizontal handle",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "0.3",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "sektion"
+          },
+          "child": {
+            "link": "drawer_top"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0.0",
+            "upper": "0.3",
+            "velocity": "1."
+          },
+          "dynamics": {
+            "damping": "0.01",
+            "friction": "0.01"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "drawer_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.00384924,
+          -0.22838798,
+          0.05702269
+        ],
+        "max": [
+          0.03899123,
+          0.10433206,
+          0.07510508
+        ],
+        "extent": [
+          0.035141990000000005,
+          0.33272004,
+          0.018082390000000004
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [
+        "Duplicate joint name: door_joint",
+        "Joint door_joint has missing parent link: sektion",
+        "Joint door_joint has missing child link: drawer_top"
+      ],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "fb0a56a1f0b6c9c9b7130a82ba34526167a7bb1b539ce1cd4592b7deaf210f60"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/coacd.urdf",
+          "bytes": 2791,
+          "sha256": "c95c83c6612afc275adb12734f4169491fd69345388b3cd2dff48f6319775b72"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/decomposed.obj",
+          "bytes": 10455,
+          "sha256": "7c2a787ed41b13d43ec70679fbfc4d040344ee09c3a17d65ba51cc4ecc7e93fb"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/drawer_body.obj",
+          "bytes": 1691,
+          "sha256": "66c8120dc1913c65212f689556b5017a9889a6e872ed531ba183fb4e72aa7b73"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47167-8-0/meta.yaml",
+          "bytes": 430,
+          "sha256": "9450b7f0cb1e53ba82bb5d1c4f41f193bc971d3a1d965f92d364f4f77752bcd1"
+        }
+      ]
+    },
+    {
+      "id": "drawer-47710-9-0",
+      "category": "drawer",
+      "handle_form_observation": "broad horizontal handle (bounding-box observation)",
+      "urdf": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/coacd.urdf",
+      "links": [
+        "skeleton",
+        "door_link",
+        "handle_link"
+      ],
+      "joints": [
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "skeleton"
+          },
+          "child": {
+            "link": "door_link"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0.0 0.0 0.0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0",
+            "upper": "0.3",
+            "velocity": "0.1"
+          },
+          "dynamics": {
+            "damping": "0.05",
+            "friction": "0.025"
+          }
+        },
+        {
+          "name": "door_joint",
+          "type": "prismatic",
+          "parent": {
+            "link": "sektion"
+          },
+          "child": {
+            "link": "drawer_top"
+          },
+          "axis": {
+            "xyz": "1 0 0"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          },
+          "limit": {
+            "effort": "1000.0",
+            "lower": "0.0",
+            "upper": "0.3",
+            "velocity": "1."
+          },
+          "dynamics": {
+            "damping": "0.01",
+            "friction": "0.01"
+          }
+        },
+        {
+          "name": "handle_joint",
+          "type": "fixed",
+          "parent": {
+            "link": "door_link"
+          },
+          "child": {
+            "link": "handle_link"
+          },
+          "axis": {
+            "xyz": "0 0 1"
+          },
+          "origin": {
+            "xyz": "0 0 0",
+            "rpy": "0 0 0"
+          }
+        }
+      ],
+      "mesh_filenames": [
+        "cabinet_body.obj",
+        "drawer_body.obj",
+        "decomposed.obj"
+      ],
+      "handle_bounds_xyz": {
+        "min": [
+          0.00287559,
+          -0.08037669,
+          0.04151216
+        ],
+        "max": [
+          0.04140699,
+          0.08822054,
+          0.10610147
+        ],
+        "extent": [
+          0.0385314,
+          0.16859723,
+          0.06458931000000001
+        ]
+      },
+      "inertial_elements": 0,
+      "source_issues": [
+        "Duplicate joint name: door_joint",
+        "Joint door_joint has missing parent link: sektion",
+        "Joint door_joint has missing child link: drawer_top"
+      ],
+      "files": [
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/cabinet_body.obj",
+          "bytes": 2119,
+          "sha256": "1b194224d164ae008eb5591864e80e76b4fc66d47055f59373130fc097128d10"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/coacd.urdf",
+          "bytes": 2795,
+          "sha256": "fd2cc5a8d4f293016f5c0a8bed12aa6e0d800a50e1c45bf5a21250f835a32815"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/decomposed.obj",
+          "bytes": 109407,
+          "sha256": "4bb17b014c109881fcb0fc0724179547ec88de8f254c60ce4e950a6a6e14aafe"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/drawer_body.obj",
+          "bytes": 1691,
+          "sha256": "43bc2775bd58631ab5fffddd371d8f2eb69c4e4421fce94c299b6e36f8aa77d6"
+        },
+        {
+          "path": "vendor/partnet_pilot/manipgen_subset/partnet/meshdata/drawer-47710-9-0/meta.yaml",
+          "bytes": 431,
+          "sha256": "6754cea8e9b10b3edd0da35ede7f673969a49005dc71fc95d7e050cbc16baed3"
+        }
+      ]
+    }
+  ]
+}

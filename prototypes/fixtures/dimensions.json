@@ -1,0 +1,13 @@
+{
+  "source_url": "https://www.ikea.com/us/en/p/sektion-base-cabinet-white-30265386/",
+  "accessed": "2026-09-16",
+  "excerpts": ["30x24x30", "Frame, thickness 3/4"],
+  "unit": "inch",
+  "nominal_frame_wdh": ["30", "24", "30"],
+  "frame_thickness": "3/4",
+  "scope": "Nominal cabinet frame envelope only. Generated fixtures are not IKEA product replicas; drawer geometry, joints, density and control settings are experimental.",
+  "nonbox_envelope": {
+    "dimensions_m": [1, 1, 1],
+    "scope": "Synthetic unit-cube parameterization stress test, not a source of real faucet/bin dimensions. Never promote these fixtures to a production asset registry."
+  }
+}

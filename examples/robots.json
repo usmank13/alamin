@@ -1,0 +1,4 @@
+[
+  {"name": "arm", "model": "../vendor/mujoco_menagerie/franka_emika_panda/panda.xml", "pos": [0.3, 0.6, 0.8], "quat": [1, 0, 0, 0], "keyframe": "home"},
+  {"name": "base", "model": "../vendor/mujoco_menagerie/robot_soccer_kit/robot_soccer_kit.xml", "pos": [-0.5, -0.5, 0], "quat": [1, 0, 0, 0]}
+]

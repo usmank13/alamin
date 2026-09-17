@@ -1,0 +1,672 @@
+{
+  "repository": "https://github.com/robocasa/robocasa",
+  "commit": "4f8a2980def75a55dff96b990745b83540425f09",
+  "archive_url": "https://utexas.box.com/shared/static/idbncsadpnaz1jfl4i6m8qejawk7p9pi.zip",
+  "archive_bytes": 529745465,
+  "archive_hash": null,
+  "archive_hash_note": "Partial range download: individual files SHA-256 and ZIP CRC verified; full archive not downloaded.",
+  "transferred_bytes": 894840,
+  "prefixes": [
+    "fixtures/microwaves/Microwave075",
+    "fixtures/dishwashers/Dishwasher051",
+    "fixtures/fridges/Refrigerator055"
+  ],
+  "files": [
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/model.xml",
+      "bytes": 12838,
+      "sha256": "9072bcb78de2e4b9e3967d9b5551a033c6f0ea3f3fb4c0cfed5e146c4f30880b",
+      "archive_member": "fixtures/microwaves/Microwave075/model.xml",
+      "crc32": "b8a7e1cd"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/T_BC001.png",
+      "bytes": 129942,
+      "sha256": "3c306fe0df64bf4065be76fec6a89b2ded18896af2111ceb80816b1e7cabad83",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/T_BC001.png",
+      "crc32": "b351fda4"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/Button001.obj",
+      "bytes": 15225,
+      "sha256": "c0656a1e4ae23b421722ccf4c5cd753a52df8f0b40cc05d1d14171932a02b3dc",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/Button001.obj",
+      "crc32": "a27318bc"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/door.obj",
+      "bytes": 96698,
+      "sha256": "62b54729e4d475668415348df53074dca464b4c1a43c7523c8507bc73edff15a",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/door.obj",
+      "crc32": "51daa7c3"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/Disc001.obj",
+      "bytes": 52994,
+      "sha256": "0794d8f42cd8b49fd69147de7337eb15f1c7ab451856ab36637e06c0ba5336ad",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/Disc001.obj",
+      "crc32": "9ec84528"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/Body001.obj",
+      "bytes": 140311,
+      "sha256": "428ba9a2aa94226954456a0e138496d4cb1ac45667e06a018afe49cca8ef3d84",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/Body001.obj",
+      "crc32": "1d9e503b"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/Button002.obj",
+      "bytes": 15211,
+      "sha256": "8cf21015aececad23d5c395defc2bc1933cde752352e938e9b2ff882c8fd5573",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/Button002.obj",
+      "crc32": "d3303224"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/microwaves/Microwave075/visuals/door_Clear.obj",
+      "bytes": 3069,
+      "sha256": "1b24430d5929f838124314c9b4834d9b33f43297bb15f8fcedbd704d00149e44",
+      "archive_member": "fixtures/microwaves/Microwave075/visuals/door_Clear.obj",
+      "crc32": "18cb908e"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/model.xml",
+      "bytes": 11654,
+      "sha256": "13c2339b66ae1dd4f09fc859c2ec1deba2a8c892a2ea1e93ee9528f034ab1d02",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/model.xml",
+      "crc32": "8cae803a"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/T_BC001.png",
+      "bytes": 208715,
+      "sha256": "d6d55eaad25053bd8a8ede7632b10c2ca7a6b63d5f0ce7ae6b27152258ec554c",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/T_BC001.png",
+      "crc32": "37ea1c56"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Contanier002.obj",
+      "bytes": 243325,
+      "sha256": "83dff0bed2cb51bd64ae3fbfe1bb3703f9b7bf47dd3d98075e05776b6620b07f",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Contanier002.obj",
+      "crc32": "45f484ee"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Button001.obj",
+      "bytes": 102064,
+      "sha256": "a25aee70ba3ce376cd2f8b94f8909b6761aabbe880374a3e2c0f81b630dbcca8",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Button001.obj",
+      "crc32": "63526e0a"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/door.obj",
+      "bytes": 163713,
+      "sha256": "49a886d1fbde04420af29301e483c636f29da9e752eb6d0d259ad19fc780b71e",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/door.obj",
+      "crc32": "7fa1646c"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Door001.obj",
+      "bytes": 56943,
+      "sha256": "e3fc65acfd579a35989e0ffa81387fbe81483ef76cddef3b4f1f82d4d2ae1d5e",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Door001.obj",
+      "crc32": "3c3e5c35"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/button_power.obj",
+      "bytes": 106164,
+      "sha256": "259578bb7bb5a331fd77a0c7a34558150bdf708bae817f76bf1402812070ce1b",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/button_power.obj",
+      "crc32": "2a6731bf"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Contanier001.obj",
+      "bytes": 241729,
+      "sha256": "240fdd80a3f0eea741536c0dcafb3063c90b674c2c130a1cac3169c65a630cba",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Contanier001.obj",
+      "crc32": "66c1094f"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/rack1.obj",
+      "bytes": 96590,
+      "sha256": "db625410ef2a2c85fd00dea632c34bd68e96cca2e5af667a7acd5433c05b070f",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/rack1.obj",
+      "crc32": "6ff1ff3d"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Body001.obj",
+      "bytes": 95543,
+      "sha256": "8ffaa574e43c4135616db194b9e4709093c3133421a93677bfd7d264ef4cbd23",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Body001.obj",
+      "crc32": "cdae9705"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/Handle001.obj",
+      "bytes": 94531,
+      "sha256": "1ff023cb1ee2f1e3543dbc0a77e029a288dbee3dafe463a5904b79d4c042ee8b",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/Handle001.obj",
+      "crc32": "2b8a4502"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/visuals/rack0.obj",
+      "bytes": 97617,
+      "sha256": "6de33e1ff8de92fd0c3fb2f4a2ce853ea5d82f053394c2ab7ec2ac4e28c47b41",
+      "archive_member": "fixtures/dishwashers/Dishwasher051/visuals/rack0.obj",
+      "crc32": "ee4a1c5b"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/model.xml",
+      "bytes": 20181,
+      "sha256": "e233de572e5b363c1df21b02eed67675d41c6cdf8c5c026497a7889fe48d3d59",
+      "archive_member": "fixtures/fridges/Refrigerator055/model.xml",
+      "crc32": "2a2b0389"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/fridge_drawer0.obj",
+      "bytes": 12184,
+      "sha256": "ce96564b44c7b7ca4aeb8b05656efdd8a5fce5995ae4a5c54fd0e77febb97ef3",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/fridge_drawer0.obj",
+      "crc32": "71a1d5ea"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/T_BC001.png",
+      "bytes": 200005,
+      "sha256": "94e9322eeffd4297c772b73cba7456497259758b8af1cad428dddebc542dd9ed",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/T_BC001.png",
+      "crc32": "9342b242"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Door001.obj",
+      "bytes": 72723,
+      "sha256": "286217edd1f22e4b9347342cbcf181c01c07bbad59cc4e7426b0e2ade0481975",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Door001.obj",
+      "crc32": "b79ec303"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Body001.obj",
+      "bytes": 111874,
+      "sha256": "304d11c4672723be87b6a0b8e98d28f62554800ed7b82e0d54c3ef044cb0dd23",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Body001.obj",
+      "crc32": "51de38f7"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Body001_Clear.obj",
+      "bytes": 3697,
+      "sha256": "e8295bdee3a1b66293bd13560d8d578acdca8ebf974856a6ab8a0791b0b0bfa8",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Body001_Clear.obj",
+      "crc32": "123e83e1"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/freezer0.obj",
+      "bytes": 44649,
+      "sha256": "38f0e7e6669904454d043a91f6d6052744965aefd039d56acfe9ef301990c053",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/freezer0.obj",
+      "crc32": "6cfb6169"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/fridge_door.obj",
+      "bytes": 39226,
+      "sha256": "39fe82903837868d8d44376f574f57cdf5084dcafe1363d86ab9f2d9d15e19c9",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/fridge_door.obj",
+      "crc32": "8950d1d0"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Drawer001.obj",
+      "bytes": 47420,
+      "sha256": "48e2baf9d2d4b75edfd437c0828fb8a36056a1988b226147358cdf6197865bd7",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Drawer001.obj",
+      "crc32": "784a2fa7"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Drawer002.obj",
+      "bytes": 77947,
+      "sha256": "42bc8113e308f905dc64a13225dc90ff274713e345fc585d09f09d9da64c00a4",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Drawer002.obj",
+      "crc32": "9caf11ec"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/fridge_door_Clear.obj",
+      "bytes": 16976,
+      "sha256": "eeff729267772b5303fa8df0ccbe757dc27976693203aa9c7d14ee33b660eaae",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/fridge_door_Clear.obj",
+      "crc32": "ba0614cc"
+    },
+    {
+      "path": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/visuals/Door001_Clear.obj",
+      "bytes": 50985,
+      "sha256": "d196c4a6bd134b6a91ce3a6d78b791e1ae5b1145de70be090de9e075ab923697",
+      "archive_member": "fixtures/fridges/Refrigerator055/visuals/Door001_Clear.obj",
+      "crc32": "9ed6497d"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/LICENSE",
+      "bytes": 1418,
+      "sha256": "5da18670b3f00c59847b1ded9c28dee59940d963b1e03b528b0108d9c5a09885",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/LICENSE"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/README.md",
+      "bytes": 6615,
+      "sha256": "e1dbe0c45f3354fd413513d9689264c9f306450bfbc341934a68033629ba150b",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/README.md"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/assets/box_links/box_links_assets.json",
+      "bytes": 562,
+      "sha256": "918335d0585b1e9ed67072d68255db47f56a3815e9136f97ea8ced86c02f7c1d",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/assets/box_links/box_links_assets.json"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/fixtures/fixture.py",
+      "bytes": 24911,
+      "sha256": "6945428028acdcf39b0e139f2cbc95709460ad962d23b9964fbf32563f967c57",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/fixtures/fixture.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/fixtures/microwave.py",
+      "bytes": 3493,
+      "sha256": "8f1c8ffd1c3643a70fa55931f0fa85a285eb3e7605ea4f1ce0d6ad082d4843b9",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/fixtures/microwave.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/fixtures/dishwasher.py",
+      "bytes": 2895,
+      "sha256": "f34bff6b715ad4003219d9badd80de8d6fa0d54836b3e774507de4158d25bac1",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/fixtures/dishwasher.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/objects/objects.py",
+      "bytes": 16891,
+      "sha256": "2f09e332ff854aaaf39999c090f025de9a414cbbfd0d1dfc0fca1fee97da59e2",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/objects/objects.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/environments/kitchen/kitchen.py",
+      "bytes": 67844,
+      "sha256": "35b1395ce65d51b993296aff1881fd5371542aec4c4e8ffc38c3f775327b5c56",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/environments/kitchen/kitchen.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/assets/fixtures/fixture_registry/microwave.yaml",
+      "bytes": 2865,
+      "sha256": "76d6871a3c317a3541238e91aa44e779d706587ea3d98f001c9690b3895c2231",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/assets/fixtures/fixture_registry/microwave.yaml"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/assets/fixtures/fixture_registry/dishwasher.yaml",
+      "bytes": 1546,
+      "sha256": "51701861adcd7fd1ffedfb666a5eef1e4a2c752352c2162ad4ec151545dc0ae4",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/assets/fixtures/fixture_registry/dishwasher.yaml"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/assets/fixtures/fixture_registry/fridge_bottom_freezer.yaml",
+      "bytes": 1078,
+      "sha256": "f64811f846b7b738a50b6258a68a08c9c41f649d2000245b6324676974ee9d88",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/assets/fixtures/fixture_registry/fridge_bottom_freezer.yaml"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robocasa/models/assets/fixtures/fixture_registry/fridge_side_by_side.yaml",
+      "bytes": 1018,
+      "sha256": "4635bd95a428dda141db95baaeb6e0beba7b23ebe731ea18447f4e71cc7be210",
+      "url": "https://raw.githubusercontent.com/robocasa/robocasa/4f8a2980def75a55dff96b990745b83540425f09/robocasa/models/assets/fixtures/fixture_registry/fridge_side_by_side.yaml"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/LICENSE",
+      "bytes": 1474,
+      "sha256": "177978cbece0a4c454c2aaec5b3f145b39270814874c43109da9e829c39d9cba",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/LICENSE"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/objects/objects.py",
+      "bytes": 24438,
+      "sha256": "5844cc77141cbe4cbddfe064db3eb7c4e61669e2cfad7bf1097f1f12bed9c64e",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/robosuite/models/objects/objects.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/base.py",
+      "bytes": 23971,
+      "sha256": "5bc7f3d8ca37ad1ff747942885981748d57717f269808cd194164f7b41c31a07",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/robosuite/models/base.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/world.py",
+      "bytes": 1267,
+      "sha256": "28586f327b52375edc187789da7f721ca25859cc4f3ee8391a1cce7bcadf9a91",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/robosuite/models/world.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/tasks/task.py",
+      "bytes": 8615,
+      "sha256": "e383f8ee7644ee25ba52e0abf284701c595bb8bd34fe7188ff87876a6e9f4b93",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/robosuite/models/tasks/task.py"
+    },
+    {
+      "path": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/assets/base.xml",
+      "bytes": 476,
+      "sha256": "6b24417576ecc2300a52b1643da0c1e7edeac68d434fbdd4d11fc656dd302f9c",
+      "url": "https://raw.githubusercontent.com/ARISE-Initiative/robosuite/5ce6643f3092639d08f7b0f90ed1c6a84f50552c/robosuite/models/assets/base.xml"
+    }
+  ],
+  "models": [
+    {
+      "xml": "vendor/robocasa_native/fixtures/microwaves/Microwave075/model.xml",
+      "compiler": [
+        {
+          "angle": "radian"
+        }
+      ],
+      "joints": [
+        {
+          "axis": "0.0 0.0 1.0",
+          "pos": "-0.283446729183197 -0.212793231010437 -0.005244613625109196",
+          "limited": "true",
+          "name": "microjoint",
+          "range": "-1.5707963267948966 0.0",
+          "type": "hinge",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 1.0 0.0",
+          "pos": "0.2170172929763794 -0.2312849909067154 -0.12825287878513336",
+          "limited": "true",
+          "name": "Button001_joint",
+          "range": "0.0 0.0025",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 1.0 0.0",
+          "pos": "0.2730391323566437 -0.2312849909067154 -0.128305122256279",
+          "limited": "true",
+          "name": "Button002_joint",
+          "range": "0.0 0.0025",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 0.0 1.0",
+          "pos": "-0.06485994160175323 -0.003092189086601138 -0.14052611589431763",
+          "limited": "false",
+          "name": "Disc001_joint",
+          "range": "0 360",
+          "type": "hinge",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        }
+      ],
+      "handle_collision_geoms": [
+        {
+          "body": "door",
+          "class": "collision",
+          "type": "box",
+          "pos": "0.14502070844173431 -0.2723143994808197 -0.005302442237734795",
+          "size": "0.006134434603154659 0.05374417454004288 0.0165408905595541",
+          "quat": "0.4999999403953552 0.4999999701976776 -0.5000001192092896 -0.4999999701976776",
+          "name": "door_handle_main"
+        }
+      ],
+      "main_region": [
+        {
+          "class": "region",
+          "name": "reg_main",
+          "type": "box",
+          "pos": "-5.809317027427596e-09 0.02450425736606121 0.0",
+          "size": "0.31329180097579956 0.2563762197494507 0.1762288043498993"
+        }
+      ],
+      "closed_reference": "All joint positions zero; source joint refs default to zero.",
+      "missing_dependencies": []
+    },
+    {
+      "xml": "vendor/robocasa_native/fixtures/dishwashers/Dishwasher051/model.xml",
+      "compiler": [
+        {
+          "angle": "radian"
+        }
+      ],
+      "joints": [
+        {
+          "axis": "1.0 0.0 0.0",
+          "pos": "-2e-08 -0.28933343404995443 -0.3595657451798248",
+          "limited": "true",
+          "name": "door_joint",
+          "range": "0.0 0.6235987755982988",
+          "type": "hinge",
+          "damping": "1",
+          "frictionloss": "10",
+          "armature": "1",
+          "stiffness": "2"
+        },
+        {
+          "axis": "0.0 1.0 0.0",
+          "pos": "0.11635070 -0.29049234 0.42535225",
+          "limited": "true",
+          "name": "button_power_joint",
+          "range": "0.0 0.002",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "4",
+          "springref": "-1"
+        },
+        {
+          "axis": "0.0 -1.0 0.0",
+          "pos": "0.00152424 -0.04322837 -0.08390982",
+          "limited": "true",
+          "name": "rack0_joint",
+          "range": "0.0 0.2",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 -1.0 0.0",
+          "pos": "0.00152424 -0.04322835 0.13654485",
+          "limited": "true",
+          "name": "rack1_joint",
+          "range": "0.0 0.3",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        }
+      ],
+      "handle_collision_geoms": [
+        {
+          "body": "door",
+          "class": "collision",
+          "type": "box",
+          "pos": "-0.00168355 -0.34621603 0.35702610",
+          "size": "0.295711487531662 0.012319796718657017 0.00947635155171156",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "door_handle_main"
+        }
+      ],
+      "main_region": [
+        {
+          "class": "region",
+          "name": "reg_main",
+          "type": "box",
+          "pos": "-2.500000001459668e-08 0.034231695000000006 -1.8999999998325912e-07",
+          "size": "0.325490785 0.324565365 0.48552377"
+        }
+      ],
+      "closed_reference": "All joint positions zero; source joint refs default to zero.",
+      "missing_dependencies": []
+    },
+    {
+      "xml": "vendor/robocasa_native/fixtures/fridges/Refrigerator055/model.xml",
+      "compiler": [
+        {
+          "angle": "radian"
+        }
+      ],
+      "joints": [
+        {
+          "axis": "0.0 -1.0 0.0",
+          "pos": "0.00033486 -0.06141864 -0.50902092",
+          "limited": "true",
+          "name": "freezer0_door_joint",
+          "range": "0.0 0.5",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 0.0 1.0",
+          "pos": "0.36623138 -0.31620973 0.44672972",
+          "limited": "true",
+          "name": "fridge_door_joint",
+          "range": "0.0 1.5707963267948966",
+          "type": "hinge",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        },
+        {
+          "axis": "0.0 -1.0 0.0",
+          "pos": "-0.04488392 0.09107547 -0.01087648",
+          "limited": "true",
+          "name": "fridge_drawer0_joint",
+          "range": "0.0 0.5",
+          "type": "slide",
+          "damping": "1",
+          "frictionloss": "1",
+          "armature": ".01",
+          "stiffness": "0.05"
+        }
+      ],
+      "handle_collision_geoms": [
+        {
+          "body": "freezer0",
+          "class": "collision",
+          "type": "box",
+          "pos": "-0.29664779 -0.37693404 -0.19838613",
+          "size": "0.010743711143732071 0.022466136142611504 0.022289980202913284",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "freezer0_door_handle_1"
+        },
+        {
+          "body": "freezer0",
+          "class": "collision",
+          "type": "box",
+          "pos": "0.30421209 -0.37693404 -0.19838625",
+          "size": "0.010743711143732071 0.022466136142611504 0.022289980202913284",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "freezer0_door_handle_2"
+        },
+        {
+          "body": "freezer0",
+          "class": "collision",
+          "type": "box",
+          "pos": "0.00339945 -0.39041822 -0.19450402",
+          "size": "0.2889271676540375 0.008723885752260685 0.018406620249152184",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "freezer0_door_handle_main"
+        },
+        {
+          "body": "fridge_door",
+          "class": "collision",
+          "type": "box",
+          "pos": "-0.28425997 -0.39387458 0.35853699",
+          "size": "0.02228936366736889 0.012253968976438046 0.3276068866252899",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "fridge_door_handle_main"
+        },
+        {
+          "body": "fridge_door",
+          "class": "collision",
+          "type": "box",
+          "pos": "-0.28426063 -0.38392048 0.04118982",
+          "size": "0.022289982065558434 0.022466136142611504 0.010743709281086922",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "fridge_door_handle_2"
+        },
+        {
+          "body": "fridge_door",
+          "class": "collision",
+          "type": "box",
+          "pos": "-0.28426045 -0.38392048 0.67963934",
+          "size": "0.022289982065558434 0.022466136142611504 0.010743709281086922",
+          "quat": "1.0 0.0 0.0 0.0",
+          "name": "fridge_door_handle_1"
+        }
+      ],
+      "main_region": [
+        {
+          "class": "region",
+          "name": "reg_main",
+          "type": "box",
+          "pos": "-0.0005298599999999931 0.022867760000000015 0.0003144099999999872",
+          "size": "0.41158877 0.37693913 0.90242709"
+        }
+      ],
+      "closed_reference": "All joint positions zero; source joint refs default to zero.",
+      "missing_dependencies": []
+    },
+    {
+      "xml": "vendor/robocasa_native/provenance/robosuite_upstream/robosuite/models/assets/base.xml",
+      "compiler": [
+        {
+          "angle": "radian",
+          "meshdir": "meshes/",
+          "inertiagrouprange": "0 0",
+          "autolimits": "true"
+        }
+      ],
+      "joints": [],
+      "handle_collision_geoms": [],
+      "main_region": [],
+      "closed_reference": "All joint positions zero; source joint refs default to zero.",
+      "missing_dependencies": []
+    }
+  ],
+  "license": {
+    "assets": "CC BY 4.0, per pinned upstream README",
+    "code": "MIT",
+    "asset_license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "RoboCasa Team; Lightwheel fixture collection distributed by RoboCasa. See preserved README and licenses.",
+    "raw_assets_modified": false
+  },
+  "runtime_import_review": {
+    "robosuite_repository": "https://github.com/ARISE-Initiative/robosuite",
+    "robosuite_reviewed_commit": "5ce6643f3092639d08f7b0f90ed1c6a84f50552c",
+    "version_scope": "RoboCasa README requests robosuite master; this is the separately pinned inspected revision, not a robocasa dependency lock.",
+    "scene_compiler_inertiagrouprange": "0 0",
+    "effect": "Group-1 visual and region geoms excluded from inferred inertia; group-0 collision geoms remain.",
+    "fixture_density_override_found": false,
+    "joint_dynamics_override_found_in_reviewed_fixture_import_path": false,
+    "g4_visual_handle_segmentation": "Not supplied. Named collision handle boxes do not establish visual mesh segmentation.",
+    "diagnostic_mass_sums_kg": {
+      "Microwave075": {
+        "raw": 383.04991626067687,
+        "only_group0_inertia": 67.47729127518737
+      },
+      "Dishwasher051": {
+        "raw": 1335.527190313961,
+        "only_group0_inertia": 228.18857792734633
+      },
+      "Refrigerator055": {
+        "raw": 4134.119522158324,
+        "only_group0_inertia": 515.2673981562925
+      }
+    },
+    "diagnostic_scope": "MuJoCo 3.13 native scale, only inertiagrouprange changed in memory. Sum includes anchored bodies, not physical measured appliance mass or full runtime scene."
+  }
+}
