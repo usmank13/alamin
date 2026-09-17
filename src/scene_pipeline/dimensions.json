@@ -1,0 +1,56 @@
+{
+  "hand_wash_sink": {
+    "dimensions_m": [
+      0.4572,
+      0.35559999999999997,
+      0.2794
+    ],
+    "basis": "sourced",
+    "url": "https://phoenixfoodequipment.com/en-us/products/phoenix-whs18-large-wall-mounted-hand-sink",
+    "identity": "Phoenix WHS18 Large Wall Mounted Hand Sink",
+    "quotes": [
+      "Overall Width: 18 in.",
+      "Overall Depth: 14 in.",
+      "Overall Height: 11 in."
+    ],
+    "document_sha256": "8867ff4a00d5741020575a1941b6e1a213fe9539d249b8522c5442a1eb70eea1",
+    "accessed": "2026-09-17",
+    "family": "table"
+  },
+  "sterilization_station": {
+    "dimensions_m": [
+      3.6576,
+      0.6858,
+      2.1082
+    ],
+    "basis": "sourced",
+    "url": "https://bowwood.net/sterilization-centre-12-sc12/",
+    "identity": "Sterilization Centre \u2013 12\u2032 | SC12",
+    "quotes": [
+      "Width: 144\u2033",
+      "Depth: 27\u2033",
+      "Total Height: 83\u2033"
+    ],
+    "document_sha256": "a093c6471a48a87b8d713bf9367511802d84d87747090ecb5a2773291f7f1e11",
+    "accessed": "2026-09-17",
+    "family": "table"
+  },
+  "treatment_chair": {
+    "dimensions_m": [
+      0.7000000000000001,
+      0.7000000000000001,
+      1.36
+    ],
+    "basis": "sourced",
+    "url": "https://www.greiner-gmbh.de/en/medbest/medical-chairs/medseat-electric.html",
+    "identity": "Medseat electric",
+    "quotes": [
+      "Overall width 70 cm",
+      "Overall depth 70 cm",
+      "Overall height 136 cm"
+    ],
+    "document_sha256": "ac491e3e04849b6d036a148f1aec168612a1ae4f9a34626f62686a1e8748a807",
+    "accessed": "2026-09-17",
+    "family": "box"
+  }
+}

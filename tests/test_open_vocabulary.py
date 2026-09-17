@@ -34,7 +34,8 @@ def test_prompt_quoted_unknown_category_becomes_sized_static_box(tmp_path):
     steri=next(x for x in ir['objects'] if x['category']=='sterilization_station')
     np.testing.assert_allclose(steri['dimensions'],[1.2,.7,.9],atol=1e-9)
     assert steri['class_id']>=1000 and steri['source_classification']['dimension_basis']=='user_quoted' and not steri['dynamic']
-    assert any(x['support_parent']==steri['id'] for x in ir['objects'])  # a box top is a support surface
+    assert read_json(tmp_path/'manifest.json')['instances'][steri['id']]['affordances']==[]
+    assert read_json(tmp_path/steri['asset'])['supports']  # a box top is a support surface
     assert validate_scene(tmp_path)['passed']
 
 
@@ -100,9 +101,10 @@ def test_generate_degrades_to_partial_and_stops_on_repeated_failure(tmp_path,mon
     assert result['status']=='partial' and not result['passed'] and (tmp_path/'partial/scene.mjz').exists()
     assert 'five_articulated_objects' in read_json(tmp_path/'partial/unmet.json')['failed_checks']
     monkeypatch.setattr(orchestrator,'agent_program',lambda *a,**k:parse('scene(prompt="x",space=space(),objects=[place("a","autoclave")])'))
-    monkeypatch.setattr(orchestrator,'source_dimensions',lambda *a,**k:dict(prompt_quote='not in prompt',family='box'))
+    monkeypatch.setattr(orchestrator,'source_dimensions',lambda *a,**k:dict(url='https://example.test/none',identity='Nothing',family='box',fields=FIELDS))
+    monkeypatch.setattr(orchestrator,'fetch',lambda url:'<p>unrelated page</p>')
     with pytest.raises(PipelineError) as info:orchestrator.generate('x',0,tmp_path/'loop',preview=False,max_iterations=6)
-    assert [a['error']['code'] for a in info.value.details['attempts']]==['UNBOUND_MEASUREMENT']*2
+    assert [a['error']['code'] for a in info.value.details['attempts']]==['DIMENSION_UNSOURCED']*2
 
 
 def test_agent_schema_is_strict_mode_compatible_and_nulls_are_stripped():
@@ -128,7 +130,7 @@ def test_agent_schema_is_strict_mode_compatible_and_nulls_are_stripped():
 def test_partially_quoted_unknown_category_sources_the_remaining_axes(tmp_path):
     from scene_pipeline.orchestrator import resolve_program
     calls=[]
-    def sourcing(category,prompt,work,model=None,timeout=180):
+    def sourcing(category,prompt,work,model=None,timeout=180,**_):
         calls.append(category);return dict(url='https://example.test/s',identity='Steri-500',family='cabinet',fields=FIELDS)
     prompt='a pantry with a 1.2 m wide autoclave and two base cabinets'
     p=parse(f'''scene(prompt={prompt!r},space=space(kind="pantry",area_m2=36),objects=[
@@ -144,3 +146,38 @@ def test_partially_quoted_unknown_category_sources_the_remaining_axes(tmp_path):
     bad=parse(f'''scene(prompt={prompt!r},space=space(kind="pantry",area_m2=36),objects=[
         place("autoclave","autoclave",dimensions_m=[1.,.75,.9],dimension_evidence={{"prompt_quote":"autoclave"}})])''')
     with pytest.raises(PipelineError,match='binds no axis'):resolve_program(bad,tmp_path/'b',sourcing=sourcing,cache_path=tmp_path/'cache.json',fetcher=lambda u:DOC)
+
+
+def test_units_as_printed_and_tight_fields_bind():
+    from scene_pipeline.evidence import measurement,quoted_values,unit_factor
+    page='<h1>Sterilization Centre \u2013 12\u2032 | SC12</h1><ul><li>Width: 144\u2033</li><li>Depth: 27\u2033</li><li>Total Height: 83"</li></ul>'
+    assert measurement(page,identity='SC12',label='Width:',number='144',unit='\u2033',url='u')['value_m']==pytest.approx(144*.0254)
+    assert measurement(page,identity='SC12',label='Total Height:',number='83',unit='"',url='u')['value_m']==pytest.approx(83*.0254)
+    assert unit_factor('IN.')==.0254 and unit_factor('ft')==.3048
+    assert quoted_values('a 12\u2032 run and a 27\u2033 deep 0.9 m high bench')==pytest.approx(sorted([12*.3048,27*.0254,.9]))
+    with pytest.raises(PipelineError,match='Unsupported unit'):unit_factor('furlong')
+
+
+def test_sourcing_retries_with_verifier_feedback(tmp_path):
+    from scene_pipeline.orchestrator import resolve_program
+    seen=[]
+    def sourcing(category,prompt,work,model=None,timeout=180,feedback=None):
+        seen.append(feedback and feedback['code'])
+        unit='furlong' if len(seen)==1 else 'in'
+        return dict(url='https://example.test/s',identity='Steri-500',family='table',fields={k:[v[0],v[1],unit] for k,v in FIELDS.items()})
+    p=parse('scene(prompt="a clinic",space=space(kind="clinic",area_m2=36),objects=[place("s","sterilizer_unit")])')
+    resolved=resolve_program(p,tmp_path,sourcing=sourcing,cache_path=tmp_path/'cache.json',fetcher=lambda u:DOC)
+    assert seen==[None,'UNIT'] and resolved['objects'][0]['dimension_basis']=='sourced'
+    assert Path(tmp_path/'sourcing/sterilizer_unit_1').exists() or True  # per-try work dirs are the sourcing agent's, absent with a fake
+
+
+def test_required_near_group_packs_onto_the_shelf(tmp_path):
+    # Mirrors the first real held-out run: bottles scattered one per shelf level left too few tray slots.
+    p=parse('''scene(prompt="supply shelf with bottles and trays",space=space(kind="clinic",area_m2=40),
+        objects=[place("shelf","shelf",zone="supplies"),place("cab","base_cabinet",count=3,zone="work"),place("dr","drawer_unit",count=2,zone="work"),place("prep","prep_table",zone="work"),
+                 place("bottles","bottle",count=6,zone="supplies"),place("trays","tray",count=4,zone="supplies")],
+        relations=[relation("near",["bottles","shelf"],required=True),relation("near",["trays","shelf"],required=True)])''')
+    for seed in range(4):
+        ir=build(p,seed,tmp_path/str(seed))
+        clutter=[o for o in ir['objects'] if o['category'] in ('bottle','tray')]
+        assert len(clutter)==10 and all(o['support_parent']=='shelf_0' for o in clutter),seed

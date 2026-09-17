@@ -92,6 +92,7 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
     def wall_gap(pos):
         from shapely.geometry import Point
         return boundary.distance(Point(pos[:2])) if boundary is not None else min(pos[0],w-pos[0],pos[1],main_d-pos[1])
+    surface_rank={}  # one seeded preference per support surface, shared by every clutter request
     for request in requests:
         try:
             folder,package=instantiate(request['category'],root/'assets',vendor=vendor,family=request.get('family'),
@@ -168,7 +169,12 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
         rng.shuffle(candidates)
         if config.get('placement')=='freestanding' and architecture is None:
             candidates.sort(key=lambda c:min(c[0][0],w-c[0][0],c[0][1],main_d-c[0][1])<1.4)
-        anchor=zones.get(request['zone'])
+        if config.get('placement')=='support':
+            # Fill one surface before spilling to the next, so a required "near the shelf"
+            # group is not broken by earlier clutter scattered one item per level.
+            for surface in sorted({(c[2],round(c[0][2],3)) for c in candidates}):surface_rank.setdefault(surface,float(rng.random()))
+            candidates.sort(key=lambda c:surface_rank[(c[2],round(c[0][2],3))])
+        anchor=zones.get(request['zone']) if config.get('placement')!='support' else None  # clutter follows its parent
         def cost(pos,yaw):
             xy=np.array(pos[:2]);total=0.
             for kind,others,weight in partners:
