@@ -1,0 +1,18 @@
+{
+  "bin": {
+    "product": "Rubbermaid 1883566 Streamline 13 gallon front step-on bin",
+    "url": "https://www.rubbermaidcommercial.com/utility-refuse/step-on-containers/streamline-resin-front-step-on-containers/?sku=1883566",
+    "retrieval": "Publisher HTML cached in vendor/p4_evidence/bin.html; specification table, not packaging dimensions",
+    "quotes": ["Product Length", "18.88 in", "Product Width", "12.12 in", "Product Height", "28.50 in"],
+    "width_depth_height_inches": [12.12, 18.88, 28.50],
+    "assumptions": ["Taper 8%; wall 6 mm; lid thickness 12 mm", "Only lid articulation; pedal linkage omitted", "Hinge opening 90 degrees; density 500 kg/m3 is an experimental setting, not product material data"]
+  },
+  "spout": {
+    "product": "T&S 133X-L12 swivel gooseneck component",
+    "url": "https://www.tsbrass.com/index.php/products/parts-accessories/nozzles-goosenecks-spouts/133X-L12",
+    "retrieval": "Primary publisher specification PDF read through web search/open, title 133X-L12, date 02/12/24; direct download returned anti-bot HTML, not a usable local PDF",
+    "quotes": ["5 3/4\"", "145mm", "10 5/16\"", "261mm", "5 13/16\"", "148mm"],
+    "reach_height_outlet_mm": [145, 261, 148],
+    "assumptions": ["Use printed metric dimensions; rounded inch labels do not convert exactly", "Reach interpreted between inlet/outlet axes; height is overall proxy height; outlet height interpreted from drawing labels without a locally inspectable drawing", "Tube radius 9 mm, mount radius 14 mm; semicircular bend; 180 degree test swivel range", "Solid collision tube approximation, not hydraulic CAD; density 500 kg/m3 experimental"]
+  }
+}

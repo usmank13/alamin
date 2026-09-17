@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "prompt": "A 90 square metre working hall with one entrance; sample the room shape and window arrangement.",
+  "space": {"kind": "working hall", "area_m2": 90, "shape": "sampled", "annexes": 0},
+  "objects": [],
+  "relations": [],
+  "architecture": {
+    "openings": [{"id": "entry", "kind": "door", "count": 1, "role": "entry", "required": true, "origin": "explicit"}],
+    "relationships": [],
+    "unsupported_requirements": []
+  }
+}

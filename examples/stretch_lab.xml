@@ -1,0 +1,5 @@
+<mujoco model="stretch_test_lab">
+  <include file="lab.xml"/>
+  <!-- Keep the stock Stretch contact settings while reusing the same world. -->
+  <option cone="elliptic" noslip_iterations="2"/>
+</mujoco>
