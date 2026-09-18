@@ -31,8 +31,11 @@ completed 60-second mapping runs split five kitchen/five warehouse, and a separa
 from supplied programs. The home kitchen exercised actual model calls and cached
 fal assets with one repair; that is warm-library prompt-to-scene evidence.
 
-The requested fal variant refresh adds varied textures and visual-only clutter,
-then re-records captures so RGB-D and scene appearance agree. Staging progress lives
+The primary collection now targets ten variants of the home kitchen (three full
+RGB-D and seven state-tier runs); the five commercial-kitchen and five warehouse
+variants are supplementary. This primary collection is planned/in progress until
+its completed dataset report is published. The fal refresh adds varied textures and
+visual-only clutter, then re-records captures so RGB-D and scene appearance agree. Staging progress lives
 under `outputs/fal_variant_refresh/`; use each domain's `dataset.json` and published
 deliverable reports to determine which refreshed batches are complete. Do not
 substitute undecorated captures or partial GPU test runs for the decorated batches.
@@ -53,8 +56,9 @@ remain useful evidence and must not be relabeled as successful environments.
 
 ## Remaining brief requirements
 
-- The ten collected variants span two scenes. The literal brief needs at least ten
-  variants of one scene: generate five more of either domain, or agree on the split.
+- Complete and verify the ten home-kitchen variants for the literal single-scene
+  requirement. Existing commercial-kitchen/warehouse batches are supplementary;
+  the published checklist records completion.
 - Measure a clean-machine installation separately and run the three unseen prompt
   evaluations without tuning inputs after observing held-out results.
 - Complete API cost accounting where provider billing was unavailable; distinguish

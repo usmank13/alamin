@@ -96,9 +96,10 @@ pipeline inspect outputs/first_variants --no-open
 
 Read `dataset.json` and each run's `report.json`: a directory or gallery alone does
 not establish completion. Failures remain in the batch summary. The local
-collection uses five kitchen and five warehouse variants, which differs from ten
-variants of one scene in the original brief. Run `--variants 10` on one accepted
-scene when reproducing that literal requirement.
+baseline contains five commercial-kitchen and five warehouse variants. The primary
+collection now targets ten home-kitchen variants; those earlier batches remain
+supplementary. Use `--variants 10` on one accepted scene for the single-scene
+requirement, and consult the published checklist for verified completion.
 
 Optional semantic navigation uses the same recorder:
 
@@ -107,6 +108,8 @@ pipeline run outputs/first_scene --flow navigate --goal 'go to the prep table' \
   --policy planner --seconds 60 --output outputs/first_navigation
 ```
 
+See [bonus features and measured examples](bonuses.md) for semantic-navigation
+results, goal-resolution behavior, action chunks and the Stretch mobile manipulator.
 The planner resolves the target through the semantic manifest. `--policy vlm`
 uses the configured model backend and can incur API costs; it is not needed for
 mapping, drawer interaction or ordinary planner navigation.

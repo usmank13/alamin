@@ -74,8 +74,9 @@ dataset reports, not the presence of decorated stills. No photorealism claim fol
 from enabling PBR. Mapping reports compare range reconstruction
 with scene ground truth; the brief imposes no fixed IoU threshold.
 
-The collected baseline has ten 60-second mapping runs, five per domain, rather
-than ten variants of one scene. HDF5 carries synchronized observations and truth;
+The baseline has ten 60-second mapping runs split across two domains. The primary
+collection now targets ten home-kitchen variants; completion is recorded in the
+published dataset reports. HDF5 carries synchronized observations and truth;
 each completed batch has a data card and recorded videos. Consult
 [brief-status.md](brief-status.md) for completion status and
 [cost-table.md](cost-table.md) for measured costs.

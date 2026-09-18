@@ -51,6 +51,7 @@ textures/clutter, variants, data loading and reproducibility limits.
 | Instructions for a command-capable agent | [skills/scene-pipeline/SKILL.md](skills/scene-pipeline/SKILL.md) |
 | Evidence and outstanding brief requirements | [docs/brief-status.md](docs/brief-status.md) |
 | Architecture and limitations | [docs/writeup.md](docs/writeup.md) |
+| Bonuses: semantic navigation, action chunks and Stretch | [docs/bonuses.md](docs/bonuses.md) |
 | Scene examples | [examples/](examples/) |
 | Core pipeline and independent MuJoCo loader | [src/scene_pipeline/](src/scene_pipeline/), [src/sim_harness/](src/sim_harness/) |
 
