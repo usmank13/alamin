@@ -425,11 +425,20 @@ pipeline inspect outputs/home_kitchen_reproduction --no-open
 ```
 
 Use `MUJOCO_GL=osmesa` when EGL is unavailable. `prepare` generates and validates
-all ten layouts and writes previews, articulation animations, 1024 px Cycles stills,
-and `variant.json` records. Indices 0–9 use layout seeds 300–309; source clutter
-counts/placement, light intensity and texture repeat vary. Five cached fal kitchen
-themes are reused across distinct layouts; they are not ten new API generations.
-The source's generated props retain their visual-only status.
+up to ten accepted layouts and writes previews, articulation animations, 1024 px
+Cycles stills, and `variant.json` records. Indices 0–9 start with base seeds 300–309.
+Each slot tries at most three deterministic candidates using
+`start_seed + index + 1000 * retry`, where retry is 0, 1 or 2. Thus slot 8 tries
+308, then 1308, then 2308 if needed; it stops after three rejected candidates.
+Actual accepted seeds are recorded in `variant.json` and the final `dataset.json`.
+
+Rejected inputs, IR, available checks and cost records remain under
+`rejected_layouts/variant_NNN_seed_SEED/`; duplicate generated geometry is removed.
+Required checks are not weakened to accept a replacement. The resulting dataset
+is conditioned on passing validation and does not imply 100% generation success.
+Source clutter counts/placement, light intensity and texture repeat vary. Five
+cached fal kitchen themes are reused across distinct accepted layouts; they are
+not ten new API generations. The source's generated props remain visual-only.
 
 `capture` records 60 simulated seconds per variant, with full RGB-D for indices
 0–2 and state/range/IMU for 3–9. It writes rendering-device metadata into completed
