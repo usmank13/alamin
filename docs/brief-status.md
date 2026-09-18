@@ -22,7 +22,7 @@ reports instead of inferring completion from a directory name or this document.
 | Articulation | Passive settling, sampled sweeps/endpoints and a contact-driven Panda drawer sequence | No dynamic full-range proof for every articulation; general manipulation remains unproven |
 | Export | Articulated URDF packages independently loaded and actuated in PyBullet | USD deferred; cross-engine contact/PBR equivalence not claimed |
 | Visuals | Same compiled geometry for MuJoCo and CPU Cycles; live fal PBR/generated-clutter exercise | Recognizable equipment does not establish photorealism; appearance must match capture provenance |
-| Mapping/data | Multi-rate synchronized HDF5, range-map metrics, six full and four state-tier captures in the collected baseline | Synthetic sensor noise; small omnibase and low camera; visibility coverage differs from traversal |
+| Mapping/data | Primary ten home-kitchen captures (three full/seven state), ten supplementary captures, synchronized HDF5 and range-map metrics | Synthetic sensor noise; small omnibase and low camera; visibility coverage differs from traversal |
 | Reproduction | Locked dependencies, pinned resources, doctor, portable archives, configurable cache/resource paths | Cold-machine timing and unseen-prompt acceptance not certified |
 
 The collected baseline has a commercial kitchen, warehouse and home kitchen, ten
@@ -31,14 +31,31 @@ completed 60-second mapping runs split five kitchen/five warehouse, and a separa
 from supplied programs. The home kitchen exercised actual model calls and cached
 fal assets with one repair; that is warm-library prompt-to-scene evidence.
 
-The primary collection now targets ten variants of the home kitchen (three full
-RGB-D and seven state-tier runs); the five commercial-kitchen and five warehouse
-variants are supplementary. This primary collection is planned/in progress until
-its completed dataset report is published. The fal refresh adds varied textures and
-visual-only clutter, then re-records captures so RGB-D and scene appearance agree. Staging progress lives
-under `outputs/fal_variant_refresh/`; use each domain's `dataset.json` and published
-deliverable reports to determine which refreshed batches are complete. Do not
-substitute undecorated captures or partial GPU test runs for the decorated batches.
+The primary collection is complete and verified: ten home-kitchen variants, each
+with 60 simulated seconds of mapping, three full RGB-D and seven state-tier runs.
+It contains 1,803 camera frames and 60,010 state samples, plus ten recorded videos
+and scene visualizations. Published evidence is under
+`deliverables/outputs/home_kitchen/variants/`; its `dataset.json` records passing
+results, exact factors and devices. Commercial-kitchen and warehouse batches are
+supplementary. All observations were recorded after decoration.
+
+Accepted layout seeds are 300–307, 1308 and 309. Candidate 308 failed robot-access
+validation; its inputs/checks/costs are retained in `rejected_layouts/`. The bounded
+replacement policy preserves acceptance checks. These are accepted-layout datasets,
+not a claim of 100% generation success. Five cached fal themes supply varied
+finishes; primary generation made zero new paid fal or model calls. That does not
+erase the historical cost of producing the cached assets.
+
+Primary full captures took 893.5, 731.2 and 385.6 wall seconds; state captures took
+89.8–101.1 seconds, excluding later replay encoding. Concurrent workload varied.
+All recorded renderer identities are NVIDIA EGL on the RTX 3070 Ti Laptop GPU;
+physics, Cycles and ffmpeg remain CPU work. This is not a controlled speedup study.
+
+The [bonus evidence](bonuses.md) includes a recorded semantic-navigation failure:
+the refrigerator resolved correctly, but estimated arrival at 0.474 m corresponded
+to a true distance of 0.924 m, outside the 0.6 m criterion. Stretch control/loading
+checks pass; autonomous mobile manipulation and generated-mesh articulation remain
+unproven. No live VLM navigation success is claimed.
 
 ## Reproduction and evaluation boundaries
 
@@ -56,9 +73,6 @@ remain useful evidence and must not be relabeled as successful environments.
 
 ## Remaining brief requirements
 
-- Complete and verify the ten home-kitchen variants for the literal single-scene
-  requirement. Existing commercial-kitchen/warehouse batches are supplementary;
-  the published checklist records completion.
 - Measure a clean-machine installation separately and run the three unseen prompt
   evaluations without tuning inputs after observing held-out results.
 - Complete API cost accounting where provider billing was unavailable; distinguish

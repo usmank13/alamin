@@ -97,9 +97,9 @@ pipeline inspect outputs/first_variants --no-open
 
 Read `dataset.json` and each run's `report.json`: a directory or gallery alone does
 not establish completion. Failures remain in the batch summary. The local
-baseline contains five commercial-kitchen and five warehouse variants. The primary
-collection now targets ten home-kitchen variants; those earlier batches remain
-supplementary. Use `--variants 10` on one accepted scene for the single-scene
+baseline contains five commercial-kitchen and five warehouse variants. The verified
+primary collection contains ten home-kitchen variants (three full/seven state);
+those earlier batches remain supplementary. Use `--variants 10` on one accepted scene for the single-scene
 requirement, and consult the published checklist for verified completion.
 
 Optional semantic navigation uses the same recorder:
@@ -393,7 +393,15 @@ It requires the source scene's authoring files (`input_program.json`, `program.j
 `ir.json`, `evidence_cache.json` and `assets/`), the applicable vendor resources,
 Blender, stock robots and ffmpeg. The published base home kitchen is the default
 source; a source `.mjz` alone is insufficient. This is replay of a saved program,
-not a fresh prompt-only experiment.
+not a fresh prompt-only experiment. The published batch has ten verified 60-second
+captures, three full/seven state, using accepted seeds 300–307, 1308 and 309;
+seed 308's rejected robot-access check remains in the batch's `rejected_layouts/`.
+
+The examples below run from the original repository root. When working from the
+copied `deliverables/code/` checkout, change every primary-helper source argument
+to `--source ../outputs/home_kitchen/scene`. Point `--cache` to your restored cache:
+source snapshots exclude vendor resources and caches, which must be supplied or
+installed separately. Keep reproduction outputs separate from published artifacts.
 
 The helper imports kitchen theme descriptions from
 [`scripts/decorate_variants.py`](../scripts/decorate_variants.py); keep both scripts
@@ -450,12 +458,12 @@ using **disjoint** index sets and the same source/output/cache/seed settings:
 MUJOCO_GL=egl python scripts/collect_home_kitchen.py capture \
   --source deliverables/outputs/home_kitchen/scene \
   --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
-  --start-seed 300 --indices 0 1 2 3 4
+  --start-seed 300 --indices 0 2 4 6 8
 # Worker B, in another shell
 MUJOCO_GL=egl python scripts/collect_home_kitchen.py capture \
   --source deliverables/outputs/home_kitchen/scene \
   --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
-  --start-seed 300 --indices 5 6 7 8 9
+  --start-seed 300 --indices 1 3 5 7 9
 ```
 
 Do not run these workers alongside an unpartitioned capture of the same output.

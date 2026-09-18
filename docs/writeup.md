@@ -2,87 +2,78 @@
 
 ## Architecture and metric accuracy
 
-An agent supplies a declarative SceneProgram: inventory, relationships and scene
-semantics. Deterministic consumers resolve assets, place geometry, validate it,
-compile MuJoCo, export URDF and collect data. The agent can be a command-capable
-coding harness using the portable skill, or the configured runtime. Supplied
-programs never require a nested model call. The current cross-domain fixtures are
-agent-authored programs, not evidence of cold, unattended prompt generalization.
+An agent supplies a declarative SceneProgram: inventory, relationships and semantics.
+Deterministic tools resolve assets, place and validate geometry, compile MuJoCo,
+export URDF and record robot data. The tracked skill works with any command-capable
+agent; supplying a program never starts a nested model. Commercial-kitchen and
+warehouse fixtures use authored programs. The home kitchen exercised live prompt
+interpretation with one repair and a warm asset library, not a cold generalization test.
 
-Dimensions come from explicit engineering defaults, axis-bound user quotations,
-verified source fields, or retrieved model units. These bases remain distinct:
-native mesh scale is not a measured product specification. RoboCasa articulated
-assets retain their joints; the new catalog tool imports static SDF props, textures
-and separate convex colliders. An agent searches, selects, imports and inserts an
-asset reference without per-object code. Licenses and provenance travel with it.
+Dimensions retain distinct bases: engineering defaults, axis-bound user quotations,
+verified source fields, or retrieved model units. Native mesh scale is not a measured
+product specification. RoboCasa fixtures preserve articulation; catalog imports
+provide static SDF props with textures and separate convex colliders. Provenance,
+licenses and hashes accompany asset packages.
 
-The optional architecture backend samples joint room/opening statistics from
-frozen real floorplan records; it does not copy a floorplan verbatim. Its current
-corpus is residential, not industrial, and furnishing placement remains heuristic.
-The present kitchen/warehouse collection uses the simpler heuristic backend.
-Independent checks cover dimensions, inventory, support, room containment,
-clearance, passive stability and sampled articulation. They do not certify semantics
-or functional suitability. MuJoCo previews, Cycles and export consume the same
-compiled geometry, preventing independently invented render scenes.
+The optional architecture backend samples frozen residential floorplan statistics;
+industrial priors remain unavailable. These deliverables use heuristic furnished
+placement. Checks cover dimensions, inventory, support, containment, clearance,
+passive stability and sampled articulation. They do not certify semantics, calibrated
+dynamics or functional suitability. MuJoCo, Cycles and export consume the same
+compiled geometry. Optional fal PBR textures and generated clutter improve appearance;
+generated props are visual-only, without contact geometry.
 
-## Why MuJoCo, and its costs
+## Simulator and export tradeoffs
 
-MuJoCo provides established CPU contact physics and stock Menagerie robots. Its
-convex-collision requirement makes collider preparation explicit. The tradeoffs
-are a separate Cycles path tracer, mesh conversion work, and independent export
-verification. URDF packages are loaded and motor-actuated in PyBullet; they preserve
-articulation, mass and inertia but do not promise identical contact behavior or
-PBR fidelity. USD remains unimplemented.
+MuJoCo provides CPU contact physics and stock Menagerie robots. Convex collision
+requirements make collider preparation explicit. Costs include mesh conversion,
+a separate Cycles bridge and independent export verification. Kitchen and warehouse
+URDF packages load and actuate in PyBullet, preserving articulation, mass and inertia;
+identical contact behavior and PBR fidelity are not promised. USD remains unimplemented.
 
-## Observed failures
+## Results and observed failures
 
-Real retrieval does not guarantee simulation readiness. Earlier PartNet-derivative
-doors penetrated at rest; a RoboCasa dishwasher drifted during settling. Of eight
-new static asset candidates, seven import; a drill's degenerate collider fails.
-A nursing station imports correctly but is taller than the test room, so placement
-is rejected. A bowl's source collider is solid, and the pallet jack has no moving
-mechanism: neither is advertised as a contact-rich task asset.
+The primary dataset has ten accepted home-kitchen variants, each with 60 simulated
+seconds of mapping: three full RGB-D and seven state/range/IMU captures. Together
+they contain 1,803 camera frames and 60,010 state samples, with recorded videos,
+scene previews, Cycles stills, data cards and mapping metrics. Five commercial-kitchen
+and five warehouse variants are supplementary; a separate Panda drawer interaction
+provides contact-driven articulation evidence. Visibility coverage is distinct from
+physical traversal; sensor noise is synthetic and uncalibrated.
 
-The first warehouse layout blocked entrance access. Revising declarative placement
-requirements fixed that scene without modifying generated files or weakening
-checks; failed attempts remain available. Another seed leaves a pallet approach
-blocked. Validated layouts are still simplified: wall-biased furniture, generous
-empty floor and sparse small-scale detail. Visual inspection supplements, rather
-than replaces, deterministic checks.
+Primary base seeds were 300–309. Seed 308 failed robot-access validation and was
+replaced by 1308 under a bounded deterministic retry policy. Rejected inputs/checks
+remain available and no acceptance check was weakened. This dataset is selected for
+passing validation, not evidence of 100% scene-generation success. Five previously
+cached fal themes vary across layouts; primary replay made zero new model or paid
+fal calls. Historical asset acquisition still had costs.
+
+Earlier retrieval failures include a degenerate drill collider, a nursing station
+taller than its test room, and a dishwasher that drifted during settling. A static
+pallet jack cannot lift; a solid bowl collider does not make a usable container.
+Warehouse entrance/access failures required revised declarative placement.
+
+The semantic-navigation bonus resolved the refrigerator and drove 3.010 m, but
+stopped after 22.5 seconds: estimated goal distance was 0.474 m versus 0.924 m truth,
+so it failed the 0.6 m arrival criterion. The report preserves this localization
+failure. Stretch loading and drive/lift/extension/turn tests pass, but autonomous
+mobile manipulation is unproven. Generated-mesh articulation is unfinished; no live
+VLM navigation success is claimed. [Bonus evidence](bonuses.md) gives examples.
 
 ## Hardware, throughput and scale
 
-The development machine has an RTX 3070 Ti Laptop GPU. Earlier measurements
-used CPU MuJoCo, software RGB-D and CPU Cycles; CUDA is not required. The
-historical 60-second kitchen mapping capture took 560 wall seconds, while a 1024-pixel Cycles still took 43.
-Current timings are recorded per artifact and must not be conflated with those
-earlier runs. NVIDIA EGL is available for new MuJoCo camera captures; physics and
-the current Cycles bridge remain on CPU. Record the backend and device with new timing results.
+The RTX 3070 Ti Laptop GPU renders MuJoCo cameras/replays through NVIDIA EGL;
+physics, Cycles and ffmpeg remain on CPU. Primary full captures took 893.5, 731.2
+and 385.6 wall seconds; state captures took 89.8–101.1 seconds. Concurrent load varied,
+so these are artifact timings, not controlled GPU speedup measurements, and exclude
+later replay encoding. Per-run reports retain renderer identity and timings.
 
-At 1,000 environments/day, agent latency, asset coverage, CPU rendering and the
-sequential collector dominate. Cached assets avoid repeat conversion. Tiered
-capture avoids rendering every variant. Training, broad parallel orchestration
-and additional agent infrastructure are outside this pass.
+At 1,000 environments/day, asset coverage, agent latency, simulation, rendering and
+storage need measured capacity planning. Cached assets, tiered capture and disjoint
+workers reduce repeated work, but this small batch does not establish production
+throughput. Provider billing remains incomplete for earlier model calls.
 
-## Deliverables and remaining limits
-
-Optional fal PBR materials and visual-only generated clutter have both offline
-integration tests and a live home-kitchen exercise. The commercial kitchen and
-warehouse validate and export independently. The variant refresh adds varied fal
-finishes and props, then re-records observations; completion follows the published
-dataset reports, not the presence of decorated stills. No photorealism claim follows
-from enabling PBR. Mapping reports compare range reconstruction
-with scene ground truth; the brief imposes no fixed IoU threshold.
-
-The baseline has ten 60-second mapping runs split across two domains. The primary
-collection now targets ten home-kitchen variants; completion is recorded in the
-published dataset reports. HDF5 carries synchronized observations and truth;
-each completed batch has a data card and recorded videos. Consult
-[brief-status.md](brief-status.md) for completion status and
-[cost-table.md](cost-table.md) for measured costs.
-
-Customers would still need broader articulated assets, calibrated dynamics,
-industrial floorplan priors, general manipulation and validated mobile-manipulator
-flows. The live model comparison is paused, and the fifteen-minute cold-machine
-installation target has not been certified. These limits are not solved by a
-loadable scene or an attractive render.
+Cold-machine installation under fifteen minutes and three unseen unattended prompts
+remain unverified. Broader articulated assets, calibrated dynamics, industrial
+layouts and general manipulation need further evidence. The published checklist
+and [brief status](brief-status.md) distinguish collected artifacts from those gaps.
