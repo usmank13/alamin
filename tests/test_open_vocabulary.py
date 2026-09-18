@@ -119,9 +119,10 @@ def test_agent_schema_is_strict_mode_compatible_and_nulls_are_stripped():
         elif isinstance(s,list):
             for v in s:walk(v)
     for schema in (PROGRAM_SCHEMA,PROGRAM_SCHEMA_V2):walk(strict(schema))
-    agent_output=dict(schema_version=1,prompt='x',space=dict(kind='kitchen',area_m2=36,shape='rectangle',annexes=0),relations=[],
+    agent_output=dict(schema_version=1,prompt='x',space=dict(kind='kitchen',area_m2=36,shape='rectangle',annexes=0,inferred_fields=None),relations=[],
         objects=[dict(id='a',category='base_cabinet',count=1,zone='main',required=True,family=None,dimensions_m=None,dimension_evidence=None,dimension_basis=None),
                  dict(id='b',category='autoclave',count=1,zone='main',required=True,family='box',dimensions_m=None,dimension_evidence=dict(url='https://e.test/p',identity='P',fields=dict(width=['W','1','m'],depth=['D','1','m'],height=['H','1','m'])),dimension_basis=None)])
+    for item in agent_output['objects']:item.update(asset_ref=None,asset_request=None,generated_request=None)
     jsonschema.validate(agent_output,strict(PROGRAM_SCHEMA))
     program=validate_program(_strip_null(agent_output))
     assert 'family' not in program['objects'][0] and program['objects'][1]['dimension_evidence']['url']=='https://e.test/p'

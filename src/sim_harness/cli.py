@@ -41,8 +41,8 @@ def main():
         export_mujoco(spec, data, args.export_mujoco)
     camera = mujoco.MjvCamera()
     mujoco.mjv_defaultFreeCamera(model, camera)
-    camera.lookat[:] = [0.2, 0.2, 0.6]
-    camera.distance = 3.5
+    camera.lookat[:] = model.stat.center
+    camera.distance = max(2.,float(model.stat.extent)*1.5)
     camera.azimuth = 135
     camera.elevation = -25
     if args.viewer:

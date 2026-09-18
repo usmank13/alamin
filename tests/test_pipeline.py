@@ -59,6 +59,12 @@ def test_source_required_not_silently_dropped(tmp_path):
     with pytest.raises(PipelineError,match='approved route'):solve(p,1,tmp_path)
 
 
+def test_large_fixtures_are_placed_before_small_fillers(tmp_path):
+    p=parse('scene("A workroom",space(area_m2=30),[place("small","base_cabinet"),place("large","prep_table")])')
+    ir=solve(p,23,tmp_path)
+    assert ir['objects'][0]['id']=='large_0'
+
+
 def test_layout_repeatable(tmp_path):
     p=load('examples/cafe_program.py');a=solve(p,7,tmp_path/'a');b=solve(p,7,tmp_path/'b')
     assert digest(a)==digest(b)

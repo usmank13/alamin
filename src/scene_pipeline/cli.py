@@ -13,6 +13,9 @@ from .contracts import PipelineError,read_json
 
 def main(argv=None):
     parser=argparse.ArgumentParser(prog='pipeline')
+    parser.add_argument('--resource-root',type=Path,help='Root containing vendor/ (also SCENE_PIPELINE_RESOURCE_ROOT)')
+    parser.add_argument('--cache-dir',type=Path,help='Writable evidence cache (also SCENE_PIPELINE_CACHE)')
+    parser.add_argument('--asset-store',type=Path,help='Retrieved asset library (also SCENE_PIPELINE_ASSET_STORE)')
     sub=parser.add_subparsers(dest='command',required=True)
     p=sub.add_parser('generate');p.add_argument('--prompt',required=True);p.add_argument('--seed',type=int,default=0);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--program',type=Path);p.add_argument('--model');p.add_argument('--max-iterations',type=int,default=20);p.add_argument('--timeout',type=float,default=900);p.add_argument('--no-preview',action='store_true')
@@ -32,6 +35,17 @@ def main(argv=None):
     p=sub.add_parser('reconstruct');p.add_argument('reference',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--no-preview',action='store_true')
     scale=p.add_mutually_exclusive_group(required=True);scale.add_argument('--area-m2',type=float);scale.add_argument('--metres-per-unit',type=float)
     sub.add_parser('registry')
+    p=sub.add_parser('asset-index');p.add_argument('--sources',type=Path,help='JSON list of revision-pinned GitHub SDF sources')
+    p=sub.add_parser('asset-search');p.add_argument('query');p.add_argument('--limit',type=int,default=12)
+    p=sub.add_parser('asset-generate',help='Generate and register any visual-only prop using fal')
+    p.add_argument('--category',required=True);p.add_argument('--prompt',required=True)
+    p.add_argument('--size-m',type=float,required=True,help='Estimated largest extent; not a measured dimension')
+    p.add_argument('--placement',choices=['support','freestanding'],default='support')
+    p.add_argument('--max-fal-usd',type=float,default=.4)
+    p=sub.add_parser('asset-fetch');p.add_argument('candidate_id');p.add_argument('--category',required=True)
+    p.add_argument('--mode',choices=['static','articulated','dynamic'],default='static')
+    p.add_argument('--placement',choices=['freestanding','support','wall'],default='freestanding')
+    p.add_argument('--timeout',type=float,default=180);p.add_argument('--no-preview',action='store_true')
     p=sub.add_parser('validate');p.add_argument('scene',type=Path)
     p=sub.add_parser('render');p.add_argument('scene',type=Path);p.add_argument('--blender');p.add_argument('--samples',type=int,default=32);p.add_argument('--resolution',type=int,default=1024)
     p.add_argument('--view',choices=['auto','interior','overview'],default='auto')
@@ -41,14 +55,77 @@ def main(argv=None):
     p=sub.add_parser('assets');p.add_argument('action',choices=['build','inspect','validate','promote']);p.add_argument('target');p.add_argument('--output',type=Path,default=Path('outputs/library'));p.add_argument('--scale',type=float,default=1)
     p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction','navigate'],required=True);p.add_argument('--goal');p.add_argument('--policy',choices=['planner','vlm'],default='planner');p.add_argument('--no-video',action='store_true');p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
     p=sub.add_parser('dataset');p.add_argument('scene',type=Path);p.add_argument('--variants',type=int,default=10);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60)
+    p.add_argument('--start-seed',type=int,default=100,help='First layout/randomization seed; each following variant increments it')
     p=sub.add_parser('costs');p.add_argument('artifacts',type=Path,nargs='+');p.add_argument('--output',type=Path,required=True);p.add_argument('--usd-per-mtok-in',type=float);p.add_argument('--usd-per-mtok-out',type=float)
     for command in ('generate','architecture'):
         p=sub.choices[command];p.add_argument('--materials',choices=['flat','fal'],default='flat',help='PBR material sets from fal PATINA (needs FAL_KEY)')
         p.add_argument('--clutter',choices=['off','fal'],default='off',help='Offer fal-generated visual-only decor categories to the agent')
         p.add_argument('--max-fal-usd',type=float,help='List-price cap on new fal jobs; cache hits are free')
+    p=sub.add_parser('doctor');p.add_argument('--smoke',action='store_true')
+    p=sub.add_parser('inspect');p.add_argument('path',type=Path);p.add_argument('--viewer',action='store_true');p.add_argument('--no-open',action='store_true')
+    p=sub.add_parser('evaluate');p.add_argument('manifest',type=Path);p.add_argument('--priors',type=Path,required=True);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--live',action='store_true');p.add_argument('--models',nargs=2);p.add_argument('--max-cost-usd',type=float)
+    p.add_argument('--agent-backend',choices=['codex','openrouter'],default='openrouter');p.add_argument('--seeds',nargs='+',type=int,default=[7,11])
+    p.add_argument('--timeout',type=float,default=900);p.add_argument('--cache-snapshot',type=Path);p.add_argument('--resume',action='store_true')
+    p.add_argument('--no-cycles',action='store_true');p.add_argument('--flows',action='store_true');p.add_argument('--interactions',action='store_true')
+    for command in ('generate','architecture','run'):
+        p=sub.choices[command]
+        p.add_argument('--agent-backend',choices=['codex','openrouter','recorded'],default='codex')
+        p.add_argument('--responses',type=Path,help='Recorded response list; offline adapter only')
+        p.add_argument('--max-cost-usd',type=float)
+        if command=='run':p.add_argument('--model');p.add_argument('--timeout',type=float,default=900)
     args=parser.parse_args(argv)
+    if args.resource_root:os.environ['SCENE_PIPELINE_RESOURCE_ROOT']=str(args.resource_root.resolve())
+    if args.cache_dir:os.environ['SCENE_PIPELINE_CACHE']=str(args.cache_dir.resolve())
+    if args.asset_store:os.environ['SCENE_PIPELINE_ASSET_STORE']=str(args.asset_store.resolve())
     try:
-        if args.command=='registry':
+        agent_options={}
+        if args.command in ('generate','architecture','run'):
+            from .runtime import Runtime
+            runtime=Runtime(backend=args.agent_backend,model=args.model,max_cost_usd=args.max_cost_usd,
+                            responses=read_json(args.responses) if args.responses else [])
+            agent_options=dict(runtime=runtime)
+        if args.command=='asset-index':
+            from .asset_catalog import index_sources
+            result=index_sources(sources=read_json(args.sources) if args.sources else None)
+        elif args.command=='asset-search':
+            from .asset_catalog import search
+            from .asset_library import registered_assets
+            result=dict(candidates=search(args.query,limit=args.limit),registered_assets=registered_assets(args.query,limit=args.limit),
+                        note='Lexical candidates, not verified semantic matches')
+        elif args.command=='asset-generate':
+            from . import fal
+            from .asset_library import register_generated,asset_preview
+            from .contracts import ID
+            import jsonschema
+            jsonschema.validate(args.category,ID)
+            request=dict(prompt=args.prompt,size_m=args.size_m,placement=args.placement,physical_use='visual_only')
+            calls=fal.prefetch(fal.decor_jobs({'objects':[dict(category=args.category,generated_request=request)]}),budget_usd=args.max_fal_usd)
+            if any(c.get('error') for c in calls):raise PipelineError('FAL_JOB','Generated asset unavailable',calls)
+            folder,asset=register_generated(args.category,request)
+            page=asset_preview(folder)
+            result=dict(passed=True,asset_ref=asset['key'],package=str(folder),gallery=str(page),fal_calls=calls,
+                        dimensions_m=asset['dimensions'],capabilities=asset['capabilities'])
+        elif args.command=='asset-fetch':
+            from .asset_library import acquire
+            folder,asset=acquire(args.candidate_id,args.category,mode=args.mode,placement=args.placement,timeout=args.timeout,preview=not args.no_preview)
+            result=dict(passed=True,asset_ref=asset['key'],package=str(folder),dimensions_m=asset['dimensions'],capabilities=asset['capabilities'])
+        elif args.command=='doctor':
+            from .doctor import diagnose
+            result=diagnose(args.smoke)
+        elif args.command=='inspect':
+            from .inspection import inspect_path
+            result=inspect_path(args.path,viewer=args.viewer,open_browser=not args.no_open)
+        elif args.command=='evaluate':
+            from .evaluation import evaluate
+            report=evaluate(read_json(args.manifest),args.output,priors=read_json(args.priors),models=args.models,
+                            live=args.live,agent_backend=args.agent_backend,seeds=args.seeds,max_cost_usd=args.max_cost_usd,
+                            timeout=args.timeout,cache_snapshot=read_json(args.cache_snapshot) if args.cache_snapshot else None,
+                            resume=args.resume,cycles=False if args.no_cycles else None,flows=args.flows or args.live,
+                            interactions=args.interactions or args.live)
+            result={k:v for k,v in report.items() if k!='runs'}
+            result.update(runs=len(report['runs']),report=str(args.output/'evaluation.json'),gallery=str(args.output/'index.html'))
+        elif args.command=='registry':
             from .registry import search
             result=search()
         elif args.command=='generate':
@@ -58,7 +135,7 @@ def main(argv=None):
                             max_iterations=args.max_iterations,timeout=args.timeout,preview=not args.no_preview,
                             layout_backend=args.layout_backend,priors=read_json(args.priors) if args.priors else None,allow_prior_backoff=args.allow_prior_backoff,
                             robot_radius=args.robot_radius,access_margin=args.access_margin,
-                            materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd)
+                            materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd,**agent_options)
         elif args.command=='architecture-fit':
             from .architecture_priors import build_bundle
             result=build_bundle(args.sample,args.output)
@@ -81,7 +158,7 @@ def main(argv=None):
                 model=args.model,max_iterations=args.max_iterations,timeout=args.timeout,preview=not args.no_preview,
                 layout_backend='architecture',priors=read_json(args.priors),allow_prior_backoff=args.allow_prior_backoff,
                 robot_radius=args.robot_radius,access_margin=args.access_margin,architecture_only=True,
-                materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd)
+                materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd,**agent_options)
         elif args.command=='architecture-evaluate':
             from .architecture_evaluation import evaluate_batch
             from .dsl import load
@@ -97,7 +174,8 @@ def main(argv=None):
                                metres_per_unit=args.metres_per_unit,render=not args.no_preview)
         elif args.command=='validate':
             from .validation import validate_scene
-            result=validate_scene(args.scene)
+            config=read_json(args.scene/'generation.json') if (args.scene/'generation.json').exists() else {}
+            result=validate_scene(args.scene,require_articulated=config.get('layout_backend')!='architecture',robot_radius=config.get('robot_radius'))
         elif args.command=='render':
             from .render import cycles
             result={'image':str(cycles(args.scene,blender=args.blender,samples=args.samples,resolution=args.resolution,view=args.view))}
@@ -119,10 +197,10 @@ def main(argv=None):
             else: result=validate_asset(args.target,promote=args.action=='promote')
         elif args.command=='run':
             from .flows import run
-            result=run(args.scene,args.flow,args.output,seconds=args.seconds,tier=args.tier,seed=args.seed,goal=args.goal,policy=args.policy,video=not args.no_video)
+            result=run(args.scene,args.flow,args.output,seconds=args.seconds,tier=args.tier,seed=args.seed,goal=args.goal,policy=args.policy,video=not args.no_video,timeout=args.timeout,**agent_options)
         elif args.command=='dataset':
             from .dataset import collect_variants
-            result=collect_variants(args.scene,args.output,args.variants,args.seconds)
+            result=collect_variants(args.scene,args.output,args.variants,args.seconds,start_seed=args.start_seed)
         elif args.command=='costs':
             from .costs import table
             result=table(args.artifacts,args.output,args.usd_per_mtok_in,args.usd_per_mtok_out)
@@ -130,6 +208,10 @@ def main(argv=None):
         return 0 if result.get('passed',True) else 1
     except PipelineError as exc:
         print(json.dumps({'error':exc.as_dict()},indent=2),file=sys.stderr)
+        return 2
+    except (OSError,ValueError) as exc:
+        from .runtime import redact
+        print(json.dumps({'error':dict(code='INPUT_ERROR',message=redact(str(exc)))}),file=sys.stderr)
         return 2
 
 

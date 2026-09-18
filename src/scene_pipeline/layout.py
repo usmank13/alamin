@@ -47,7 +47,7 @@ def floorplan(space, *, aspect=None):
     return rooms,w,d
 
 
-def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=None, architecture=None):
+def solve(program, seed, root, *, vendor=None, aspect=None, architecture=None):
     validate_program(program)
     root=Path(root); rng=np.random.default_rng(seed)
     if architecture is not None:
@@ -79,7 +79,22 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
     for request in program['objects']:
         for number in range(request['count']):
             requests.append({**request,'instance':f"{request['id']}_{number}"})
-    requests.sort(key=lambda x:(CATALOG.get(x['category'],{}).get('placement')=='support',CATALOG.get(x['category'],{}).get('dynamic',False)))
+    prepared={}
+    for request in program['objects']:
+        try:
+            prepared[request['id']]=instantiate(request['category'],root/'assets',vendor=vendor,family=request.get('family'),
+                dimensions=request.get('dimensions_m'),dimension_basis=request.get('dimension_basis'),asset_ref=request.get('asset_ref'))
+        except PipelineError as exc:
+            if request['required']:raise
+            prepared[request['id']]=exc
+    def placement_order(request):
+        entry=prepared[request['id']]
+        if isinstance(entry,PipelineError):return (False,False,0.)
+        package=entry[1];config=package.get('layout',{});dims=package['dimensions']
+        # Grounded dimensions, not category-specific rules: reserve large footprints
+        # before small fillers, and place supported objects after their furniture.
+        return (config.get('placement')=='support',config.get('dynamic',False),-dims[0]*dims[1])
+    requests.sort(key=placement_order)
     # Zones become geometry: with two or more labels each owns a seeded wall midpoint and
     # membership is a soft cost. One label means no anchor, so single-zone layouts are unchanged.
     labels=sorted({r['zone'] for r in program['objects']});edges=list(zip(polygon,polygon[1:]+polygon[:1]))
@@ -95,8 +110,9 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
     surface_rank={}  # one seeded preference per support surface, shared by every clutter request
     for request in requests:
         try:
-            folder,package=instantiate(request['category'],root/'assets',vendor=vendor,family=request.get('family'),
-                                       dimensions=request.get('dimensions_m'),dimension_basis=request.get('dimension_basis'))
+            entry=prepared[request['id']]
+            if isinstance(entry,PipelineError):raise entry
+            folder,package=entry
         except PipelineError as exc:
             if request['required']:
                 raise
@@ -104,7 +120,7 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
         package_map[package['key']]=package
         lo,hi=np.array(package['bounds']); width,depth,height=hi-lo
         candidates=[]
-        config=CATALOG.get(request['category']) or package.get('layout',{})
+        config=package.get('layout',{}) if request.get('asset_ref') else CATALOG.get(request['category']) or package.get('layout',{})
         # Soft intent guides placement. Relations name request ids; partners are the
         # already-placed instances of those requests (including earlier instances of this one).
         partners=[]
@@ -119,11 +135,13 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
                 for surface in parent['supports']:
                     surface_z=support['position'][2]+surface['center'][2]
                     if 'support_height_m' in config and not config['support_height_m'][0]<=surface_z<=config['support_height_m'][1]:continue
-                    for dx in np.arange(-surface['size'][0]/2-lo[0]+.005,surface['size'][0]/2-hi[0]-.005+1e-8,max(width+.025,.10)):
-                        for dy in np.arange(-surface['size'][1]/2-lo[1]+.005,surface['size'][1]/2-hi[1]-.005+1e-8,max(depth+.025,.10)):
-                            c,s=math.cos(support['yaw']),math.sin(support['yaw'])
-                            candidates.append(([support['position'][0]+c*dx-s*dy,support['position'][1]+s*dx+c*dy,
-                                                surface_z-lo[2]+.001],support['yaw'],support['id']))
+                    for turn in (0.,math.pi/2):
+                        low,high=np.array(footprint(package,[0,0,0],turn,sweep=False));span=high-low
+                        for dx in np.arange(-surface['size'][0]/2-low[0]+.005,surface['size'][0]/2-high[0]-.005+1e-8,max(span[0]+.025,.10)):
+                            for dy in np.arange(-surface['size'][1]/2-low[1]+.005,surface['size'][1]/2-high[1]-.005+1e-8,max(span[1]+.025,.10)):
+                                c,s=math.cos(support['yaw']),math.sin(support['yaw'])
+                                candidates.append(([support['position'][0]+c*dx-s*dy,support['position'][1]+s*dx+c*dy,
+                                                    surface_z-lo[2]+.001],support['yaw']+turn,support['id']))
         elif request['category']=='door':
             if architecture is not None:
                 raise PipelineError('DOOR_ASSET_FIT_UNSUPPORTED','Opening generation does not resize or rig stock door assets')
@@ -188,7 +206,11 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
             if anchor is not None:total+=.5*float(np.linalg.norm(xy-anchor))
             return total
         if partners or anchor is not None:
-            candidates.sort(key=lambda c:cost(c[0],c[1]))  # stable: seeded order breaks ties
+            # A supporting relation partner is a better "near" candidate than a
+            # different nearby surface. This remains a preference, not a new gate.
+            preferred_supports={o['id'] for kind,others,_ in partners if kind=='near'
+                                for o in others if package_map[o['asset_key']]['supports']}
+            candidates.sort(key=lambda c:(bool(preferred_supports) and c[2] not in preferred_supports,cost(c[0],c[1])))
         chosen=None
         wall_required=any(r['required'] and r['kind']=='against_wall' and request['id'] in r['objects'] for r in program['relations'])
         for pos,yaw,parent in candidates:
@@ -216,7 +238,11 @@ def solve(program, seed, root, *, vendor=Path('vendor/robocasa_native'), aspect=
                 chosen=(pos,yaw,parent,volume); break
         if chosen is None:
             if request['required']:
-                raise PipelineError('LAYOUT_UNSAT',f"No valid placement for {request['instance']}",dict(object=request['instance']))
+                raise PipelineError('LAYOUT_UNSAT',f"No valid placement for {request['instance']}",
+                    dict(object=request['instance'],object_id=request['id'],dimensions_m=package['dimensions'],
+                         placement=config.get('placement'),candidate_count=len(candidates),
+                         supports=[dict(object=o['id'],surfaces=package_map[o['asset_key']]['supports'])
+                                   for o in objects if package_map[o['asset_key']]['supports']]))
             dropped.append(dict(id=request['instance'],reason='no collision-free placement')); continue
         pos,yaw,parent,volume=chosen
         objects.append(dict(id=request['instance'],category=request['category'],class_id=class_id(request['category']),

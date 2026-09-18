@@ -11,6 +11,15 @@ from . import fal
 from .contracts import PipelineError, read_json
 
 
+def config_from_request(request):
+    from .contracts import GENERATED_REQUEST
+    import jsonschema
+    jsonschema.validate(request, GENERATED_REQUEST)
+    return dict(route='G6',prompt=request['prompt'],size_m=[request['size_m']]*2,
+                size_basis='agent_estimate_visual_only_not_measured',placement=request['placement'],
+                dynamic=False,support_height_m=[.3,1.6])
+
+
 def package(category, config):
     """MjSpec plus provenance for a decor category from the fal cache: Z-up, band-midpoint size, base on z=0, no contact geoms."""
     model, payload = fal.decor_request(category, config)
@@ -27,7 +36,10 @@ def package(category, config):
     if not parts:
         raise PipelineError('GENERATED_MESH_EMPTY', f'{category}: GLB has no geometry', dict(folder=str(entry)))
     mesh = parts[0] if len(parts) == 1 else trimesh.util.concatenate(parts)
-    # trimesh converts glTF Y-up to Z-up on load. Uniform scale to the declared band midpoint on the largest extent.
+    # trimesh preserves glTF scene coordinates (Y-up). Rotate the fully transformed
+    # scene into MuJoCo Z-up explicitly; a same-library round trip hid this before.
+    mesh.apply_transform([[1,0,0,0],[0,0,-1,0],[0,1,0,0],[0,0,0,1]])
+    # Uniform scale to the declared band midpoint on the largest extent.
     scale = float(np.mean(config['size_m']))/float(max(mesh.extents))
     mesh.apply_scale(scale)
     lo, hi = mesh.bounds; mesh.apply_translation([-(lo[0]+hi[0])/2, -(lo[1]+hi[1])/2, -lo[2]])
@@ -52,6 +64,6 @@ def package(category, config):
     hashes = {**meta.get('files', {}), **{k: hashlib.sha256(v).hexdigest() for k, v in assets.items()}}
     provenance = dict(kind='generated_source', provider='fal', model=model, request_id=meta.get('request_id'), source=meta.get('request_id') or fal.key(model, payload),
                       prompt=payload['prompt'], retrieved_at=meta.get('completed_at'), license='fal.ai and Tencent Hunyuan3D terms; not independently verified',
-                      hashes=hashes, scale=scale, size_basis='registry_decor_size_band_midpoint', size_band_m=list(config['size_m']),
-                      orientation='gltf_y_up_converted_to_z_up_by_trimesh_loader', textured=bool(images), physical_use='visual_only_no_contact_geometry', calibrated=False)
+                      hashes=hashes, scale=scale, size_basis=config.get('size_basis','registry_decor_size_band_midpoint'), size_band_m=list(config['size_m']),
+                      orientation='gltf_y_up_to_mujoco_z_up_explicit_rx_90', textured=bool(images), physical_use='visual_only_no_contact_geometry', calibrated=False)
     return spec, provenance

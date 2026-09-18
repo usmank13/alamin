@@ -1,5 +1,12 @@
 ## Setup
 
+For the scene generator, model backends, visual inspection and cross-domain tests,
+start with [Running the pipeline](docs/running.md) and [Current brief status](docs/brief-status.md).
+The portable [agent skill](skills/scene-pipeline/SKILL.md) includes direct asset
+search/import commands. `pipeline inspect PATH` opens scene, asset, or dataset
+galleries; `--viewer` opens MuJoCo. See the [writeup](docs/writeup.md) and
+[measured costs](docs/cost-table.md) for brief-facing evidence and limitations.
+
 Requires Linux, Git and [uv](https://docs.astral.sh/uv/getting-started/installation/).
 Python 3.12 is selected automatically. From this directory:
 
@@ -11,8 +18,6 @@ This installs locked dependencies into `.venv` and fetches three robot directori
 from a pinned [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
 revision into ignored `vendor/`. Downloads require network access. Setup preserves
 locally modified robot checkouts by refusing to overwrite them. No CUDA dependency.
-The existing `.git` directory on this machine is empty; initialize version control
-separately when ready.
 
 ## Run
 
@@ -83,6 +88,19 @@ flows. Setup adds the pipeline extras and, optionally, the Blender binary for Cy
 bash scripts/setup_pipeline.sh --blender
 ```
 
+With an authenticated agent backend, run the entire generation/render/inspection
+path from one prompt (fal credentials can be in `.env`):
+
+```bash
+.venv/bin/python scripts/create_scene.py 'A standard tiled home kitchen with everyday countertop clutter.' \
+  --materials fal --clutter fal --max-fal-usd 5 --output outputs/my_kitchen
+```
+
+Open the resulting `index.html` to inspect the scene and its checks. Generated
+clutter is visual-only. Failures remain visible; this command does not certify
+photorealism or silently weaken validation. See [running.md](docs/running.md) for
+backend options and retrieval/generation tools for uncataloged assets.
+
 One command per brief deliverable, run from the repository root:
 
 ```bash
@@ -98,7 +116,7 @@ One command per brief deliverable, run from the repository root:
 # Flows write data.h5, report.json and replay.mp4 (ffmpeg); --tier state skips RGB-D
 .venv/bin/pipeline run outputs/kitchen --flow mapping --output outputs/kitchen_mapping --seconds 60
 .venv/bin/pipeline run outputs/kitchen --flow interaction --output outputs/kitchen_interaction --seconds 60
-.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the walk-in fridge' \
+.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the refrigerator' \
   --output outputs/kitchen_nav --seconds 60
 .venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the prep table' --policy vlm \
   --output outputs/kitchen_nav_vlm --seconds 20
@@ -118,12 +136,13 @@ meshes sized to a declared band. Every fal job is cached by request digest under
 map once as MuJoCo material texture layers (`rgb`, `normal`, `roughness`, `metallic`, `texuniform` with a
 metric repeat from the finish's tile size) and rebinds every asset's `finish_*` placeholder to them, so the
 MJZ the simulator loads is the textured scene and its RGB camera sees the albedo. `pipeline render` reads the
-same layers back from the compiled model into Principled BSDF: one scene, two consumers. Without the flags
-or a key, finishes stay the declared flat engineering colours and `manifest.json` says so under `materials`.
+same layers back from the compiled model into Principled BSDF: one scene, two consumers. Without the flags,
+finishes stay the declared flat engineering colours and `manifest.json` says so under `materials`.
+Explicit fal requests need `FAL_KEY` for uncached jobs; missing credentials are reported, not silently ignored.
 Decor carries no collision geometry, so an arm can sweep through it; it is dressing, not a manipulation target.
 
 Semantic navigation resolves the goal text through the scene's semantic manifest (an
-instance id, or a category alias such as `walk-in`, `refrigerator` or `drawer`), never
+instance id, or a category alias such as `refrigerator` or `drawer`), never
 through coordinates. The robot drives the mapping stack (noisy odometry, scan matching,
 online occupancy) behind an action-chunk contract: a policy returns K body-frame
 `[vx, vy, wz]` actions that are executed open-loop before it is queried again, the
@@ -142,8 +161,10 @@ print(inspect('outputs/kitchen_mapping/data.h5'))
 chunks = load_stream('outputs/kitchen_nav/data.h5', 'action', 0, 10)
 ```
 
-Writeup: [docs/writeup.md](docs/writeup.md). Measured stage timings and token usage:
-[docs/cost-table.md](docs/cost-table.md). Design notes live in the ignored `docs/agent/`.
+The final submission writeup and consolidated cost table remain release tasks.
+Use `pipeline costs` to build a measured table from your artifacts. Operating
+instructions and limitations are tracked in [docs/running.md](docs/running.md);
+historical design notes live in the ignored `docs/agent/`.
 
 ## Integration contract
 

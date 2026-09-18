@@ -21,10 +21,11 @@ def materials(asset,appearance):
     if mode not in ('flat','fal'):raise PipelineError('MATERIAL_SOURCE',f'Unknown material source {mode}')
     assets_bytes={};realized={};fallback=[]
     for finish,spec in MATERIALS.items():
+        spec={**spec,**options.get('overrides',{}).get(finish,{})}
         ET.SubElement(asset,'material',name=f'finish_{finish}',rgba=vec([spec['rgba'][i]*tint[i] for i in range(3)]+[spec['rgba'][3]]),
                       shininess=str(spec['shininess']),reflectance=str(spec['reflectance']))
         if mode!='fal' or 'prompt' not in spec:continue
-        model,payload=fal.patina_request(finish,seed);entry=fal.cached(model,payload)
+        model,payload=fal.patina_request(finish,seed,prompt=spec['prompt']);entry=fal.cached(model,payload)
         if entry is None:fallback.append(finish);continue
         layers=[]
         for map_name,role in fal.PATINA_ROLES.items():
@@ -109,6 +110,9 @@ def compile_scene(ir, root):
     # Attach asset-free templates first; semantic identity never depends on IDs.
     for instance,info,child in sorted(children,key=lambda item:bool(item[2].assets)):
         classification=classify(info)
+        existing=manifest['class_names'].get(str(instance['class_id']))
+        if existing is not None and existing!=instance['category']:
+            raise PipelineError('SEMANTIC_ID_COLLISION','Two categories share a class ID',dict(categories=[existing,instance['category']],class_id=instance['class_id']))
         if classification['allowed_use']=='visual_only':
             if instance['dynamic'] or list(child.joints):
                 raise PipelineError('DECORATION_PHYSICS','Generated visual-only assets cannot have dynamics or articulation')

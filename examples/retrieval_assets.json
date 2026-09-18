@@ -1,0 +1,13 @@
+{
+  "note": "Agent-selected examples, not a category routing table. All are requested as static geometry; moving mechanisms are not inferred.",
+  "cases": [
+    {"domain":"warehouse", "query":"pallet", "category":"pallet", "candidate_id":"gazebo:euro_pallet"},
+    {"domain":"warehouse", "query":"shelf", "category":"pallet_rack", "candidate_id":"warehouse:models/aws_robomaker_warehouse_ShelfE_01"},
+    {"domain":"warehouse", "query":"pallet jack", "category":"pallet_jack", "candidate_id":"warehouse:models/aws_robomaker_warehouse_PalletJackB_01"},
+    {"domain":"clinic", "query":"nursesstation", "category":"nursing_station", "candidate_id":"hospital:models/aws_robomaker_hospital_nursesstation_01"},
+    {"domain":"kitchen", "query":"cafe table", "category":"cafe_table", "candidate_id":"gazebo:cafe_table"},
+    {"domain":"kitchen", "query":"bowl", "category":"bowl", "candidate_id":"gazebo:bowl"},
+    {"domain":"workshop", "query":"drill", "category":"cordless_drill", "candidate_id":"gazebo:cordless_drill"},
+    {"domain":"workshop", "query":"computer", "category":"computer", "candidate_id":"hospital:models/aws_robomaker_retail_Computer_01"}
+  ]
+}

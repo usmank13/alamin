@@ -1,17 +1,86 @@
 # Writeup: text to simulation
 
-Numbers are from `outputs/kitchen*` on this CPU-only machine; see [cost-table.md](cost-table.md).
+## Architecture and metric accuracy
 
-**Architecture, and where the metric accuracy comes from.** One prompt goes to a bounded Codex loop that emits a declarative SceneProgram: categories, counts, zones, relations. No number from the model reaches the simulator. Dimensions come from three deterministic sources: a versioned engineering registry for the built-in families (counter 900 mm, door clear width 950 mm, 18 mm panels), user-quoted sizes that must appear verbatim in the prompt, and web-sourced evidence accepted only when label, number and unit occur together on the fetched page, then cached. Retrieved RoboCasa appliances scale uniformly (length s, mass s³, inertia s⁵) so joints stay valid. A seeded solver places footprints, opening reservations and swept articulation volumes; the compiler emits MJCF with primitive or convex colliders, density-derived mass, stable instance ids and a semantic manifest. Validation settles the scene for five seconds, runs mask-independent penetration checks and 21-pose sweeps of every joint; failures return to the agent as structured feedback and no generated file is edited. Cycles, URDF export, robot flows and HDF5 collection read the same IR, so render and sim cannot drift.
+An agent supplies a declarative SceneProgram: inventory, relationships and scene
+semantics. Deterministic consumers resolve assets, place geometry, validate it,
+compile MuJoCo, export URDF and collect data. The agent can be a command-capable
+coding harness using the portable skill, or the configured runtime. Supplied
+programs never require a nested model call. The current cross-domain fixtures are
+agent-authored programs, not evidence of cold, unattended prompt generalization.
 
-**Why MuJoCo, and what it cost.** Its compile-time convex-collision rule forces separate collision geometry, the brief's hardest requirement anyway, and a 60 s mapping flow with 10 Hz RGB-D capture ran in 560 s wall on this CPU, video encoding included. The costs: no path tracer, so Cycles is a second consumer of the IR (43 s per 1024 px still); no native USD, so portability is a URDF package with 15 motor-driven joints verified in PyBullet (33 s); Menagerie robots need their parent-filter conventions preserved through composition; and the stock soccer-kit omnibase is small and uncalibrated upstream, which caps travel at 4.8 m per minute.
+Dimensions come from explicit engineering defaults, axis-bound user quotations,
+verified source fields, or retrieved model units. These bases remain distinct:
+native mesh scale is not a measured product specification. RoboCasa articulated
+assets retain their joints; the new catalog tool imports static SDF props, textures
+and separate convex colliders. An agent searches, selects, imports and inserts an
+asset reference without per-object code. Licenses and provenance travel with it.
 
-**Failure taxonomy observed.** Source geometry: 0/18 PartNet-derivative doors pass rest penetration at any scale, and the RoboCasa dishwasher drifts 7 mm while settling, so it stays unpromoted. Mass: visual meshes carried default density through the MJZ round trip and inflated a fridge to 3.7 t until visual geoms were zeroed. Agent intent: invented hard relations and inventory dropped during repair, now blocked by an intent freeze. Layout: clutter intersecting shelf uprights and blocked appliance access. Perception: odometry over-reports travel about twofold from wheel slip; mapping IoU moved from 0.47 on the first cafe run to 0.74 on this kitchen across five mapper revisions, with exact-pose controls at 0.83 and 0.94 isolating localization error. Navigation: arrival declared from the pose estimate exactly at the reach boundary left the true distance 2.8 cm outside it, fixed with a 10 cm margin; the VLM policy never declares arrival itself.
+The optional architecture backend samples joint room/opening statistics from
+frozen real floorplan records; it does not copy a floorplan verbatim. Its current
+corpus is residential, not industrial, and furnishing placement remains heuristic.
+The present kitchen/warehouse collection uses the simpler heuristic backend.
+Independent checks cover dimensions, inventory, support, room containment,
+clearance, passive stability and sampled articulation. They do not certify semantics
+or functional suitability. MuJoCo previews, Cycles and export consume the same
+compiled geometry, preventing independently invented render scenes.
 
-**Where hardware limits shaped the design.** No working GPU driver here: Cycles renders on CPU, OSMesa produces software RGB-D at 10 Hz, and every flow is one process. With a GPU we would capture RGB-D for every variant instead of three, raise Cycles samples, and batch randomization through MJX.
+## Why MuJoCo, and its costs
 
-**What breaks first at 1,000 environments a day.** Codex latency and quota: a validated scene needs one to five agent calls of about 15 k input tokens, and the VLM policy adds a call every two simulated seconds. Then Cycles CPU minutes, then the sequential variant collector (one 60 s RGB-D variant costs about as much wall time as the mapping flow below). Generation itself is cheap (7 s, of which validation 3.4 s). Coverage fails before compute: the registry plus sourced boxes will not span a thousand distinct prompts without a curated articulated corpus.
+MuJoCo provides established CPU contact physics and stock Menagerie robots. Its
+convex-collision requirement makes collider preparation explicit. The tradeoffs
+are a separate Cycles path tracer, mesh conversion work, and independent export
+verification. URDF packages are loaded and motor-actuated in PyBullet; they preserve
+articulation, mass and inertia but do not promise identical contact behavior or
+PBR fidelity. USD remains unimplemented.
 
-**What a robotics customer would ask for that this cannot deliver today.** Walk-in fridges, sinks and wash stations as articulated assets; USD with UsdPhysics; real PBR materials instead of tinted procedural finishes; calibrated mass and friction rather than engineering defaults; a full-size mobile manipulator (Stretch loads in the harness but has no flow); grasping rather than contact-only drawer actuation; a learned policy behind the action-chunk contract, which today is a planner or a zero-shot VLM; and articulation of generated meshes, scoped out as research.
+## Observed failures
 
-**Measured results and bonus scope.** Mapping on the kitchen: IoU 0.74, reachable coverage 1.00, 1.8 cm mean occupied error. Drawer interaction passed (open endpoint error 2.5 mm, closed 0.06 mm, 17750 contact samples). Dataset: the ten-variant 60 s collection is implemented (`pipeline dataset`) but deliberately not yet run while the flows are still being tested. Semantic navigation resolves goal text through the manifest: fridge 0.53 m true distance after 4 s (reached, 0.5 m travelled); shelf 0.50 m true distance after 27 s (reached, 3.9 m travelled); prep table 0.49 m true distance after 36 s (reached, 4.8 m travelled). VLM policy trial: 11 Codex calls over 20 s, 0 failed, final true distance 0.18 m. Not done: USD export, Stretch flows, generated-mesh articulation.
+Real retrieval does not guarantee simulation readiness. Earlier PartNet-derivative
+doors penetrated at rest; a RoboCasa dishwasher drifted during settling. Of eight
+new static asset candidates, seven import; a drill's degenerate collider fails.
+A nursing station imports correctly but is taller than the test room, so placement
+is rejected. A bowl's source collider is solid, and the pallet jack has no moving
+mechanism: neither is advertised as a contact-rich task asset.
+
+The first warehouse layout blocked entrance access. Revising declarative placement
+requirements fixed that scene without modifying generated files or weakening
+checks; failed attempts remain available. Another seed leaves a pallet approach
+blocked. Validated layouts are still simplified: wall-biased furniture, generous
+empty floor and sparse small-scale detail. Visual inspection supplements, rather
+than replaces, deterministic checks.
+
+## Hardware, throughput and scale
+
+This machine has an RTX 3070, but these measurements use CPU MuJoCo, software
+RGB-D and CPU Cycles; CUDA is not required. The historical 60-second kitchen
+mapping capture took 560 wall seconds, while a 1024-pixel Cycles still took 43.
+Current timings are recorded per artifact and must not be conflated with those
+earlier runs. GPU rendering could reduce capture latency without changing the
+schema or physics contract.
+
+At 1,000 environments/day, agent latency, asset coverage, CPU rendering and the
+sequential collector dominate. Cached assets avoid repeat conversion. Tiered
+capture avoids rendering every variant. Training, broad parallel orchestration
+and additional agent infrastructure are outside this pass.
+
+## Deliverables and remaining limits
+
+The cleanup pass merges optional fal PBR materials and visual-only generated
+clutter, tested offline with synthetic API responses. No paid texture/model calls
+were made; current scene stills use default finishes and retrieved textures, not
+a claimed photorealistic PBR demonstration. Two richer kitchen/warehouse scenes
+validate and export independently. Mapping reports compare range reconstruction
+with scene ground truth; the brief imposes no fixed IoU threshold.
+
+The requested collection is ten 60-second mapping runs, five per domain, rather
+than ten variants of one scene. HDF5 carries synchronized observations and truth;
+each completed batch has a data card and recorded videos. Consult
+[brief-status.md](brief-status.md) for completion status and
+[cost-table.md](cost-table.md) for measured costs.
+
+Customers would still need broader articulated assets, calibrated dynamics,
+industrial floorplan priors, general manipulation and validated mobile-manipulator
+flows. The live model comparison is paused, and the fifteen-minute cold-machine
+installation target has not been certified. These limits are not solved by a
+loadable scene or an attractive render.

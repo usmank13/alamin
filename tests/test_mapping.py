@@ -89,7 +89,8 @@ def test_goal_resolution_through_semantic_manifest():
     manifest={'instances':{'cold_storage_0':dict(id='cold_storage_0',category='fridge',position=[5,0,.9],bounds=box),
                            'cold_storage_1':dict(id='cold_storage_1',category='fridge',position=[1,0,.9],bounds=box),
                            'drawers_0':dict(id='drawers_0',category='drawer_unit',position=[2,2,0],bounds=box)}}
-    goal=resolve_goal('Go to the walk-in fridge',manifest,(0,0))
+    with pytest.raises(PipelineError,match='walk-in'):resolve_goal('Go to the walk-in fridge',manifest,(0,0))
+    goal=resolve_goal('Go to the refrigerator',manifest,(0,0))
     assert goal['id']=='cold_storage_1' and goal['alternatives']==['cold_storage_0']
     assert resolve_goal('cold_storage_0',manifest,(0,0))['id']=='cold_storage_0'
     assert resolve_goal('open the drawer',manifest,(0,0))['category']=='drawer_unit'

@@ -9,7 +9,7 @@ def classify(asset):
         origin,provider='procedural','scene_pipeline.templates'
         basis=source.get('dimension_basis') or 'engineering_design_parameters'
     elif route=='G3' and source.get('kind')=='retrieved_source':
-        origin,provider,basis='retrieved','RoboCasa / Lightwheel','native_asset_scale_not_measured_product_dimensions'
+        origin,provider,basis='retrieved',source.get('provider','RoboCasa / Lightwheel'),source.get('dimension_basis','native_asset_scale_not_measured_product_dimensions')
     elif route in ('G6','G8') and source.get('kind')=='generated_source':
         origin,provider,basis='generated',source.get('provider','unspecified'),'unverified_generated_geometry'
     else:

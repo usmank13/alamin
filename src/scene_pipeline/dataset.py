@@ -67,7 +67,7 @@ def randomize_program(program,rng):
     return program,counts
 
 
-def collect_variants(scene,output,variants=10,seconds=60):
+def collect_variants(scene,output,variants=10,seconds=60,*,start_seed=100):
     from .orchestrator import generate
     from .flows import run
     from .compiler import compile_scene
@@ -76,14 +76,35 @@ def collect_variants(scene,output,variants=10,seconds=60):
     if output.exists(): raise PipelineError('OUTPUT_EXISTS',str(output))
     if not 1<=variants<=100: raise PipelineError('VARIANT_COUNT','Expected 1..100 variants')
     output.mkdir(parents=True)
-    program=read_json(Path(scene)/'program.json');results=[];fal_records=[]
-    config=read_json(Path(scene)/'generation.json') if (Path(scene)/'generation.json').exists() else {}
+    scene=Path(scene)
+    program=read_json(scene/('input_program.json' if (scene/'input_program.json').exists() else 'program.json'));results=[];fal_records=[]
+    # References replay from the portable scene, never re-search a mutable remote catalog.
+    resolved=read_json(scene/'program.json');by_id={o['id']:o for o in resolved['objects']}
+    asset_store=output/'asset_library'
+    from .asset_library import verify
+    import shutil
+    for item in program['objects']:
+        ref=by_id[item['id']].get('asset_ref')
+        if not ref:continue
+        source=scene/'assets'/ref;verify(source,ref)
+        destination=asset_store/'packages'/ref
+        if not destination.exists():shutil.copytree(source,destination)
+        item.pop('asset_request',None);item.pop('generated_request',None);item['asset_ref']=ref
+    config=read_json(scene/'generation.json') if (scene/'generation.json').exists() else dict(layout_backend='heuristic')
     materials=config.get('materials','flat');clutter=config.get('clutter','off');budget=config.get('max_fal_usd')
+    config={k:v for k,v in config.items() if k in ('layout_backend','allow_prior_backoff','robot_radius','access_margin','architecture_only')}
+    priors=read_json(scene/'priors.json') if (scene/'priors.json').exists() else None
+    if config.get('layout_backend') in ('architecture','empirical') and priors is None:
+        raise PipelineError('REPLAY_EVIDENCE','Generation requires the original prior bundle')
+    cache=output/'evidence_cache.json'
+    write_json(cache,read_json(scene/'evidence_cache.json') if (scene/'evidence_cache.json').exists() else {})
     for i in range(variants):
-        target=output/f'variant_{i:03d}';rng=np.random.default_rng(i+100)
+        target=output/f'variant_{i:03d}';seed=start_seed+i;rng=np.random.default_rng(seed)
         try:
             variant,counts=randomize_program(program,rng)
-            generate(program['prompt'],i+100,target,program=variant,preview=False,materials=materials,clutter=clutter,max_fal_usd=budget)
+            generation=generate(program['prompt'],seed,target,program=variant,preview=False,priors=priors,cache_path=cache,asset_store=asset_store,
+                                materials=materials,clutter=clutter,max_fal_usd=budget,**config)
+            if not generation['passed']:raise PipelineError('VARIANT_VALIDATION','Variant generation is partial, not accepted')
             # Appearance randomization is encoded into IR, not patched in generated MJCF.
             ir=read_json(target/'ir.json')
             appearance={**ir['meta'].get('appearance',{}),'light_multiplier':float(rng.uniform(.8,1.2)),
@@ -94,17 +115,17 @@ def collect_variants(scene,output,variants=10,seconds=60):
                 fal_records+=fal.prefetch(fal.material_jobs(appearance['materials']['seed']),budget_usd=budget,spent_usd=sum(r['cost_usd'] for r in fal_records))
                 write_json(output/'fal_calls.json',fal_records)
             ir['meta']['appearance']=appearance
-            factors=dict(layout_seed=i+100,clutter_counts=counts,**appearance)
+            factors=dict(layout_seed=seed,clutter_counts=counts,**appearance)
             write_json(target/'ir.json',ir);compile_scene(ir,target)
-            validation=validate_scene(target)
+            validation=validate_scene(target,require_articulated=config.get('layout_backend')!='architecture',robot_radius=config.get('robot_radius'))
             if not validation['passed']:
                 raise PipelineError('VARIANT_VALIDATION','Appearance variant failed validation',validation)
             tier='full' if i<3 else 'state'
             report=run(target,'mapping',target/'mapping',seconds=seconds,tier=tier,seed=i)
             results.append(dict(variant=i,tier=tier,factors=factors,report=report,streams=inspect(target/'mapping'/'data.h5')))
         except PipelineError as exc:
-            results.append(dict(variant=i,error=exc.as_dict()))
-    summary=dict(schema_version=1,variants=results,passed=all(x.get('report',{}).get('passed',False) for x in results),
+            results.append(dict(variant=i,layout_seed=seed,error=exc.as_dict()))
+    summary=dict(schema_version=1,start_seed=start_seed,variants=results,passed=all(x.get('report',{}).get('passed',False) for x in results),
                  tier_rationale='Three RGB-D runs; remaining runs avoid rendering overhead while retaining state/range/IMU observations and truth.',
                  randomization='Per variant: layout seed (object placement), clutter counts x0.7-1.3 for containers/jars/bottles/trays and decor, light multiplier 0.8-1.2, material tint, texture repeat, and with --materials fal the PBR texture set seed (0-2); factors recorded per variant.')
     write_json(output/'dataset.json',summary)

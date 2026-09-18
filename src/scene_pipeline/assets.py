@@ -169,9 +169,20 @@ def scale_native(source, factor):
     return spec
 
 
-def instantiate(category, destination, *, vendor=Path('vendor/robocasa_native'), scale=1., family=None, dimensions=None, dimension_basis=None):
+def instantiate(category, destination, *, vendor=None, scale=1., family=None, dimensions=None, dimension_basis=None,asset_ref=None,generated_request=None):
+    if asset_ref is not None:
+        from .asset_library import materialize
+        folder,package=materialize(asset_ref,destination)
+        if package['category']!=category or dimensions is not None or family is not None or scale!=1:
+            raise PipelineError('ASSET_IDENTITY','Retrieved references require matching categories and unmodified native geometry')
+        return folder,package
+    from .resources import vendor_path
+    vendor=vendor if vendor is not None else vendor_path('robocasa_native')
     try:
-        config = lookup(category)
+        if generated_request is not None:
+            from .generated import config_from_request
+            config = config_from_request(generated_request)
+        else:config = lookup(category)
     except PipelineError:
         # Open-vocabulary category: resolved dimensions are mandatory; the family defaults to the grey box.
         if dimensions is None or dimension_basis is None:

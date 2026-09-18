@@ -22,6 +22,8 @@ from .sensors import attach_rig,sensor,noisy_ranges,NOISE,semantic_masks
 from .dataset import Recorder,inspect
 from .validation import aabbs
 from .registry import CATALOG
+from .resources import vendor_path
+from .runtime import Runtime, using, request
 
 
 def belongs_to(model, geom, prefix):
@@ -30,7 +32,7 @@ def belongs_to(model, geom, prefix):
 
 
 REACH=.6
-GOAL_ALIASES={**{k:k for k in CATALOG},'refrigerator':'fridge','walk-in':'fridge','walk in':'fridge','cold storage':'fridge',
+GOAL_ALIASES={**{k:k for k in CATALOG},'refrigerator':'fridge',
               'drawer':'drawer_unit','cabinet':'base_cabinet','table':'prep_table','prep':'prep_table','shelves':'shelf'}
 
 
@@ -43,10 +45,13 @@ def clearance(xy,lo,hi):
 def resolve_goal(text,manifest,spawn_xy):
     """Free text -> one manifest instance through the semantic layer; never coordinates."""
     instances=manifest['instances'];key=text.strip().lower()
+    if ('walk-in' in key or 'walk in' in key) and not any(e['category']=='walk_in_fridge' for e in instances.values()):
+        raise PipelineError('UNKNOWN_GOAL','No walk-in fridge exists; a reach-in fridge is not an equivalent target')
     if key in instances:matches=[instances[key]]
     else:
-        alias=next((a for a in sorted(GOAL_ALIASES,key=len,reverse=True) if a in key),None)
-        matches=[e for e in instances.values() if alias and e['category']==GOAL_ALIASES[alias]]
+        aliases={**GOAL_ALIASES,**{e['category'].replace('_',' '):e['category'] for e in instances.values()}}
+        alias=next((a for a in sorted(aliases,key=len,reverse=True) if __import__('re').search(r'\b'+__import__('re').escape(a)+r'\b',key)),None)
+        matches=[e for e in instances.values() if alias and e['category']==aliases[alias]]
     if not matches:raise PipelineError('UNKNOWN_GOAL',f'No semantic instance matches {text!r}',{'categories':sorted({e['category'] for e in instances.values()})})
     matches.sort(key=lambda e:np.linalg.norm(np.asarray(e['position'][:2])-np.asarray(spawn_xy)))
     chosen=matches[0]
@@ -96,7 +101,7 @@ def _robot_spec(root,flow,offset,placement=None):
     for key in list(spec.keys):spec.delete(key)
     ir=read_json(root/'ir.json');manifest=read_json(root/'manifest.json')
     if flow in ('mapping','navigate'):
-        path=Path('vendor/mujoco_menagerie/robot_soccer_kit/robot_soccer_kit.xml')
+        path=vendor_path('mujoco_menagerie/robot_soccer_kit/robot_soccer_kit.xml')
         prefix='base/';position,yaw=placement if placement is not None else ([offset,0,0],0.);target=None
         child=_read_spec(path)
         rig=attach_rig(child,'base','rig_',lidar=True)
@@ -106,7 +111,7 @@ def _robot_spec(root,flow,offset,placement=None):
         target=candidates[0];yaw=target['yaw']+math.pi/2
         R=Rotation.from_euler('z',target['yaw'])
         position=(np.array(target['position'])+R.apply([0,-offset,0])).tolist()
-        path=Path('vendor/mujoco_menagerie/franka_emika_panda/panda.xml');prefix='arm/'
+        path=vendor_path('mujoco_menagerie/franka_emika_panda/panda.xml');prefix='arm/'
         child=_read_spec(path)
         child.body('hand').add_site(name='grasp',pos=[0,0,.1034],size=[.003,0,0],rgba=[0,0,0,0])
         rig=attach_rig(child,'link0','rig_',wrench_body='hand')
@@ -315,14 +320,8 @@ def vlm_chunk(mapper,manifest,goal,ranges,frame,work,K,timeout=180):
             f'Nearest range per 45-degree sector, starting behind the robot and going counter-clockwise, metres (null = no return): {sectors}. '
             f'Return up to {steps} actions [vx,vy,wz]; each is held {hold/100:.2f} s; limits |vx|,|vy|<=.3 m/s, |wz|<=1 rad/s. '
             f'Set arrived=true only when within {REACH} m of the goal. Output only JSON matching the schema.')
-    command=['codex','exec','--sandbox','read-only','--skip-git-repo-check','--ignore-user-config','--ephemeral','--json',
-             '--output-schema',str((work/'chunk.schema.json').resolve()),'--output-last-message',str((work/'chunk.json').resolve()),'--cd',str(work.resolve())]
-    if frame is not None:Image.fromarray(frame).save(work/'frame.png');command[2:2]=['-i',str((work/'frame.png').resolve())]
-    try:result=subprocess.run(command+[prompt],capture_output=True,text=True,timeout=timeout)
-    except (FileNotFoundError,subprocess.TimeoutExpired) as exc:raise PipelineError('AGENT_UNAVAILABLE',str(exc)) from exc
-    (work/'trajectory.jsonl').write_text(result.stdout);(work/'agent.stderr.log').write_text(result.stderr)
-    if result.returncode or not (work/'chunk.json').exists():raise PipelineError('AGENT_FAILED','VLM policy call failed',{'returncode':result.returncode,'work':str(work)})
-    reply=read_json(work/'chunk.json')
+    if frame is not None:Image.fromarray(frame).save(work/'frame.png')
+    reply=request(prompt,read_json(work/'chunk.schema.json'),work,timeout=timeout,name='chunk',image=work/'frame.png' if frame is not None else None)
     actions=np.clip(np.array(reply['actions'],dtype=float).reshape(-1,3),[-.3,-.3,-1],[.3,.3,1])
     chunk=np.repeat(actions,hold,axis=0)[:K]
     # ponytail: open-loop chunk, no ACT-style temporal ensembling; add when a learned policy replaces the VLM.
@@ -380,7 +379,18 @@ class DrawerController:
                 controller='Position/orientation IK -> native Panda actuators; no object commands; success must be measured')
 
 
-def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='planner',video=True):
+def run(scene,flow,output,*,agent_backend='codex',model=None,timeout=900,max_cost_usd=None,runtime=None,**kwargs):
+    if Path(output).exists():raise PipelineError('OUTPUT_EXISTS',str(output))
+    runtime=runtime or Runtime(backend=agent_backend,model=model,deadline=time.monotonic()+timeout,max_cost_usd=max_cost_usd)
+    if not math.isfinite(timeout) or timeout<=0:raise PipelineError('TIME_BUDGET','Timeout must be finite and positive')
+    runtime.deadline=min(runtime.deadline,time.monotonic()+timeout) if runtime.deadline is not None else time.monotonic()+timeout
+    with using(runtime):
+        try:return _run(scene,flow,output,**kwargs)
+        finally:
+            if Path(output).exists():write_json(Path(output)/'agent_calls.json',runtime.calls)
+
+
+def _run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='planner',video=True):
     scene=Path(scene);output=Path(output)
     if output.exists():raise PipelineError('OUTPUT_EXISTS',str(output))
     if not 0<seconds<=60:raise PipelineError('FLOW_DURATION','Flow duration must be (0,60] simulated seconds')
@@ -478,6 +488,9 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
                           estimated_distance_m=est_d,true_distance_m=true_d,reach_m=REACH,path_length_m=actual_travel,reached=bool(true_d<=REACH),passed=bool(true_d<=REACH),
                           acceptance='true final base distance to the goal instance bounds within reach; goal resolved from the semantic manifest, not coordinates')
             result['controller_inputs'].append('goal instance id/position resolved from the semantic manifest')
+            result['ground_truth_usage']='Static semantic manifest supplies the goal; live robot truth is used for post-rollout scoring only'
+            if policy=='vlm':
+                result['controller_inputs'].append('static object positions from scene manifest (known-map prior, not perception)')
     result.update(flow=flow,simulated_seconds=float(data.time),wall_seconds=time.perf_counter()-started,warnings=warnings.tolist(),streams=inspect(output/'data.h5'))
     if frames:
         frames[0].save(output/'flow.gif',save_all=True,append_images=frames[1:],duration=100,loop=0)
@@ -487,4 +500,6 @@ def run(scene,flow,output,*,seconds=60,tier='full',seed=0,goal=None,policy='plan
         try:result['video']=encode(output)['video']
         except PipelineError as exc:result['video_error']=exc.as_dict()
         write_json(output/'report.json',result)
+    from .inspection import scene_page
+    scene_page(output)
     return result

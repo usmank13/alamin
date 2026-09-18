@@ -52,17 +52,28 @@ FIELD = dict(type='array', items={'type': 'string', 'minLength': 1}, minItems=3,
 EVIDENCE = {'oneOf': [obj({'prompt_quote': {'type': 'string', 'minLength': 1}}),
                       obj({'url': {'type': 'string', 'pattern': '^https?://'}, 'identity': {'type': 'string', 'minLength': 1},
                            'fields': obj({'width': FIELD, 'depth': FIELD, 'height': FIELD})})]}
+ASSET_REQUEST=obj({'query':{'type':'string','minLength':1,'maxLength':300},
+    'candidate_id':{'type':'string','minLength':1,'maxLength':400},
+    'mode':{'type':'string','enum':['static','articulated','dynamic']},
+    'placement':{'type':'string','enum':['freestanding','support','wall']}},required=['query'])
+GENERATED_REQUEST=obj({'prompt':{'type':'string','minLength':1,'maxLength':900},
+    'size_m':{'type':'number','minimum':.02,'maximum':2.},
+    'placement':{'type':'string','enum':['support','freestanding']},
+    'physical_use':{'type':'string','const':'visual_only'}})
 PROGRAM_SCHEMA = obj({
     'schema_version': {'type':'integer','const': VERSION},
     'prompt': {'type': 'string', 'minLength': 1},
     'space': obj({'kind': {'type':'string','minLength':1,'maxLength':100},
                   'area_m2': {'type': 'number', 'minimum': 30, 'maximum': 120},
                   'shape': {'type':'string','enum': ['rectangle', 'l_shape']},
-                  'annexes': {'type': 'integer', 'minimum': 0, 'maximum': 2}}),
+                  'annexes': {'type': 'integer', 'minimum': 0, 'maximum': 2},
+                  'inferred_fields': {'type':'array','uniqueItems':True,'items':{'type':'string','enum':['kind','area_m2','shape','annexes']}}},
+                 required=['kind','area_m2','shape','annexes']),
     'objects': {'type': 'array', 'minItems': 1, 'maxItems': 100, 'items': obj({
         'id': ID, 'category': ID, 'count': {'type': 'integer', 'minimum': 1, 'maximum': 50},
         'zone': ID, 'required': {'type': 'boolean'},
         'family': FAMILY, 'dimensions_m': SIZE, 'dimension_evidence': EVIDENCE,
+        'asset_ref':{'type':'string','pattern':'^[0-9a-f]{64}$'},'asset_request':ASSET_REQUEST,'generated_request':GENERATED_REQUEST,
         'dimension_basis': {'type': 'string', 'enum': ['user_quoted', 'sourced', 'user_quoted_and_sourced']}},
         required=['id', 'category', 'count', 'zone', 'required'])},
     'relations': {'type': 'array', 'items': obj({'kind': {'type':'string','enum': ['against_wall', 'near', 'in_row', 'under']},
@@ -102,6 +113,9 @@ def validate_program(program):
         if not set(relation['objects']) <= set(ids):
             raise PipelineError('UNKNOWN_REFERENCE', 'Relation references an absent object')
     for o in program['objects']:
+        if any(k in o for k in ('asset_ref','asset_request','generated_request')):
+            if sum(k in o for k in ('asset_ref','asset_request','generated_request'))>1 or any(k in o for k in ('family','dimensions_m','dimension_evidence','dimension_basis')):
+                raise PipelineError('ASSET_CONTRACT','Use an asset request/reference OR a sized template; native asset dimensions cannot be silently overridden',o['id'])
         evidence, basis = o.get('dimension_evidence'), o.get('dimension_basis')
         if evidence is not None and basis is not None:
             raise PipelineError('UNBOUND_MEASUREMENT', 'Unresolved evidence and a resolved basis cannot coexist', o['id'])

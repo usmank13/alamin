@@ -21,11 +21,21 @@ def freeze(program, *, authority):
 
 def check_revision(intent,program):
     validate_program(program)
-    if program['prompt']!=intent['prompt'] or program['space']!=intent['space']:
+    agent=intent['authority']=='agent_program_not_independently_verified'
+    inferred=intent['space'].get('inferred_fields',[]) if agent else []
+    fixed_space=[k for k in intent['space'] if k!='inferred_fields' and k not in inferred]
+    if program['prompt']!=intent['prompt'] or any(program['space'].get(k)!=intent['space'][k] for k in fixed_space):
         raise PipelineError('INTENT_DRIFT','Repair changed the prompt or space requirement')
     by_id={r['id']:r for r in program['objects']}
     for original in intent['requirements']:
-        if original['required'] and by_id.get(original['id'])!=original:
+        if not original['required']:continue
+        revised=by_id.get(original['id'],{})
+        # Required inventory is semantic, not a commitment to the first retrieved
+        # package or inferred template. Supplied programs retain exact contracts.
+        keys=['id','category','count','zone','required'] if agent else list(original)
+        if (original.get('dimension_evidence') or {}).get('prompt_quote') or original.get('dimension_basis','').startswith('user_quoted'):
+            keys+=['dimensions_m','dimension_evidence','dimension_basis']
+        if (not agent and revised!=original) or any(revised.get(k)!=original.get(k) for k in keys):
             raise PipelineError('INTENT_DRIFT','Repair changed a frozen required object request',original)
     for relation in intent['relations']:
         if relation['required'] and relation not in program['relations']:

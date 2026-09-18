@@ -98,6 +98,14 @@ def export_urdf(root,output=None):
                   fidelity=dict(preserved=['metric geometry','hinge/slide frames and limits','mass and inertia','dynamic clutter as separate roots','semantic sidecar'],
                                 approximated=['joint friction','effort/velocity limits use export defaults'],
                                 omitted=['textures/PBR','MuJoCo solver/contact masks','springs/armature','actuators','sensor rigs']))
+    import shutil
+    metadata['asset_licenses']={}
+    for instance in read_json(root/'ir.json')['objects']:
+        package=(root/instance['asset']).parent;licenses=package/'licenses'
+        if licenses.exists():
+            relative=Path('licenses')/instance['asset_key']
+            shutil.copytree(licenses,output/relative,dirs_exist_ok=True)
+            metadata['asset_licenses'][instance['asset_key']]=str(relative)
     write_json(output/'package.json',metadata)
     return output
 

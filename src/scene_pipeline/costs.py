@@ -8,7 +8,11 @@ from .contracts import PipelineError,read_json,write_json
 def tokens(root):
     """Sum Codex `turn.completed` usage over attempt trajectories; None when no agent ran."""
     total=None
-    for path in sorted(Path(root).glob('attempts/*/trajectory.jsonl')):
+    calls=Path(root)/'agent_calls.json'
+    if calls.exists():
+        records=read_json(calls)
+        return dict(input=sum(r.get('input_tokens',0) or 0 for r in records),output=sum(r.get('output_tokens',0) or 0 for r in records)) if records else None
+    for path in sorted((Path(root)/'attempts').rglob('trajectory.jsonl')):
         for line in path.read_text().splitlines():
             try:event=json.loads(line)
             except ValueError:continue
@@ -60,7 +64,7 @@ def table(artifacts,output,usd_in=None,usd_out=None):
         t=r.get('tokens');lines.append(f"| {r['artifact']} | {r['stage']} | {fmt(r.get('wall_s'))} | {fmt(r.get('sim_s'))} | {fmt(r.get('attempts'))} | "
                                     f"{f'{t['input']}/{t['output']}' if t else 'n/a'} | {fmt(r.get('api_spend_usd'))} | {fmt(r.get('passed'))} |")
     lines.append(f'| **total** | | **{total:.1f}** | | | | | |')
-    note=('\n\nWall seconds are measured on this CPU-only machine. `n/a` spend means the Codex CLI reports tokens but no price; '
+    note=('\n\nWall seconds are measured for this run; physics and current Cycles rendering use the CPU. `n/a` spend means billing was unavailable; '
           'pass `--usd-per-mtok-in/--usd-per-mtok-out` to price them. Deterministic stages have no API spend. '
           'fal rows are list price at request time with cache hits at 0, not provider billing.\n')
     output.write_text('# Cost and timing table\n\n'+'\n'.join(lines)+note)

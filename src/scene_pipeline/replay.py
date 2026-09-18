@@ -33,7 +33,21 @@ def video(root,fps=5):
             camera.lookat[:]=data.xpos[bodies[0]]+rotation@np.array([0,-.35,.6])
             camera.distance=2.8;camera.azimuth=float(np.degrees(np.arctan2(rotation[1,0],rotation[0,0]))+135);camera.elevation=-25
         else:
-            camera.distance*=1.3;camera.elevation=-60
+            # Imported meshes can inflate MuJoCo's default model extent. Frame
+            # the actual finite room floor so the robot and aisles stay visible.
+            floors=[i for i in range(model.ngeom) if model.geom(i).name.startswith('floor_')]
+            if floors:
+                corners=[]
+                for i in floors:
+                    rotation=data.geom_xmat[i].reshape(3,3)
+                    center=data.geom_xpos[i]+rotation@model.geom_aabb[i,:3]
+                    half=np.abs(rotation)@model.geom_aabb[i,3:]
+                    corners.extend([center-half,center+half])
+                low,high=np.min(corners,axis=0),np.max(corners,axis=0)
+                camera.lookat[:]=[*(low[:2]+high[:2])/2,.6]
+                camera.distance=float(np.linalg.norm(high[:2]-low[:2])*1.1)
+            else:camera.distance*=1.3
+            camera.azimuth=130;camera.elevation=-60
         command=[executable,'-v','error','-n','-f','rawvideo','-pix_fmt','rgb24','-s','480x360','-r',str(fps),
                  '-i','pipe:0','-an','-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',str(destination)]
         with (root/'replay.stderr.log').open('w') as log:

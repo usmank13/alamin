@@ -57,8 +57,25 @@ def test_prefetch_caches_ledgers_and_caps(cache):
 def test_prefetch_requires_key_only_for_uncached_jobs(cache,monkeypatch):
     fake=FakeFal();fal.prefetch(fal.material_jobs(0)[:1],http=fake.http,download=fake.download,interval=0)
     monkeypatch.delenv('FAL_KEY')
+    monkeypatch.delenv('FAL_API_KEY',raising=False)
     assert fal.prefetch(fal.material_jobs(0)[:1],http=fake.http,download=fake.download)[0]['cached']
     with pytest.raises(PipelineError,match='FAL_KEY'):fal.prefetch(fal.material_jobs(0)[1:2],http=fake.http,download=fake.download)
+
+
+def test_api_key_alias_and_scene_local_floor_override(cache,tmp_path,monkeypatch):
+    monkeypatch.delenv('FAL_KEY');monkeypatch.setenv('FAL_API_KEY','test-alias')
+    prompt='seamless natural oak plank flooring'
+    model,payload=fal.patina_request('floor_tile',prompt=prompt)
+    fake=FakeFal();fal.prefetch([dict(kind='material',finish='floor_tile',model=model,payload=payload)],http=fake.http,download=fake.download,interval=0)
+    ir=solve(load('examples/cafe_program.py'),1,tmp_path)
+    ir['meta']['appearance']={'materials':dict(source='fal',overrides={'floor_tile':dict(prompt=prompt,tile_m=2.)})}
+    write_json(tmp_path/'ir.json',ir);compile_scene(ir,tmp_path)
+    report=json.loads((tmp_path/'manifest.json').read_text())['materials']
+    assert report['realized']['floor_tile']['prompt']==prompt
+    assert report['realized']['floor_tile']['tile_m']==2.
+    assert fal.cached(*fal.patina_request('floor_tile')) is None
+    compiled=mujoco.MjSpec.from_zip(str(tmp_path/'scene.mjz')).compile()
+    assert compiled.mat_texrepeat[compiled.material('pbr_floor_tile').id].tolist()==pytest.approx([.5,.5])
 
 
 def test_compiler_realizes_pbr_layers_once_and_degrades_per_finish(cache,tmp_path):
@@ -92,7 +109,7 @@ def test_flat_mode_keeps_placeholders_and_checker(tmp_path):
 
 def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
     import trimesh
-    box=trimesh.creation.box(extents=[.5,.3,1.])  # trimesh writes/reads glTF Y-up; the 1.0 m Z axis must survive the round trip
+    box=trimesh.creation.box(extents=[.5,1.,.3])  # genuine glTF Y-up: height is the 1.0 m Y axis
     box.visual=trimesh.visual.TextureVisuals(uv=np.zeros((len(box.vertices),2)),image=Image.fromarray(np.full((4,4,3),90,np.uint8)))
     fake=FakeFal(glb=box.export(file_type='glb'))
     program=parse('scene("a prep table with mugs and a kettle",space(area_m2=40),[place("table","prep_table"),place("mugs","mug",count=2,required=False),place("kettle","kettle",required=False)])')
@@ -104,6 +121,7 @@ def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
     mugs=[o for o in ir['objects'] if o['category']=='mug']
     assert len(mugs)==2 and all(o['support_parent']=='table_0' for o in mugs) and not any(o['dynamic'] for o in mugs)
     assert mugs[0]['dimensions'][2]==pytest.approx(.105,abs=1e-6) and mugs[0]['source_classification']['allowed_use']=='visual_only'
+    assert mugs[0]['dimensions'][:2]==pytest.approx([.0525,.0315],abs=1e-6)
     write_json(tmp_path/'warm'/'ir.json',ir);compile_scene(ir,tmp_path/'warm')
     inventory=json.loads((tmp_path/'warm'/'provenance.json').read_text());assert inventory['counts']['generated']==3
     manifest=json.loads((tmp_path/'warm'/'manifest.json').read_text())
@@ -112,3 +130,59 @@ def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
     decor=[i for i in range(model.ngeom) if model.geom(i).name.startswith('mugs_0/')]
     assert decor and all(model.geom_type[i]==mujoco.mjtGeom.mjGEOM_MESH and not (model.geom_contype[i] or model.geom_conaffinity[i]) for i in decor)
     assert model.mesh_texcoordnum[model.geom_dataid[decor[0]]]>0
+
+
+@pytest.mark.parametrize('category',['tea_towel','jar'])
+def test_novel_generated_category_registers_and_replays_without_fal(cache,tmp_path,monkeypatch,category):
+    import trimesh
+    from scene_pipeline.orchestrator import generate
+    from scene_pipeline.asset_library import verify,registered_assets
+    from scene_pipeline.contracts import read_json,validate_program
+    program=load('examples/cafe_program.py')
+    request=dict(prompt='a '+category.replace('_',' '),size_m=.2,placement='support',physical_use='visual_only')
+    program['objects'].append(dict(id='decor',category=category,count=2,zone='main',required=True,generated_request=request))
+    fake=FakeFal(glb=trimesh.creation.box(extents=[.2,.03,.15]).export(file_type='glb'))
+    jobs=fal.decor_jobs(program)
+    assert len(jobs)==1
+    fal.prefetch(jobs,http=fake.http,download=fake.download,interval=0)
+    store=tmp_path/'library';scene=tmp_path/'scene'
+    assert generate(program['prompt'],1,scene,program=program,clutter='fal',asset_store=store,preview=False)['passed']
+    resolved=read_json(scene/'program.json');item=resolved['objects'][-1]
+    assert 'generated_request' not in item and item['asset_ref']
+    asset=verify(store/'packages'/item['asset_ref'])
+    assert asset['capabilities']['visual_only'] and not asset['capabilities']['articulated']
+    assert asset['provenance']['size_basis']=='agent_estimate_visual_only_not_measured'
+    assert registered_assets(category.replace('_',' '),store)[0]['asset_ref']==item['asset_ref']
+    assert all(o['source_classification']['allowed_use']=='visual_only' for o in read_json(scene/'ir.json')['objects'] if o['category']==category)
+    metrics=[m for m in read_json(scene/'validation.json')['metrics'] if m['category']==category]
+    assert metrics and all(m['mass_ok'] is None and m['mass_check_scope']=='not_applicable_visual_only_no_contact_geometry' for m in metrics)
+    monkeypatch.setattr(fal,'_http',lambda *a,**k:pytest.fail('A registered asset must replay offline'))
+    assert generate(program['prompt'],1,tmp_path/'replay',program=resolved,asset_store=store,preview=False)['passed']
+    bad={**item,'generated_request':request}
+    resolved['objects'][-1]=bad
+    with pytest.raises(PipelineError,match='asset request/reference'):validate_program(resolved)
+
+
+def test_generated_request_cannot_claim_contact_capability():
+    program=load('examples/cafe_program.py')
+    program['objects'].append(dict(id='novel',category='novel',count=1,zone='main',required=True,
+        generated_request=dict(prompt='a prop',size_m=.2,placement='support',physical_use='contact_rich')))
+    from scene_pipeline.contracts import validate_program
+    with pytest.raises(PipelineError,match='visual_only'):validate_program(program)
+
+
+def test_supported_object_can_turn_to_fit(cache,tmp_path,monkeypatch):
+    import math
+    import trimesh
+    from scene_pipeline.asset_library import register_generated
+    request=dict(prompt='a long rectangular visual prop',size_m=1.,placement='support',physical_use='visual_only')
+    fake=FakeFal(glb=trimesh.creation.box(extents=[.55,.1,1.]).export(file_type='glb'))
+    fal.prefetch(fal.decor_jobs({'objects':[dict(category='long_prop',generated_request=request)]}),
+                 http=fake.http,download=fake.download,interval=0)
+    store=tmp_path/'library';monkeypatch.setenv('SCENE_PIPELINE_ASSET_STORE',str(store))
+    _,asset=register_generated('long_prop',request,store=store)
+    program=parse('scene("A work surface and a long prop",space(area_m2=30),[place("prop","long_prop",asset_ref="'+asset['key']+'"),place("table","prep_table")])')
+    ir=solve(program,23,tmp_path/'scene');by_id={o['id']:o for o in ir['objects']}
+    prop,table=by_id['prop_0'],by_id['table_0']
+    assert prop['support_parent']=='table_0'
+    assert abs(math.sin(prop['yaw']-table['yaw']))==pytest.approx(1.)

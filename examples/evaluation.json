@@ -1,0 +1,366 @@
+{
+  "schema_version": 1,
+  "note": "Mechanism smoke: shared storage vocabulary plus one dimensioned novel object per domain. Not a test of realistic domain-specific equipment or layouts.",
+  "cases": [
+    {
+      "id": "kitchen",
+      "domain": "kitchen",
+      "prompt": "A rectangular 48 square metre catering kitchen with one entrance, three base cabinets, two drawer units, a shelf, six jars and a packing table 1.4 m wide, 0.7 m deep and 0.9 m high.",
+      "expected_counts": {
+        "base_cabinet": 3,
+        "drawer_unit": 2,
+        "shelf": 1,
+        "jar": 6,
+        "packing_table": 1
+      },
+      "expected_dimensions_m": {
+        "packing_table": [
+          1.4,
+          0.7,
+          0.9
+        ]
+      },
+      "program": {
+        "schema_version": 2,
+        "prompt": "A rectangular 48 square metre catering kitchen with one entrance, three base cabinets, two drawer units, a shelf, six jars and a packing table 1.4 m wide, 0.7 m deep and 0.9 m high.",
+        "space": {
+          "kind": "kitchen",
+          "area_m2": 48,
+          "shape": "rectangle",
+          "annexes": 0
+        },
+        "objects": [
+          {
+            "id": "cabinets",
+            "category": "base_cabinet",
+            "count": 3,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "drawers",
+            "category": "drawer_unit",
+            "count": 2,
+            "zone": "work",
+            "required": true
+          },
+          {
+            "id": "shelf",
+            "category": "shelf",
+            "count": 1,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "jars",
+            "category": "jar",
+            "count": 6,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "special",
+            "category": "packing_table",
+            "count": 1,
+            "zone": "work",
+            "required": true,
+            "family": "table",
+            "dimensions_m": [
+              1.4,
+              0.7,
+              0.9
+            ],
+            "dimension_evidence": {
+              "prompt_quote": "1.4 m wide, 0.7 m deep and 0.9 m high"
+            }
+          }
+        ],
+        "relations": [],
+        "architecture": {
+          "openings": [
+            {
+              "id": "entry",
+              "kind": "door",
+              "count": 1,
+              "role": "entrance",
+              "required": true,
+              "origin": "explicit"
+            }
+          ],
+          "relationships": [],
+          "unsupported_requirements": []
+        }
+      }
+    },
+    {
+      "id": "clinic",
+      "domain": "clinic",
+      "prompt": "A rectangular 40 square metre clinic supply room with one entrance, three base cabinets, two drawer units, a shelf, six jars and a treatment chair 0.7 m wide, 0.7 m deep and 1.36 m high. Represent the chair as a static dimensional proxy.",
+      "expected_counts": {
+        "base_cabinet": 3,
+        "drawer_unit": 2,
+        "shelf": 1,
+        "jar": 6,
+        "treatment_chair": 1
+      },
+      "expected_dimensions_m": {
+        "treatment_chair": [
+          0.7,
+          0.7,
+          1.36
+        ]
+      },
+      "program": {
+        "schema_version": 2,
+        "prompt": "A rectangular 40 square metre clinic supply room with one entrance, three base cabinets, two drawer units, a shelf, six jars and a treatment chair 0.7 m wide, 0.7 m deep and 1.36 m high. Represent the chair as a static dimensional proxy.",
+        "space": {
+          "kind": "clinic",
+          "area_m2": 40,
+          "shape": "rectangle",
+          "annexes": 0
+        },
+        "objects": [
+          {
+            "id": "cabinets",
+            "category": "base_cabinet",
+            "count": 3,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "drawers",
+            "category": "drawer_unit",
+            "count": 2,
+            "zone": "work",
+            "required": true
+          },
+          {
+            "id": "shelf",
+            "category": "shelf",
+            "count": 1,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "jars",
+            "category": "jar",
+            "count": 6,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "special",
+            "category": "treatment_chair",
+            "count": 1,
+            "zone": "work",
+            "required": true,
+            "family": "box",
+            "dimensions_m": [
+              0.7,
+              0.7,
+              1.36
+            ],
+            "dimension_evidence": {
+              "prompt_quote": "0.7 m wide, 0.7 m deep and 1.36 m high"
+            }
+          }
+        ],
+        "relations": [],
+        "architecture": {
+          "openings": [
+            {
+              "id": "entry",
+              "kind": "door",
+              "count": 1,
+              "role": "entrance",
+              "required": true,
+              "origin": "explicit"
+            }
+          ],
+          "relationships": [],
+          "unsupported_requirements": []
+        }
+      }
+    },
+    {
+      "id": "electronics",
+      "domain": "electronics workshop",
+      "prompt": "A rectangular 60 square metre electronics workshop with one entrance, three base cabinets, two drawer units, a shelf, six jars and an electronics workbench 1.5 m wide, 0.75 m deep and 0.9 m high.",
+      "expected_counts": {
+        "base_cabinet": 3,
+        "drawer_unit": 2,
+        "shelf": 1,
+        "jar": 6,
+        "electronics_workbench": 1
+      },
+      "expected_dimensions_m": {
+        "electronics_workbench": [
+          1.5,
+          0.75,
+          0.9
+        ]
+      },
+      "program": {
+        "schema_version": 2,
+        "prompt": "A rectangular 60 square metre electronics workshop with one entrance, three base cabinets, two drawer units, a shelf, six jars and an electronics workbench 1.5 m wide, 0.75 m deep and 0.9 m high.",
+        "space": {
+          "kind": "electronics workshop",
+          "area_m2": 60,
+          "shape": "rectangle",
+          "annexes": 0
+        },
+        "objects": [
+          {
+            "id": "cabinets",
+            "category": "base_cabinet",
+            "count": 3,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "drawers",
+            "category": "drawer_unit",
+            "count": 2,
+            "zone": "work",
+            "required": true
+          },
+          {
+            "id": "shelf",
+            "category": "shelf",
+            "count": 1,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "jars",
+            "category": "jar",
+            "count": 6,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "special",
+            "category": "electronics_workbench",
+            "count": 1,
+            "zone": "work",
+            "required": true,
+            "family": "table",
+            "dimensions_m": [
+              1.5,
+              0.75,
+              0.9
+            ],
+            "dimension_evidence": {
+              "prompt_quote": "1.5 m wide, 0.75 m deep and 0.9 m high"
+            }
+          }
+        ],
+        "relations": [],
+        "architecture": {
+          "openings": [
+            {
+              "id": "entry",
+              "kind": "door",
+              "count": 1,
+              "role": "entrance",
+              "required": true,
+              "origin": "explicit"
+            }
+          ],
+          "relationships": [],
+          "unsupported_requirements": []
+        }
+      }
+    },
+    {
+      "id": "manufacturing",
+      "domain": "manufacturing workcell",
+      "prompt": "A rectangular 90 square metre manufacturing workcell with one entrance, three base cabinets, two drawer units, a shelf, six jars and an assembly bench 1.8 m wide, 0.8 m deep and 0.9 m high.",
+      "expected_counts": {
+        "base_cabinet": 3,
+        "drawer_unit": 2,
+        "shelf": 1,
+        "jar": 6,
+        "assembly_bench": 1
+      },
+      "expected_dimensions_m": {
+        "assembly_bench": [
+          1.8,
+          0.8,
+          0.9
+        ]
+      },
+      "program": {
+        "schema_version": 2,
+        "prompt": "A rectangular 90 square metre manufacturing workcell with one entrance, three base cabinets, two drawer units, a shelf, six jars and an assembly bench 1.8 m wide, 0.8 m deep and 0.9 m high.",
+        "space": {
+          "kind": "manufacturing workcell",
+          "area_m2": 90,
+          "shape": "rectangle",
+          "annexes": 0
+        },
+        "objects": [
+          {
+            "id": "cabinets",
+            "category": "base_cabinet",
+            "count": 3,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "drawers",
+            "category": "drawer_unit",
+            "count": 2,
+            "zone": "work",
+            "required": true
+          },
+          {
+            "id": "shelf",
+            "category": "shelf",
+            "count": 1,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "jars",
+            "category": "jar",
+            "count": 6,
+            "zone": "storage",
+            "required": true
+          },
+          {
+            "id": "special",
+            "category": "assembly_bench",
+            "count": 1,
+            "zone": "work",
+            "required": true,
+            "family": "table",
+            "dimensions_m": [
+              1.8,
+              0.8,
+              0.9
+            ],
+            "dimension_evidence": {
+              "prompt_quote": "1.8 m wide, 0.8 m deep and 0.9 m high"
+            }
+          }
+        ],
+        "relations": [],
+        "architecture": {
+          "openings": [
+            {
+              "id": "entry",
+              "kind": "door",
+              "count": 1,
+              "role": "entrance",
+              "required": true,
+              "origin": "explicit"
+            }
+          ],
+          "relationships": [],
+          "unsupported_requirements": []
+        }
+      }
+    }
+  ]
+}

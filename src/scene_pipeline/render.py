@@ -55,10 +55,19 @@ def preview(root, *, cutaway=True):
         ImageDraw.Draw(source_view).text((12,12),'Sources: blue=procedural / orange=retrieved / purple=generated',fill='white')
         source_view.save(root/'provenance.png')
     model.geom_rgba[:]=rgba
-    report=read_json(root/'validation.json') if (root/'validation.json').exists() else {}
-    import html
-    rows=''.join('<tr>'+''.join('<td>'+html.escape(str(value))+'</td>' for value in [key,entry['category'],entry.get('source_classification',{}).get('origin','legacy/unknown'),entry.get('source_classification',{}).get('provider',''),entry.get('source_classification',{}).get('allowed_use','')])+'</tr>' for key,entry in manifest['instances'].items())
-    (root/'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Scene inspection</title><style>body{font-family:sans-serif;max-width:1300px;margin:2em auto}td,th{padding:.4em;text-align:left}img{max-width:100%}pre{white-space:pre-wrap}</style><h1>Scene inspection</h1><p>Cutaway views; joint animation is kinematic, not robot manipulation.</p><img src="preview.png"><img src="articulation.gif"><h2>Object provenance</h2><img src="provenance.png"><p>Origin does not certify contact-rich suitability.</p><table><tr><th>Instance</th><th>Category</th><th>Origin</th><th>Provider</th><th>Allowed use</th></tr>'+rows+'</table><p><a href="ir.json">SceneIR</a> | <a href="manifest.json">Semantics</a> | <a href="provenance.json">Provenance JSON</a> | <a href="validation.json">Validation</a> | <a href="render/cycles.png">Cycles still</a></p><pre>'+html.escape(str(report))+'</pre>')
+    plan=Image.new('RGB',(800,800),'white');draw=ImageDraw.Draw(plan);scale=690/max(high-low)
+    def xy(p):return (55+(p[0]-low[0])*scale,745-(p[1]-low[1])*scale)
+    for room in ir['rooms']:draw.polygon([xy(p) for p in room['polygon']],fill='#eceff3',outline='#223344',width=3)
+    for obj in ir['objects']:
+        x,y=obj['position'][:2];w,d=obj['dimensions'][:2];c,s=math.cos(obj['yaw']),math.sin(obj['yaw'])
+        polygon=[xy([x+c*a-s*b,y+s*a+c*b]) for a,b in [(-w/2,-d/2),(w/2,-d/2),(w/2,d/2),(-w/2,d/2)]]
+        draw.polygon(polygon,outline='#28618b',width=2);draw.text(xy([x,y]),obj['id'],fill='#112233')
+    for opening in ir['openings']:
+        p=xy(opening['position']);draw.ellipse([p[0]-5,p[1]-5,p[0]+5,p[1]+5],fill='#00895f')
+    draw.text((20,15),'Plan / bounding footprints; green=opening centers; not collision proof',fill='black')
+    plan.save(root/'topdown.png')
+    from .inspection import scene_page
+    scene_page(root)
 
 
 def render_recipe(root, *, view='auto'):
@@ -103,7 +112,8 @@ def cycles(root, *, blender=None, samples=32, resolution=1024,view='auto'):
     recipe=render_recipe(root,view=view)
     executable=blender or shutil.which('blender')
     if not executable:
-        choices=sorted(Path('vendor/blender').glob('blender-*/blender'))
+        from .resources import vendor_path
+        choices=sorted(vendor_path('blender').glob('blender-*/blender'))
         executable=str(choices[-1].resolve()) if choices else None
     if not executable:
         raise PipelineError('MISSING_BLENDER','Install Blender or run scripts/fetch_blender.py; preview is not a path-traced substitute')

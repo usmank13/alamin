@@ -117,8 +117,10 @@ def brief_checks(model,manifest,ir,*,robot_radius):
         category=inst['category'];prefix=name+'/'
         geoms=[i for i in range(model.ngeom) if colliders[i] and model.geom(i).name.startswith(prefix)]
         mass=float(sum(model.body_mass[b] for b in range(model.nbody) if model.body(b).name.startswith(prefix)))
-        band=MASS_BANDS_KG.get(category)
+        visual_only=inst.get('source_classification',{}).get('allowed_use')=='visual_only' and not geoms
+        band=None if visual_only else MASS_BANDS_KG.get(category)
         entry=dict(instance=name,category=category,mass_kg=mass,mass_band_kg=band,mass_ok=None if band is None else bool(band[0]<=mass<=band[1]))
+        if visual_only:entry['mass_check_scope']='not_applicable_visual_only_no_contact_geometry'
         if category in TOP_BANDS_M and geoms:
             top=float(hi[geoms][:,2].max());entry.update(top_m=top,top_band_m=TOP_BANDS_M[category],top_ok=bool(TOP_BANDS_M[category][0]<=top<=TOP_BANDS_M[category][1]))
         if category=='door':

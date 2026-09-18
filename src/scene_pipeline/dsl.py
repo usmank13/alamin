@@ -6,12 +6,13 @@ from pathlib import Path
 from .contracts import PipelineError,validate_program
 
 
-def space(kind='kitchen',area_m2=60,shape='rectangle',annexes=0):
-    return dict(kind=kind,area_m2=area_m2,shape=shape,annexes=annexes)
+def space(kind='kitchen',area_m2=60,shape='rectangle',annexes=0,inferred_fields=None):
+    return dict(kind=kind,area_m2=area_m2,shape=shape,annexes=annexes,
+                **({'inferred_fields':inferred_fields} if inferred_fields is not None else {}))
 
 
-def place(id,category,count=1,zone='main',required=True,family=None,dimensions_m=None,dimension_evidence=None):
-    extra={k:v for k,v in dict(family=family,dimensions_m=dimensions_m,dimension_evidence=dimension_evidence).items() if v is not None}
+def place(id,category,count=1,zone='main',required=True,family=None,dimensions_m=None,dimension_evidence=None,asset_ref=None,asset_request=None,generated_request=None):
+    extra={k:v for k,v in dict(family=family,dimensions_m=dimensions_m,dimension_evidence=dimension_evidence,asset_ref=asset_ref,asset_request=asset_request,generated_request=generated_request).items() if v is not None}
     return dict(id=id,category=category,count=count,zone=zone,required=required,**extra)
 
 

@@ -29,6 +29,9 @@ def check_scene(intent,ir,root):
         if o['category']!='door' and not floor.buffer(1e-6).covers(footprint):
             errors.append(dict(code='OUTSIDE_ROOMS',object=o['id']))
         if o['position'][2]+lo[2]<-.002:errors.append(dict(code='BELOW_FLOOR',object=o['id']))
+        ceilings=[r['height'] for r in ir['rooms'] if Polygon(r['polygon']).intersects(footprint)]
+        if ceilings and o['position'][2]+hi[2]>min(ceilings)+.002:
+            errors.append(dict(code='ABOVE_CEILING',object=o['id']))
     for o in ir['objects']:
         parent=o['support_parent']
         if not parent:continue
@@ -58,7 +61,7 @@ def check_scene(intent,ir,root):
             satisfied=top<=geometry[b['id']][1]+.01 and math.dist(a['position'][:2],b['position'][:2])<.3
         if not satisfied:errors.append(dict(code='REQUIRED_RELATION',relation=relation))
     return dict(schema_version=1,passed=not errors,errors=errors,
-                scope=['required_inventory','required_relations','asset_identity','dimensions','room_containment','floor','support'],
+                scope=['required_inventory','required_relations','asset_identity','dimensions','room_containment','floor','ceiling','support'],
                 unverified=['natural_language_interpretation','functional_zone_geometry','robot_connectivity',
                             'full_scene_distribution'],
                 note='Physics/collisions remain separate; no LLM approval used.')

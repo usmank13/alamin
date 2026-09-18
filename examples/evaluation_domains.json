@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "note": "Representative live prompts, distinct from cabinet-heavy mechanical fixtures. Missing functional coverage must remain visible; no five-cabinet quota. Expected category labels permit no automatic semantic substitutions.",
+  "cases": [
+    {
+      "id": "kitchen",
+      "domain": "commercial kitchen",
+      "expected_area_m2": 70,
+      "prompt": "A rectangular 70 square metre commercial kitchen with one entrance, two preparation counters, one hand-wash sink, one dishwashing sink, one dishwasher, one reach-in fridge, two dry-goods shelves, six trays and eight food containers. Include space for preparation, washing and cold storage. Do not replace a sink with a plain table or a refrigerator with an unrelated cabinet.",
+      "expected_counts": {
+        "counter": 2,
+        "hand_wash_sink": 1,
+        "dishwashing_sink": 1,
+        "dishwasher": 1,
+        "fridge": 1,
+        "shelf": 2,
+        "tray": 6,
+        "container": 8
+      },
+      "required_capabilities": {
+        "hand_wash_sink": [
+          "washing_geometry"
+        ],
+        "dishwashing_sink": [
+          "washing_geometry"
+        ],
+        "fridge": [
+          "cold_storage_access"
+        ]
+      }
+    },
+    {
+      "id": "clinic",
+      "domain": "clinical treatment room",
+      "expected_area_m2": 50,
+      "prompt": "A rectangular 50 square metre clinical treatment room with one entrance, two treatment chairs, one hand-wash sink, one sterilization station, one wheeled instrument cart, two supply cabinets and one sharps container. Preserve the different functions of treatment, sterilization, washing and waste storage; do not substitute generic cabinets for this equipment.",
+      "expected_counts": {
+        "treatment_chair": 2,
+        "hand_wash_sink": 1,
+        "sterilization_station": 1,
+        "instrument_cart": 1,
+        "supply_cabinet": 2,
+        "sharps_container": 1
+      },
+      "required_capabilities": {
+        "treatment_chair": [
+          "seating_geometry"
+        ],
+        "instrument_cart": [
+          "mobile_cart"
+        ],
+        "sterilization_station": [
+          "sterilization_access"
+        ]
+      }
+    },
+    {
+      "id": "electronics",
+      "domain": "electronics repair workshop",
+      "expected_area_m2": 60,
+      "prompt": "A rectangular 60 square metre electronics repair workshop with one entrance, two electronics workbenches, two soldering stations, two oscilloscopes, one inspection microscope, two component drawer units, one storage shelf and twelve parts trays. Group inspection and soldering equipment with the workbenches, and use the drawers and trays for components.",
+      "expected_counts": {
+        "electronics_workbench": 2,
+        "soldering_station": 2,
+        "oscilloscope": 2,
+        "inspection_microscope": 1,
+        "component_drawer_unit": 2,
+        "shelf": 1,
+        "parts_tray": 12
+      },
+      "required_capabilities": {
+        "component_drawer_unit": [
+          "sliding_access"
+        ],
+        "inspection_microscope": [
+          "inspection_geometry"
+        ],
+        "soldering_station": [
+          "tool_geometry"
+        ]
+      }
+    },
+    {
+      "id": "warehouse",
+      "domain": "warehouse and material handling",
+      "expected_area_m2": 100,
+      "prompt": "A rectangular 100 square metre warehouse and material-handling area with one entrance, four pallet racks, six pallets, twelve cartons, two wheeled platform carts, one pallet jack, one packing bench and two safety barriers. Arrange receiving, rack storage, packing and outbound staging as distinct work areas connected by a robot-access aisle. Place four pallets at floor-level rack bays and two in staging; distribute the cartons on the pallets. Keep staging clear of the entrance and the main aisle. Preserve rack bays, pallet fork openings and recognizable handling equipment; report any proxy substitutions. This is a scene-construction test, not a requirement to execute a robot lifting or transport task.",
+      "expected_counts": {
+        "pallet_rack": 4,
+        "pallet": 6,
+        "carton": 12,
+        "platform_cart": 2,
+        "pallet_jack": 1,
+        "packing_bench": 1,
+        "safety_barrier": 2
+      },
+      "capability_probes": {
+        "pallet_rack": [
+          "pallet_support"
+        ],
+        "pallet_jack": [
+          "pallet_engagement",
+          "loaded_lift"
+        ],
+        "platform_cart": [
+          "mobile_cart"
+        ]
+      }
+    }
+  ]
+}

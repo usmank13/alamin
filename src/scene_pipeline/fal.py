@@ -25,8 +25,8 @@ PRICE_BASIS = 'fal list price 2026-09; cache hits cost 0; not provider-reported 
 KEEP = ('.png', '.jpg', '.jpeg', '.webp', '.glb')
 
 
-def patina_request(finish, seed=0):
-    return PATINA, dict(prompt=MATERIALS[finish]['prompt'], image_size='square_hd', seed=int(seed), enable_prompt_expansion=False,
+def patina_request(finish, seed=0, *, prompt=None):
+    return PATINA, dict(prompt=prompt if prompt is not None else MATERIALS[finish]['prompt'], image_size='square_hd', seed=int(seed), enable_prompt_expansion=False,
                         maps=list(PATINA_ROLES), tiling_mode='both', output_format='png')
 
 
@@ -46,8 +46,17 @@ def material_jobs(seed=0):
 
 def decor_jobs(program):
     jobs = []
-    for category in sorted({o['category'] for o in program['objects'] if CATALOG.get(o['category'], {}).get('route') == 'G6'}):
-        model, payload = decor_request(category); jobs.append(dict(kind='decor', category=category, model=model, payload=payload))
+    seen=set()
+    for item in program['objects']:
+        if item.get('asset_ref') or item.get('asset_request'):continue
+        category=item['category'];config=None
+        if item.get('generated_request'):
+            from .generated import config_from_request
+            config=config_from_request(item['generated_request'])
+        elif CATALOG.get(category,{}).get('route')!='G6':continue
+        model,payload=decor_request(category,config);identity=key(model,payload)
+        if identity not in seen:
+            jobs.append(dict(kind='decor',category=category,model=model,payload=payload));seen.add(identity)
     return jobs
 
 
@@ -62,7 +71,7 @@ def cached(model, payload):
 
 def _http(method, url, body=None, timeout=60.):
     request = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None, method=method,
-                                     headers={'Authorization': f"Key {os.environ.get('FAL_KEY', '')}", 'Content-Type': 'application/json'})
+                                     headers={'Authorization': f"Key {os.environ.get('FAL_KEY') or os.environ.get('FAL_API_KEY', '')}", 'Content-Type': 'application/json'})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read())
 
@@ -117,8 +126,8 @@ def prefetch(jobs, *, budget_usd=None, spent_usd=0., deadline_s=600., interval=2
         folder = ROOT/key(job['model'], job['payload']); labels = {k: v for k, v in job.items() if k != 'payload'}
         if (folder/'meta.json').exists():
             records.append(dict(**labels, cached=True, cost_usd=0., request_id=read_json(folder/'meta.json').get('request_id'))); continue
-        if not os.environ.get('FAL_KEY'):
-            raise PipelineError('FAL_CREDENTIALS', 'Set FAL_KEY to generate materials or clutter with fal')
+        if not (os.environ.get('FAL_KEY') or os.environ.get('FAL_API_KEY')):
+            raise PipelineError('FAL_CREDENTIALS', 'Set FAL_KEY or FAL_API_KEY to generate materials or clutter with fal')
         price = PRICE_USD[job['model']]
         if budget_usd is not None and spent+price > budget_usd:
             records.append(dict(**labels, cached=False, cost_usd=0., error=dict(code='BUDGET_EXHAUSTED', message=f'fal list-price budget {budget_usd} USD would be exceeded'))); continue
