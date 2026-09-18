@@ -398,12 +398,15 @@ not a fresh prompt-only experiment.
 The helper imports kitchen theme descriptions from
 [`scripts/decorate_variants.py`](../scripts/decorate_variants.py); keep both scripts
 in the checkout. `--cache` points directly to the fal cache folder, normally
-`vendor/fal_cache/fal`. The five required PBR themes and all other requests needed
-by source regeneration must already be cached. There is no paid fetch stage:
+`vendor/fal_cache/fal`. The cache must contain both the default material requests
+for seed **0** (used during source regeneration) and the five custom theme sets
+with seeds **7100–7104**, plus other source-required assets. There is no paid fetch stage:
 missing cached textures stop preparation, model calls are bypassed by the supplied
 program, and the generation spend allowance is zero. This means **zero new paid or
 model calls for replay**, not zero historical asset-acquisition cost. Copy the
-verified cache from the producing environment when reproducing elsewhere.
+verified cache from the producing environment when reproducing elsewhere. Losing
+the cache does not make free regeneration possible: restoring it or separately
+acquiring missing assets is required before this zero-spend helper can run.
 
 ```bash
 python scripts/collect_home_kitchen.py prepare \
