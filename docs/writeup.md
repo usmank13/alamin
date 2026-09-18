@@ -52,12 +52,12 @@ than replaces, deterministic checks.
 
 ## Hardware, throughput and scale
 
-This machine has an RTX 3070, but these measurements use CPU MuJoCo, software
-RGB-D and CPU Cycles; CUDA is not required. The historical 60-second kitchen
-mapping capture took 560 wall seconds, while a 1024-pixel Cycles still took 43.
+The development machine has an RTX 3070 Ti Laptop GPU. Earlier measurements
+used CPU MuJoCo, software RGB-D and CPU Cycles; CUDA is not required. The
+historical 60-second kitchen mapping capture took 560 wall seconds, while a 1024-pixel Cycles still took 43.
 Current timings are recorded per artifact and must not be conflated with those
-earlier runs. GPU rendering could reduce capture latency without changing the
-schema or physics contract.
+earlier runs. NVIDIA EGL is available for new MuJoCo camera captures; physics and
+the current Cycles bridge remain on CPU. Record the backend and device with new timing results.
 
 At 1,000 environments/day, agent latency, asset coverage, CPU rendering and the
 sequential collector dominate. Cached assets avoid repeat conversion. Tiered
@@ -66,14 +66,15 @@ and additional agent infrastructure are outside this pass.
 
 ## Deliverables and remaining limits
 
-The cleanup pass merges optional fal PBR materials and visual-only generated
-clutter, tested offline with synthetic API responses. No paid texture/model calls
-were made; current scene stills use default finishes and retrieved textures, not
-a claimed photorealistic PBR demonstration. Two richer kitchen/warehouse scenes
-validate and export independently. Mapping reports compare range reconstruction
+Optional fal PBR materials and visual-only generated clutter have both offline
+integration tests and a live home-kitchen exercise. The commercial kitchen and
+warehouse validate and export independently. The variant refresh adds varied fal
+finishes and props, then re-records observations; completion follows the published
+dataset reports, not the presence of decorated stills. No photorealism claim follows
+from enabling PBR. Mapping reports compare range reconstruction
 with scene ground truth; the brief imposes no fixed IoU threshold.
 
-The requested collection is ten 60-second mapping runs, five per domain, rather
+The collected baseline has ten 60-second mapping runs, five per domain, rather
 than ten variants of one scene. HDF5 carries synchronized observations and truth;
 each completed batch has a data card and recorded videos. Consult
 [brief-status.md](brief-status.md) for completion status and

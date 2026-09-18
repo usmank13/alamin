@@ -1,5 +1,10 @@
 # Cost and timing table
 
+Historical partial measurement, retained with its original values. This table
+predates the complete ten-run collection and the fal/GPU refresh. Generate a
+current table with `pipeline costs` over the exact artifacts being reviewed; the
+local deliverable snapshot has its own consolidated reports.
+
 | artifact | stage | wall s | sim s | attempts | tokens in/out | API spend USD | passed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | kitchen | generate/layout | 0.3 | n/a | n/a | n/a | n/a | n/a |

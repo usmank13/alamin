@@ -1,38 +1,385 @@
-# Running and inspecting the pipeline
+# Running and reproducing the pipeline
 
-The core is a Python library and CLI, not a coding-agent harness. Agents supply
-declarative intent and evidence; deterministic tools own dimensions, geometry,
-validation and compilation. MuJoCo physics is CPU-based. CUDA is optional, and
-Cycles currently uses CPU. No diffusion renderer is used.
+Run the commands below from the repository root. The core CLI works without an
+agent: an external agent or person writes a SceneProgram, and deterministic tools
+build and check it. Prompt-only generation is an optional adapter described later.
+Use fresh output directories for generation, dataset collection and robot captures.
+A failed run remains evidence; fix inputs and write a new run instead of editing
+compiled geometry or weakening its checks.
 
-## First run without an agent or datasets
+Quick links: [setup](#setup-and-first-scene), [capture formats](#capture-formats),
+[GPU rendering](#rendering-on-cpu-or-gpu), [portable agent workflow](#portable-agent-workflow),
+[reproduction](#resources-caches-and-reproduction), [fal decoration](#optional-fal-textures-and-clutter),
+[optional model backends](#agent-backends).
 
-On Linux with Git, uv, and OSMesa installed (`libosmesa6` on Ubuntu):
+## Setup and first scene
+
+On Linux, install Git, uv, and your system rendering libraries. Ubuntu package
+names are `libosmesa6` for software rendering, `libglfw3` for the desktop viewer,
+and `ffmpeg` for videos. Setup does not install system packages or GPU drivers.
+Python 3.12 and dependencies come from the committed `uv.lock`.
 
 ```bash
 bash scripts/setup_pipeline.sh --minimal
-.venv/bin/pipeline doctor --smoke
-.venv/bin/pipeline generate --program examples/cafe_program.py \
-  --prompt 'A compact cafe kitchen with three cabinets, two drawer units, a prep table, a shelf and eight containers.' \
+source .venv/bin/activate
+pipeline doctor --smoke
+pipeline generate --program examples/cafe_program.py \
+  --prompt 'A compact cafe kitchen with a prep table, three cabinets, two drawer units, a storage shelf, and eight containers.' \
   --seed 1 --output outputs/first_scene
-.venv/bin/pipeline inspect outputs/first_scene
+pipeline inspect outputs/first_scene --no-open
 ```
 
-This fixture checks installation; it is not evidence of natural-language generation.
-Output directories are never overwritten. Choose another directory for another run.
-The scripts resolve their own repo directory. Installed `pipeline` commands work
-from other directories with absolute input/output paths. Use
-`--resource-root /path/to/repo` before the subcommand, or
-`SCENE_PIPELINE_RESOURCE_ROOT`, to locate `vendor/` outside an editable checkout.
+Open the printed gallery path. This fixture requires no credentials, retrieved
+asset catalog or robot downloads. It verifies deterministic generation with a
+supplied program; it does not evaluate natural-language interpretation.
 
-`setup_pipeline.sh` fetches stock robots unless `--minimal` is supplied.
-Optional flags: `--blender`, `--agent`, `--prototypes`, `--retrieval`, `--test`.
-RoboCasa fixtures are a separate explicit acquisition; see
-[`prototypes/ROBOCASA_DATASET.md`](../prototypes/ROBOCASA_DATASET.md).
-Floorplan ingestion is also explicit; generation never downloads a prior corpus.
-`doctor` reports missing optional assets/tools without requiring them for templates.
-Viewer dependencies are GLFW plus a working desktop display; video encoding needs
-ffmpeg. Setup does not change system packages or GPU drivers.
+For robot flows and Cycles rendering, install the additional resources:
+
+```bash
+bash scripts/setup_pipeline.sh --blender
+```
+
+Without `--minimal`, setup fetches stock robots from a pinned MuJoCo Menagerie
+revision. `--blender` fetches the Blender binary; an existing `blender` on PATH also
+works. Other setup flags are `--retrieval`, `--agent`, `--prototypes`, and `--test`.
+`doctor` lists missing optional tools without making them mandatory for templates.
+Network access is needed for dependency/resource downloads.
+
+Richer programs may require RoboCasa fixtures or retrieved assets; these are not
+included by default. Fetch fixtures with `python prototypes/fetch_robocasa.py` and
+verify them with `python prototypes/fetch_robocasa.py --verify`; read the source and
+license notes in [ROBOCASA_DATASET.md](../prototypes/ROBOCASA_DATASET.md). Static
+catalog acquisition is described under [retrieval](#retrieve-and-insert-an-asset).
+Floorplan corpora are also explicit acquisitions, never automatic generation inputs.
+
+## Scene → render/export → robot capture → variants
+
+Continue with `outputs/first_scene` from the quick start:
+
+```bash
+pipeline render outputs/first_scene --view overview --resolution 1024 --samples 32
+pipeline export outputs/first_scene --format urdf --verify
+pipeline run outputs/first_scene --flow mapping --seconds 60 \
+  --tier full --seed 0 --output outputs/first_mapping
+pipeline run outputs/first_scene --flow interaction --seconds 60 \
+  --tier full --seed 0 --output outputs/first_interaction
+pipeline dataset outputs/first_scene --variants 10 --start-seed 100 --seconds 60 \
+  --output outputs/first_variants
+pipeline inspect outputs/first_variants --no-open
+pipeline costs outputs/first_scene outputs/first_mapping outputs/first_interaction \
+  outputs/first_variants --output outputs/first_costs.md
+```
+
+`render` produces `render/cycles.png` from the compiled scene using CPU Cycles.
+`export --verify` tests the independent URDF package in PyBullet. Mapping uses the
+stock small omnidirectional base; interaction runs the Panda against a qualifying
+drawer. An arbitrary scene may lack the geometry needed by a particular flow.
+`--seconds` is simulated time, not a wall-time limit. `--no-video` skips encoding;
+`pipeline replay ROLLOUT_DIRECTORY` regenerates a video from recorded states.
+
+The dataset collector replays saved programs, evidence, priors and asset references
+without a model call. Seeds resample placement and clutter counts; lighting, tint,
+texture repeat and optional fal texture-set seeds vary as recorded in `dataset.json`.
+The first three variants have full RGB-D capture, and the remainder use the `state`
+tier (state/range/IMU without RGB-D). To capture RGB-D for additional variants, run
+`pipeline run VARIANT --flow mapping --tier full --output NEW_DIRECTORY` explicitly.
+The collector does not generate variant stills or previews; export them afterward:
+
+```bash
+for variant in outputs/first_variants/variant_*; do
+  pipeline preview "$variant"
+  pipeline render "$variant" --view overview
+  pipeline inspect "$variant" --no-open
+done
+pipeline inspect outputs/first_variants --no-open
+```
+
+Read `dataset.json` and each run's `report.json`: a directory or gallery alone does
+not establish completion. Failures remain in the batch summary. The local
+collection uses five kitchen and five warehouse variants, which differs from ten
+variants of one scene in the original brief. Run `--variants 10` on one accepted
+scene when reproducing that literal requirement.
+
+Optional semantic navigation uses the same recorder:
+
+```bash
+pipeline run outputs/first_scene --flow navigate --goal 'go to the prep table' \
+  --policy planner --seconds 60 --output outputs/first_navigation
+```
+
+The planner resolves the target through the semantic manifest. `--policy vlm`
+uses the configured model backend and can incur API costs; it is not needed for
+mapping, drawer interaction or ordinary planner navigation.
+
+## Capture formats
+
+A flow directory contains `data.h5`, `rig.json`, `report.json`, a portable
+`rollout_scene.mjz`, and, when enabled, `replay.mp4`. Mapping adds reconstruction
+maps and ground-truth comparison metrics. `rig.json` and HDF5 metadata describe
+sensor rates, frames, units and synthetic noise. Ground truth and noisy observations
+are separate; this is not hardware-calibrated sensing.
+
+```python
+from scene_pipeline.dataset import inspect, load_stream
+
+path = "outputs/first_mapping/data.h5"
+print(inspect(path))  # validates clocks/field lengths and lists available streams
+samples = load_stream(path, "state", 0, 10)  # sample indices 0 through 9
+print(samples["time"])
+```
+
+`start` and `stop` are sample indices, not seconds. Different-rate streams must be
+joined by their `time` fields, never by array index. The mapping report distinguishes
+visibility coverage from physical robot traversal.
+
+The separate `sim` diagnostic command writes final-frame arrays at the simulation
+`capture_time` in `report.json`: `depth.npy` is metric depth; `segmentation.npy`
+is int32 `[height,width,2]` with MuJoCo `(object_id, object_type)` and background
+`(-1,-1)`. Only `mjOBJ_GEOM` IDs index the ground-truth geometry list. These are
+model-local IDs, not semantic class labels. `state.npz` stores time, qpos, qvel,
+controls, activations and world body poses; read it with `allow_pickle=False`.
+`ground_truth.json` records wxyz quaternions, masses/inertias, conservative geometry
+AABBs, joints and controls. Call `mj_forward` before a live
+`sim_harness.ground_truth.snapshot(model, data)`.
+
+## Rendering on CPU or GPU
+
+MuJoCo physics stays on CPU. MuJoCo's offscreen camera rendering uses software
+OSMesa by default; a working NVIDIA driver and accessible GPU can use EGL:
+
+```bash
+MUJOCO_GL=egl pipeline doctor --smoke
+MUJOCO_GL=egl pipeline run outputs/first_scene --flow mapping --seconds 60 \
+  --output outputs/first_mapping_gpu
+```
+
+Set `MUJOCO_GL` before Python imports MuJoCo. `nvidia-smi` checks driver visibility;
+a successful EGL smoke test checks context creation but does not identify the
+rendering device. Containers/sandboxes also need GPU device and driver-library
+access. Identify the actual EGL renderer with:
+
+```bash
+MUJOCO_GL=egl python - <<'PY'
+import mujoco
+from OpenGL import GL
+context = mujoco.GLContext(16, 16)
+context.make_current()
+print(GL.glGetString(GL.GL_VENDOR).decode())
+print(GL.glGetString(GL.GL_RENDERER).decode())
+context.free()
+PY
+```
+
+Physics, HDF5 writes and
+ffmpeg encoding still consume CPU; benchmark a representative capture before
+extrapolating throughput. The current Cycles bridge explicitly selects CPU and
+has no GPU CLI switch. Desktop inspection uses GLFW and needs a display.
+
+## Portable agent workflow
+
+The canonical skill is [`skills/scene-pipeline/SKILL.md`](../skills/scene-pipeline/SKILL.md).
+Any agent that can read instructions and execute commands can use it. Point your agent at this tracked file, or copy/link its
+folder into your harness's skill location; automatic discovery depends on the harness.
+The instructions require this repository and resolve examples/docs from its root,
+so preserve that association if the skill is installed elsewhere. This repository does not install itself into global agent settings.
+
+An external agent can run `pipeline registry`, write a SceneProgram JSON, then call
+`pipeline generate --program ...`. That path never starts a nested agent. For novel
+categories, provide user-quoted, axis-labeled dimensions or a URL with complete
+width/depth/height fields. A caller cannot bypass evidence verification by supplying
+`dimension_basis`. JSON/DSL inputs are data, never executed Python.
+
+## Visual inspection
+
+`inspect` accepts a scene, retrieved asset, evaluation batch, or completed dataset.
+Dataset pages link each variant's checks, HDF5 and recorded mapping video.
+
+```bash
+pipeline inspect /absolute/path/to/scene_or_evaluation
+pipeline inspect /absolute/path/to/scene --no-open   # print page path only
+pipeline inspect /absolute/path/to/scene --viewer    # real MuJoCo, GLFW
+pipeline preview /absolute/path/to/scene
+pipeline render /absolute/path/to/scene --view overview
+pipeline replay /absolute/path/to/rollout
+```
+
+HTML pages are static and work without a server. They show available perspective,
+plan and provenance views, validation/failure reports, Cycles stills, and task
+videos. Missing artifacts are not linked as if they existed. Plan views are
+bounding-footprint diagnostics, not collision proof. The animation is a kinematic
+sweep, **not** a robot interaction. Replay reads recorded physical states; launching
+the simulator alone starts simulation and does not replay a controller.
+
+## Resources, caches and reproduction
+
+Installed commands work outside the checkout with absolute scene/output paths.
+Global options belong **before** the subcommand:
+
+```bash
+pipeline --resource-root /absolute/path/to/repo \
+  --cache-dir /absolute/path/to/cache \
+  --asset-store /absolute/path/to/assets doctor --smoke
+```
+
+| Resource | Default / override | Needed for |
+| --- | --- | --- |
+| Python packages | `.venv`, locked by `uv.lock` | All commands |
+| Stock robots, fixture sources, Blender | `vendor/` under repo; `--resource-root` or `SCENE_PIPELINE_RESOURCE_ROOT` | New flows, source-based generation, Cycles |
+| Evidence and fal downloads | `$XDG_CACHE_HOME/scene-pipeline` or `~/.cache/scene-pipeline`; `--cache-dir` or `SCENE_PIPELINE_CACHE` | Verified source reuse; cached API assets |
+| Static/generated asset packages | `$XDG_CACHE_HOME/scene-pipeline/assets` or `~/.cache/scene-pipeline/assets`; `--asset-store` or `SCENE_PIPELINE_ASSET_STORE` | Asset search/import and referenced generation |
+| Generated artifacts | Explicit `--output` | Scenes, runs, datasets and reports |
+
+The fal cache is the `fal/` child of the configured cache root; dimension evidence
+uses `dimensions.json`. Evidence records archive source text, fields and hashes.
+The decoration driver below uses its own `--cache`, pointing directly to the fal
+folder; `restyle_scene.py` defaults to `vendor/fal_cache/fal` unless
+`SCENE_PIPELINE_CACHE` is set. Caches are not committed. Keep secrets in process environment variables or
+an ignored `.env`, never in ScenePrograms, source control or exported artifacts.
+
+A scene's `scene.mjz` embeds compiled geometry and assets; loading it needs no vendor
+tree. Preserve the entire scene folder for validation, galleries, export and dataset
+regeneration: program/intent, IR, semantic manifest, provenance, checks, assets,
+generation configuration, evidence, and any prior bundle are part of that contract.
+An MJZ alone cannot regenerate the authoring process. Existing rollout archives plus
+HDF5 states can replay without re-running a controller; new flows need stock robots.
+
+For reproduction, retain the Git revision, `uv.lock`, source program and prompt,
+seeds/configuration, asset packages and hashes, prior/evidence snapshots, cached fal
+responses and rendering-device details. Frozen inputs make reruns inspectable;
+live models, mutable providers, different drivers and simulator/renderer versions
+can still change output. A seed does not guarantee the same future API result.
+`fal_calls.json`, `agent_calls.json` and `cost.json` distinguish reused assets from
+new spend; missing provider billing remains unknown. Do not describe cache hits as
+the total acquisition cost.
+
+Fresh-machine timing under fifteen minutes and three unseen prompt-only evaluations
+have **not** been certified. Existing fixed-program and warm-cache runs establish
+composition and capture behavior, not those acceptance claims. See
+[brief-status.md](brief-status.md) and the local deliverable checklist for evidence.
+
+## Retrieve and insert an asset
+
+This is a direct tool workflow for any command-capable agent, not a new agent
+framework. Install `--retrieval` alongside whichever other setup extras you use:
+
+```bash
+bash scripts/setup_pipeline.sh --minimal --retrieval
+pipeline --asset-store vendor/asset_library asset-index
+pipeline --asset-store vendor/asset_library asset-search 'pallet'
+pipeline --asset-store vendor/asset_library asset-fetch gazebo:euro_pallet --category pallet
+```
+
+`asset-fetch` returns `asset_ref`, dimensions, capabilities and a package path.
+Inspect that path, then put `asset_ref` on the corresponding SceneProgram object.
+Alternatively, an agent can supply a selected `asset_request.candidate_id` and
+query, as in [warehouse_program.py](../examples/warehouse_program.py).
+Use the same asset store for generation. A supplied program never starts a nested
+agent; query-only selection is a convenience for the configured runtime.
+
+The current catalog indexes pinned OSRF Gazebo and AWS house/warehouse/hospital model
+repositories. These are downloaded data, not installed Gazebo/ROS executables.
+The importer supports single-link **static rigid SDF props**, with source textures
+and separate primitive/decomposed colliders. It rejects articulated models rather
+than freezing them silently. Existing RoboCasa articulation remains available via
+the registry. Native source scale is not a manufacturer measurement; do not override
+dimensions on an asset reference. Packages carry provenance and source licenses
+into scenes and URDF exports. A bowl with a solid source collider is not a verified
+container; a static pallet jack is not a lifting mechanism.
+
+The registry is not a closed vocabulary for generated dressing. `asset-generate`
+accepts any category and registers its generated visual in the same asset library:
+
+```bash
+pipeline asset-generate --category tea_towel --prompt 'a folded cotton tea towel' \
+  --size-m .25 --placement support --max-fal-usd .4
+pipeline asset-search 'tea towel'
+```
+
+Set `FAL_KEY` or `FAL_API_KEY` in the environment for direct CLI calls. Use the
+returned `asset_ref` in subsequent scenes; it replays without a fal call. The
+one-prompt runner also accepts agent-created `generated_request` objects containing
+`prompt`, `size_m`, `placement` and `physical_use: "visual_only"` when clutter is
+enabled. The estimated largest extent is labeled unverified; no collision geometry,
+support surface or articulation is invented. The importer explicitly converts GLB
+Y-up into MuJoCo Z-up. Source prompts, hashes and provider request IDs travel with
+the package. Retrieval selection can decline all candidates; an unrelated room
+keyword no longer forces a match. This is not deterministic semantic verification.
+
+Run the small public-asset exercise (no model calls) with:
+
+```bash
+.venv/bin/python scripts/exercise_asset_retrieval.py --output outputs/assets_check \
+  --priors outputs/architecture_grounding/frozen_corpus/priors.json
+pipeline inspect outputs/assets_check
+```
+
+Omit `--priors` for asset-only tests. Failures stay in the report and return exit 1.
+
+## Optional fal textures and clutter
+
+For an authored program that includes dressing, enable fal explicitly:
+
+```bash
+# Export FAL_KEY or FAL_API_KEY in your shell first.
+pipeline generate --program examples/pbr_kitchen_program.py \
+  --prompt 'A 60 square metre working prep kitchen with countertop clutter.' \
+  --seed 17 --materials fal --clutter fal --max-fal-usd 6 \
+  --output outputs/decorated_kitchen
+```
+
+This richer fixture requires its source assets to be available; inspect its program
+and registry entries before running it. PATINA supplies PBR finishes and Hunyuan3D
+supplies visual-only clutter. Clutter has no collision geometry and cannot serve as
+a manipulation target. Both MuJoCo and Cycles consume the compiled material/mesh
+assets; RGB-D must be re-recorded after changing them. Existing captures cannot be
+made consistent with new textures by replacing thumbnails or replay videos.
+
+Uncached requests need credentials and can cost money. `--max-fal-usd` checks
+estimated list-price spend, not an account billing ceiling. Request-digest cache
+hits avoid repeat charges only for matching cached jobs. Dataset collection from
+a fal-enabled scene can fetch new texture seeds; review its inherited budget and
+cache before starting. Direct `pipeline` commands read environment variables;
+`create_scene.py`, `restyle_scene.py` and `decorate_variants.py fetch` also read
+supported credentials from `.env` as data.
+
+For one floor finish on a saved scene, preserving layout:
+
+```bash
+python scripts/restyle_scene.py outputs/first_scene --output outputs/first_oak \
+  --floor-prompt 'Seamless natural oak plank flooring, matte finish, neutral illumination' \
+  --tile-m 2 --max-fal-usd 0.10
+```
+
+`--tile-m` sizes the whole repeated patch, not an individual plank. This runner
+writes new validation, previews and a Cycles still; it does not re-record a flow.
+
+For the local **five kitchen + five warehouse** collection, the dedicated driver
+adds distinct themed finishes and seeded prop selection/placement without moving
+original physical objects. It requires that source collection, not just a checkout:
+
+```bash
+python scripts/decorate_variants.py plan --source deliverables/outputs \
+  --output outputs/decorated_variants --cache vendor/fal_cache/fal
+# Inspect outputs/decorated_variants/plan.json before the paid fetch.
+python scripts/decorate_variants.py fetch --output outputs/decorated_variants \
+  --cache vendor/fal_cache/fal --max-fal-usd 8
+python scripts/decorate_variants.py prepare --output outputs/decorated_variants \
+  --cache vendor/fal_cache/fal
+MUJOCO_GL=egl python scripts/decorate_variants.py capture \
+  --output outputs/decorated_variants --domain kitchen --cache vendor/fal_cache/fal
+MUJOCO_GL=egl python scripts/decorate_variants.py capture \
+  --output outputs/decorated_variants --domain warehouse --cache vendor/fal_cache/fal
+```
+
+Use `MUJOCO_GL=osmesa` when EGL is unavailable. The driver records source IR hashes,
+material requests, decoration seeds, physical-invariant comparisons, fresh scene
+checks, and new 60-second captures. It retains the source batch's three full/two
+state tiers. Successful stages can be reused in the same staging directory; an
+interrupted capture without a completed report must be moved aside before retrying.
+The plan stores absolute source paths: do not relocate its source mid-run. Start
+from an undecorated source snapshot to repeat the pass; applying it to the published
+decorated variants is not a clean reproduction. The source tree stays unchanged,
+and publishing/packaging the staging results is a separate step.
 
 ## Agent backends
 
@@ -108,149 +455,6 @@ fields remove IDs or replace sections. Intent checks apply after merging.
 This tests orchestration, not model capability. Python callers can inject
 `Runtime(backend='recorded', responses=[...])` into `generate(..., runtime=...)`.
 
-## Portable agent workflow
-
-The canonical skill is [`skills/scene-pipeline/SKILL.md`](../skills/scene-pipeline/SKILL.md).
-Any agent that can read instructions and execute commands can use it. Copy/link its
-folder into your harness's skill location if desired; automatic discovery depends
-on that harness. This repository does not install itself into global agent settings.
-
-An external agent can run `pipeline registry`, write a SceneProgram JSON, then call
-`pipeline generate --program ...`. That path never starts a nested agent. For novel
-categories, provide user-quoted, axis-labeled dimensions or a URL with complete
-width/depth/height fields. A caller cannot bypass evidence verification by supplying
-`dimension_basis`. JSON/DSL inputs are data, never executed Python.
-
-The writable dimension cache defaults to `$XDG_CACHE_HOME/scene-pipeline` (or
-`~/.cache/scene-pipeline`). Override with global `--cache-dir` or
-`SCENE_PIPELINE_CACHE`. New records archive source text, fields and hashes; old
-hash-only entries are not silently trusted. Concurrent updates use locking and
-atomic replacement. Each scene saves original intent, resolved intent, evidence
-and generation configuration so variants can replay without model calls.
-
-## Visual inspection
-
-`inspect` accepts a scene, retrieved asset, evaluation batch, or completed dataset.
-Dataset pages link each variant's checks, HDF5 and recorded mapping video.
-
-```bash
-pipeline inspect /absolute/path/to/scene_or_evaluation
-pipeline inspect /absolute/path/to/scene --no-open   # print page path only
-pipeline inspect /absolute/path/to/scene --viewer    # real MuJoCo, GLFW
-pipeline preview /absolute/path/to/scene
-pipeline render /absolute/path/to/scene --view overview
-pipeline replay /absolute/path/to/rollout
-```
-
-HTML pages are static and work without a server. They show available perspective,
-plan and provenance views, validation/failure reports, Cycles stills, and task
-videos. Missing artifacts are not linked as if they existed. Plan views are
-bounding-footprint diagnostics, not collision proof. The animation is a kinematic
-sweep, **not** a robot interaction. Replay reads recorded physical states; launching
-the simulator alone starts simulation and does not replay a controller.
-
-## Retrieve and insert an asset
-
-This is a direct tool workflow for any command-capable agent, not a new agent
-framework. Install `--retrieval` alongside whichever other setup extras you use:
-
-```bash
-bash scripts/setup_pipeline.sh --minimal --retrieval
-pipeline --asset-store vendor/asset_library asset-index
-pipeline --asset-store vendor/asset_library asset-search 'pallet'
-pipeline --asset-store vendor/asset_library asset-fetch gazebo:euro_pallet --category pallet
-```
-
-`asset-fetch` returns `asset_ref`, dimensions, capabilities and a package path.
-Inspect that path, then put `asset_ref` on the corresponding SceneProgram object.
-Alternatively, an agent can supply a selected `asset_request.candidate_id` and
-query, as in [warehouse_program.py](../examples/warehouse_program.py).
-Use the same asset store for generation. A supplied program never starts a nested
-agent; query-only selection is a convenience for the configured runtime.
-
-The current catalog indexes pinned OSRF Gazebo and AWS house/warehouse/hospital model
-repositories. These are downloaded data, not installed Gazebo/ROS executables.
-The importer supports single-link **static rigid SDF props**, with source textures
-and separate primitive/decomposed colliders. It rejects articulated models rather
-than freezing them silently. Existing RoboCasa articulation remains available via
-the registry. Native source scale is not a manufacturer measurement; do not override
-dimensions on an asset reference. Packages carry provenance and source licenses
-into scenes and URDF exports. A bowl with a solid source collider is not a verified
-container; a static pallet jack is not a lifting mechanism.
-
-The registry is not a closed vocabulary for generated dressing. `asset-generate`
-accepts any category and registers its generated visual in the same asset library:
-
-```bash
-pipeline asset-generate --category tea_towel --prompt 'a folded cotton tea towel' \
-  --size-m .25 --placement support --max-fal-usd .4
-pipeline asset-search 'tea towel'
-```
-
-Set `FAL_KEY` or `FAL_API_KEY` in the environment for direct CLI calls. Use the
-returned `asset_ref` in subsequent scenes; it replays without a fal call. The
-one-prompt runner also accepts agent-created `generated_request` objects containing
-`prompt`, `size_m`, `placement` and `physical_use: "visual_only"` when clutter is
-enabled. The estimated largest extent is labeled unverified; no collision geometry,
-support surface or articulation is invented. The importer explicitly converts GLB
-Y-up into MuJoCo Z-up. Source prompts, hashes and provider request IDs travel with
-the package. Retrieval selection can decline all candidates; an unrelated room
-keyword no longer forces a match. This is not deterministic semantic verification.
-
-Run the small public-asset exercise (no model calls) with:
-
-```bash
-.venv/bin/python scripts/exercise_asset_retrieval.py --output outputs/assets_check \
-  --priors outputs/architecture_grounding/frozen_corpus/priors.json
-pipeline inspect outputs/assets_check
-```
-
-Omit `--priors` for asset-only tests. Failures stay in the report and return exit 1.
-
-## Deliverable collection
-
-After a scene validates, the existing collector runs randomized mapping captures:
-
-```bash
-pipeline dataset outputs/my_kitchen --output outputs/kitchen_dataset --variants 5 --seconds 60
-pipeline dataset outputs/my_warehouse --output outputs/warehouse_dataset --variants 5 --start-seed 101 --seconds 60
-pipeline inspect outputs/kitchen_dataset
-pipeline inspect outputs/warehouse_dataset
-```
-
-This requested split is ten runs across two domains, not the original brief's ten
-variants of one scene. Each five-run batch captures RGB-D in its first three runs
-and state/range/IMU in the other two (six full, four lightweight in total). Both use
-the same simulated clock, loader and data-card format. Keep failed variants visible.
-These fixed-program experiments test composition and capture, not an unattended
-held-out prompt benchmark. The prompt remains the source of inventory and relations;
-do not patch generated geometry to fix a layout.
-
-PBR materials and optional visual-only clutter from `pbr-materials` are merged.
-`generate --materials fal --max-fal-usd LIMIT` requires configured fal credentials
-and may spend money; the default is still flat materials. Tests use synthetic API
-responses, which establish integration, not real generated-texture quality.
-
-To exercise a single fal material on an existing creation without regenerating its
-layout, the small runner below reads `FAL_API_KEY` or `FAL_KEY` from `.env` (as data,
-not shell code). The source scene stays untouched; output contains the maps, source
-request, cost record, fresh validation, MuJoCo preview and 1024 px Cycles render.
-The API sees the material prompt only, not your scene files.
-
-```bash
-.venv/bin/python scripts/restyle_scene.py outputs/deliverables_cleanup/kitchen \
-  --output outputs/kitchen_wood \
-  --floor-prompt 'Seamless natural oak plank flooring, matte finish, neutral illumination' \
-  --tile-m 2 --max-fal-usd 0.10
-pipeline inspect outputs/kitchen_wood
-```
-
-`--tile-m` is the physical size of the whole repeated texture patch, not a board's
-width. Overrides are stored in this scene's appearance metadata; registry defaults
-for other scenes do not change. This is a generated PBR material followed by Cycles,
-not a diffusion repaint of the scene. Other pipeline commands accept either key
-name in the process environment; only this runner explicitly reads a dotenv file.
-
 ## Cross-domain evaluation
 
 Freeze a prior bundle first using the existing `architecture-fit` command and real
@@ -266,7 +470,7 @@ pipeline inspect outputs/domain_regression
 
 # Eight live runs: two models, four domains, one seed. Requires key and spend cap.
 pipeline evaluate examples/evaluation_domains.json --priors PATH_TO_PRIORS.json \
-  --live --models PROVIDER/MODEL_A PROVIDER/MODEL_B --max-cost-usd 10 \
+  --live --models PROVIDER/MODEL_A PROVIDER/MODEL_B --seeds 7 --max-cost-usd 10 \
   --output outputs/domain_models
 ```
 

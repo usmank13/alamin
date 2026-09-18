@@ -1,170 +1,81 @@
-## Setup
+# Scene pipeline
 
-For the scene generator, model backends, visual inspection and cross-domain tests,
-start with [Running the pipeline](docs/running.md) and [Current brief status](docs/brief-status.md).
-The portable [agent skill](skills/scene-pipeline/SKILL.md) includes direct asset
-search/import commands. `pipeline inspect PATH` opens scene, asset, or dataset
-galleries; `--viewer` opens MuJoCo. See the [writeup](docs/writeup.md) and
-[measured costs](docs/cost-table.md) for brief-facing evidence and limitations.
+Generate validated MuJoCo workspaces, inspect the same geometry in Cycles, and
+record robot mapping or drawer-interaction datasets. A declarative SceneProgram
+specifies inventory and relations; Python tools resolve assets, place and validate
+them, compile scenes, and collect synchronized observations and ground truth.
 
-Requires Linux, Git and [uv](https://docs.astral.sh/uv/getting-started/installation/).
-Python 3.12 is selected automatically. From this directory:
+Start with [running and reproducing the pipeline](docs/running.md). The
+[harness-agnostic agent skill](skills/scene-pipeline/SKILL.md) works with any agent
+that can read files and execute commands. Supplying `--program` requires neither
+Codex nor an API-backed agent. Prompt-only generation has optional model adapters.
 
-```bash
-bash scripts/setup.sh
-```
+## Quick start
 
-This installs locked dependencies into `.venv` and fetches three robot directories
-from a pinned [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie)
-revision into ignored `vendor/`. Downloads require network access. Setup preserves
-locally modified robot checkouts by refusing to overwrite them. No CUDA dependency.
-
-## Run
-
-Desktop viewer (close the window to stop):
+Requires Linux, Git, uv and system rendering libraries (`libosmesa6` on Ubuntu).
+Python 3.12 and Python dependencies are selected from `uv.lock`. From the repo root:
 
 ```bash
-.venv/bin/sim examples/lab.xml --robots examples/robots.json --viewer --backend glfw
+bash scripts/setup_pipeline.sh --minimal
+source .venv/bin/activate
+pipeline generate --program examples/cafe_program.py \
+  --prompt 'A compact cafe kitchen with a prep table, three cabinets, two drawer units, a storage shelf, and eight containers.' \
+  --seed 1 --output outputs/first_scene
+pipeline inspect outputs/first_scene --no-open
 ```
 
-Headless CPU physics and software-rendered RGB/depth:
+Open the printed `index.html` to inspect previews and checks. This is a supplied
+program fixture, not a cold natural-language evaluation. Generation and capture
+need new output directories; reports and galleries can be refreshed in place.
 
-```bash
-.venv/bin/sim examples/lab.xml --robots examples/robots.json --backend osmesa --seconds 10
-.venv/bin/pytest
-```
-
-Results: `outputs/smoke/rgb.png`, `depth.npy` (480×640 metric depth),
-`segmentation.npy`, `ground_truth.json`, `state.npz`, and `report.json`.
-The command fails on physics warnings, resets, nonfinite state,
-or invalid renders. It holds the arm at its home controls and leaves wheel targets
-at zero; the integration test additionally drives the wheels and moves an arm joint.
-Physics wall time excludes model compilation and rendering.
-
-
-### Diagnostic capture format
-
-All final-frame artifacts use `report.json`'s `capture_time` in simulation seconds.
-Derived poses are refreshed with `mj_forward` before capture. These are noiseless
-diagnostics, not a configured robot sensor suite or a training dataset.
-
-- `segmentation.npy`: int32 `[480,640,2]`, channels `(object_id, object_type)` from
-  MuJoCo's renderer; background is `(-1,-1)`. For `mjOBJ_GEOM`, object ID indexes
-  the `geoms` array in `ground_truth.json`. Other types must not be interpreted
-  as geometry IDs. These are model-local IDs, not semantic labels.
-- `ground_truth.json`: version 1; simulation time, body world poses (wxyz
-  quaternions), masses/principal inertias, geometry-to-body mapping, geometry world
-  AABBs, contact masks, joint types/limits/positions/velocities, and named controls.
-  Bounds conservatively enclose each transformed local geometry bounding box;
-  they are not tight semantic object bounds. Infinite planes have null bounds.
-- `state.npz`: `time` scalar, `qpos[nq]`, `qvel[nv]`, `ctrl[nu]`, `act[na]`,
-  `body_position[nbody,3]`, `body_quaternion_wxyz[nbody,4]`. Joint qpos and qvel
-  widths differ for free/ball joints. Read with `np.load(path, allow_pickle=False)`.
-- `report.json`: MuJoCo version/backend, timestep/integrator/solver/gravity,
-  simulation duration, separate load/physics/render-capture wall timings, warnings,
-  and initial/final contacts with signed separation in metres. Negative distance
-  indicates penetration; this is a diagnostic, not an automatic clearance pass.
-
-For live programmatic access, call `sim_harness.ground_truth.snapshot(model, data)`
-after `mujoco.mj_forward(model, data)`. It returns the same JSON-compatible structure.
-
-Load your own generated scene, with or without robots:
-
-```bash
-.venv/bin/sim /path/to/generated/scene.xml --backend osmesa
-.venv/bin/sim /path/to/generated/scene.xml --robots /path/to/placements.json --viewer
-```
-
-`--output DIR` separates runs. `--viewer-seconds 5` closes a viewer after five
-wall-clock seconds for diagnostics. The viewer uses native MuJoCo mouse controls
-and actuator sliders. These commands run from the repo root.
-
-## Scene pipeline
-
-`src/scene_pipeline` turns a prompt into a validated MuJoCo scene and runs the robot
-flows. Setup adds the pipeline extras and, optionally, the Blender binary for Cycles:
+Add stock robots and Blender, then capture and render that scene:
 
 ```bash
 bash scripts/setup_pipeline.sh --blender
+pipeline run outputs/first_scene --flow mapping --seconds 60 \
+  --output outputs/first_mapping
+pipeline render outputs/first_scene --view overview
+pipeline inspect outputs/first_mapping --no-open
 ```
 
-With an authenticated agent backend, run the entire generation/render/inspection
-path from one prompt (fal credentials can be in `.env`):
+Video encoding requires ffmpeg. MuJoCo physics and the current Cycles bridge use
+CPU. MuJoCo camera capture can use NVIDIA EGL with `MUJOCO_GL=egl`; software
+rendering defaults to OSMesa. See the run guide for setup, GPU checks, optional fal
+textures/clutter, variants, data loading and reproducibility limits.
+
+## Where to look
+
+| Need | Entry point |
+| --- | --- |
+| Setup, end-to-end commands and reproduction | [docs/running.md](docs/running.md) |
+| Instructions for a command-capable agent | [skills/scene-pipeline/SKILL.md](skills/scene-pipeline/SKILL.md) |
+| Evidence and outstanding brief requirements | [docs/brief-status.md](docs/brief-status.md) |
+| Architecture and limitations | [docs/writeup.md](docs/writeup.md) |
+| Scene examples | [examples/](examples/) |
+| Core pipeline and independent MuJoCo loader | [src/scene_pipeline/](src/scene_pipeline/), [src/sim_harness/](src/sim_harness/) |
+
+The local `deliverables/` snapshot, when present, contains grouped scenes, datasets,
+galleries and a checklist. It and the downloaded `vendor/`, generated `outputs/`
+and private historical `docs/agent/` notes are excluded from Git. Reproduction does
+not require the private notes. The tracked cost table is a historical measurement;
+use `pipeline costs` on the artifacts being reviewed for a current table.
+
+## Independent simulation harness
+
+The `sim` CLI loads MJCF or portable MJZ archives independently of scene generation:
 
 ```bash
-.venv/bin/python scripts/create_scene.py 'A standard tiled home kitchen with everyday countertop clutter.' \
-  --materials fal --clutter fal --max-fal-usd 5 --output outputs/my_kitchen
+.venv/bin/sim examples/lab.xml --robots examples/robots.json --viewer --backend glfw
+.venv/bin/sim examples/lab.xml --robots examples/robots.json \
+  --backend osmesa --seconds 10 --output outputs/smoke
+.venv/bin/sim outputs/first_scene/scene.mjz --viewer --backend glfw
 ```
 
-Open the resulting `index.html` to inspect the scene and its checks. Generated
-clutter is visual-only. Failures remain visible; this command does not certify
-photorealism or silently weaken validation. See [running.md](docs/running.md) for
-backend options and retrieval/generation tools for uncataloged assets.
-
-One command per brief deliverable, run from the repository root:
-
-```bash
-# Prompt -> validated scene; omit --program to let the Codex agent write the SceneProgram
-.venv/bin/pipeline generate --prompt 'A 60 square metre working prep kitchen ...' \
-  --program examples/rich_kitchen_program.py --seed 17 --output outputs/kitchen
-# Optional fal layers (export FAL_KEY): PATINA PBR material sets per finish, Hunyuan3D visual-only decor
-.venv/bin/pipeline generate --prompt 'A 60 square metre working prep kitchen ...' \
-  --program examples/pbr_kitchen_program.py --seed 17 --materials fal --clutter fal --max-fal-usd 6 \
-  --output outputs/pbr_kitchen
-.venv/bin/pipeline render outputs/kitchen                        # 1024 px CPU Cycles still, same IR
-.venv/bin/pipeline export outputs/kitchen --format urdf --verify  # URDF loaded and actuated in PyBullet
-# Flows write data.h5, report.json and replay.mp4 (ffmpeg); --tier state skips RGB-D
-.venv/bin/pipeline run outputs/kitchen --flow mapping --output outputs/kitchen_mapping --seconds 60
-.venv/bin/pipeline run outputs/kitchen --flow interaction --output outputs/kitchen_interaction --seconds 60
-.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the refrigerator' \
-  --output outputs/kitchen_nav --seconds 60
-.venv/bin/pipeline run outputs/kitchen --flow navigate --goal 'go to the prep table' --policy vlm \
-  --output outputs/kitchen_nav_vlm --seconds 20
-# Ten randomized variants (layout seed, clutter counts, light, tint, texture repeat, PBR texture-set seed); three with RGB-D
-.venv/bin/pipeline dataset outputs/kitchen --output outputs/kitchen_dataset --variants 10 --seconds 60
-# Stage wall-clock and Codex token table from the artifacts above
-.venv/bin/pipeline costs outputs/kitchen outputs/kitchen_mapping outputs/kitchen_interaction \
-  outputs/kitchen_nav outputs/kitchen_dataset --output docs/cost-table.md
-```
-
-Materials, clutter and render/sim sync. `--materials fal` asks fal PATINA for one seamless PBR
-set (base colour, normal, roughness, metalness) per registry finish; `--clutter fal` offers the agent
-decor categories (`mug`, `kettle`, `potted_plant`, ...) that Hunyuan3D turns into static, contact-free
-meshes sized to a declared band. Every fal job is cached by request digest under
-`$SCENE_PIPELINE_CACHE` (default `~/.cache/scene-pipeline/fal`), so repairs and variants never pay twice;
-`fal_calls.json` and `cost.json` record list-price spend, with cache hits at zero. The compiler writes each
-map once as MuJoCo material texture layers (`rgb`, `normal`, `roughness`, `metallic`, `texuniform` with a
-metric repeat from the finish's tile size) and rebinds every asset's `finish_*` placeholder to them, so the
-MJZ the simulator loads is the textured scene and its RGB camera sees the albedo. `pipeline render` reads the
-same layers back from the compiled model into Principled BSDF: one scene, two consumers. Without the flags,
-finishes stay the declared flat engineering colours and `manifest.json` says so under `materials`.
-Explicit fal requests need `FAL_KEY` for uncached jobs; missing credentials are reported, not silently ignored.
-Decor carries no collision geometry, so an arm can sweep through it; it is dressing, not a manipulation target.
-
-Semantic navigation resolves the goal text through the scene's semantic manifest (an
-instance id, or a category alias such as `refrigerator` or `drawer`), never
-through coordinates. The robot drives the mapping stack (noisy odometry, scan matching,
-online occupancy) behind an action-chunk contract: a policy returns K body-frame
-`[vx, vy, wz]` actions that are executed open-loop before it is queried again, the
-interface a learned VLA fills later. `planner` (default) plans on the online map toward
-the free cell beside the goal; `vlm` sends the base camera frame, the instruction, the
-goal offset and a range summary to the Codex CLI with a strict JSON action schema
-(10-40 s per call, so keep `--seconds` small). Every chunk is recorded in the `action`
-stream with the pose estimate. Success is scored after the rollout from ground truth
-only: true final distance to the goal bounds within 0.6 m.
-
-Read the HDF5 streams by time, not by index:
-
-```python
-from scene_pipeline.dataset import inspect, load_stream
-print(inspect('outputs/kitchen_mapping/data.h5'))
-chunks = load_stream('outputs/kitchen_nav/data.h5', 'action', 0, 10)
-```
-
-The final submission writeup and consolidated cost table remain release tasks.
-Use `pipeline costs` to build a measured table from your artifacts. Operating
-instructions and limitations are tracked in [docs/running.md](docs/running.md);
-historical design notes live in the ignored `docs/agent/`.
+Stock robot models come from `setup_pipeline.sh` without `--minimal` (or the smaller
+`setup.sh` for harness-only dependencies). The headless diagnostic writes one RGB,
+depth and segmentation frame, `ground_truth.json`, `state.npz` and `report.json`.
+Those noiseless final-frame diagnostics differ from the multi-rate HDF5 datasets
+created by `pipeline run`. See [the capture formats](docs/running.md#capture-formats).
 
 ## Integration contract
 
