@@ -9,7 +9,8 @@ compiled geometry or weakening its checks.
 
 Quick links: [setup](#setup-and-first-scene), [capture formats](#capture-formats),
 [GPU rendering](#rendering-on-cpu-or-gpu), [portable agent workflow](#portable-agent-workflow),
-[reproduction](#resources-caches-and-reproduction), [fal decoration](#optional-fal-textures-and-clutter),
+[reproduction](#resources-caches-and-reproduction), [home-kitchen batch](#reproduce-the-primary-home-kitchen-batch),
+[fal decoration](#optional-fal-textures-and-clutter),
 [optional model backends](#agent-backends).
 
 ## Setup and first scene
@@ -383,6 +384,87 @@ The plan stores absolute source paths: do not relocate its source mid-run. Start
 from an undecorated source snapshot to repeat the pass; applying it to the published
 decorated variants is not a clean reproduction. The source tree stays unchanged,
 and publishing/packaging the staging results is a separate step.
+
+## Reproduce the primary home-kitchen batch
+
+[`scripts/collect_home_kitchen.py`](../scripts/collect_home_kitchen.py) builds the
+single-scene primary dataset from a saved home kitchen and existing fal downloads.
+It requires the source scene's authoring files (`input_program.json`, `program.json`,
+`ir.json`, `evidence_cache.json` and `assets/`), the applicable vendor resources,
+Blender, stock robots and ffmpeg. The published base home kitchen is the default
+source; a source `.mjz` alone is insufficient. This is replay of a saved program,
+not a fresh prompt-only experiment.
+
+The helper imports kitchen theme descriptions from
+[`scripts/decorate_variants.py`](../scripts/decorate_variants.py); keep both scripts
+in the checkout. `--cache` points directly to the fal cache folder, normally
+`vendor/fal_cache/fal`. The five required PBR themes and all other requests needed
+by source regeneration must already be cached. There is no paid fetch stage:
+missing cached textures stop preparation, model calls are bypassed by the supplied
+program, and the generation spend allowance is zero. This means **zero new paid or
+model calls for replay**, not zero historical asset-acquisition cost. Copy the
+verified cache from the producing environment when reproducing elsewhere.
+
+```bash
+python scripts/collect_home_kitchen.py prepare \
+  --source deliverables/outputs/home_kitchen/scene \
+  --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
+  --start-seed 300
+MUJOCO_GL=egl python scripts/collect_home_kitchen.py capture \
+  --source deliverables/outputs/home_kitchen/scene \
+  --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
+  --start-seed 300
+python scripts/collect_home_kitchen.py finalize \
+  --source deliverables/outputs/home_kitchen/scene \
+  --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
+  --start-seed 300
+pipeline inspect outputs/home_kitchen_reproduction --no-open
+```
+
+Use `MUJOCO_GL=osmesa` when EGL is unavailable. `prepare` generates and validates
+all ten layouts and writes previews, articulation animations, 1024 px Cycles stills,
+and `variant.json` records. Indices 0–9 use layout seeds 300–309; source clutter
+counts/placement, light intensity and texture repeat vary. Five cached fal kitchen
+themes are reused across distinct layouts; they are not ten new API generations.
+The source's generated props retain their visual-only status.
+
+`capture` records 60 simulated seconds per variant, with full RGB-D for indices
+0–2 and state/range/IMU for 3–9. It writes rendering-device metadata into completed
+reports. For concurrent capture after preparation, start workers in separate shells
+using **disjoint** index sets and the same source/output/cache/seed settings:
+
+```bash
+# Worker A
+MUJOCO_GL=egl python scripts/collect_home_kitchen.py capture \
+  --source deliverables/outputs/home_kitchen/scene \
+  --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
+  --start-seed 300 --indices 0 1 2 3 4
+# Worker B, in another shell
+MUJOCO_GL=egl python scripts/collect_home_kitchen.py capture \
+  --source deliverables/outputs/home_kitchen/scene \
+  --output outputs/home_kitchen_reproduction --cache vendor/fal_cache/fal \
+  --start-seed 300 --indices 5 6 7 8 9
+```
+
+Do not run these workers alongside an unpartitioned capture of the same output.
+`--indices` also restricts preparation, useful for a specific retry; run initial
+preparation in one process so shared source packages are initialized once. Capture
+can wait for a prepared variant, but workers must never write the same index.
+Concurrent workers share CPU, GPU, memory and disk bandwidth; concurrency is not
+an assurance of higher throughput.
+
+After **all** capture workers finish, run the unpartitioned `finalize` command.
+It always checks indices 0–9, irrespective of `--indices`, requires passing scene
+and capture records and 60-second durations, checks HDF5 clock/field alignment,
+then writes `dataset.json`, `DATA_CARD.md` and the batch gallery. A prepared scene
+or a running capture is not a completed dataset.
+
+Use a new output root for changed source programs, seeds, themes or code. Successful
+preparation is skipped when `variant.json` exists, and capture is skipped when
+`mapping/report.json` exists; this is stage reuse, not configuration-identity
+validation. Inspect those records before resuming. Preserve/move aside an incomplete
+scene or mapping directory before retrying its index; do not silently overwrite
+failure evidence. Final publication into `deliverables/` remains a separate step.
 
 ## Agent backends
 
