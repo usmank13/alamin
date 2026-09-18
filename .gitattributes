@@ -1,0 +1,6 @@
+examples/kitchen_example/**/*.h5 filter=lfs diff=lfs merge=lfs -text
+examples/kitchen_example/**/*.mjz filter=lfs diff=lfs merge=lfs -text
+examples/kitchen_example/**/*.gif filter=lfs diff=lfs merge=lfs -text
+examples/kitchen_example/**/*.png filter=lfs diff=lfs merge=lfs -text
+examples/kitchen_example/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+examples/kitchen_example/**/*.npz filter=lfs diff=lfs merge=lfs -text

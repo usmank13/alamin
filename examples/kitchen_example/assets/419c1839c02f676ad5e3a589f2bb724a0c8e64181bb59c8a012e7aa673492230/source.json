@@ -1,0 +1,26 @@
+{
+  "kind": "generated_source",
+  "provider": "fal",
+  "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+  "request_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+  "source": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+  "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object, a single object centred on a plain background",
+  "retrieved_at": "2026-09-18T02:41:53.351087+00:00",
+  "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+  "hashes": {
+    "model_glb.glb": "8a2fc7d345c0d6f74eb6a0a12a3d0e8d96e4a2d95a6a09ab424eb9d54fb5a816",
+    "thumbnail.png": "e9ec14e3d0963e0f8146dff6fcb1596496ff94a1d6995a4b60b4c743785a86e9",
+    "mesh.obj": "8ac35bb5c8d291444442e2902ec7e502384cf44d62e653b94f08c650021a07f3",
+    "albedo.png": "d70eeecb5147015f965847ac071d4876092983b8b15352e6425e7252d071aa62"
+  },
+  "scale": 0.12075981903175294,
+  "size_basis": "agent_estimate_visual_only_not_measured",
+  "size_band_m": [
+    0.12,
+    0.12
+  ],
+  "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+  "textured": true,
+  "physical_use": "visual_only_no_contact_geometry",
+  "calibrated": false
+}

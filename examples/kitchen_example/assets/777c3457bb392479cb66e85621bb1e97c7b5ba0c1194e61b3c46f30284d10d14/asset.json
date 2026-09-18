@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+  "category": "fridge",
+  "route": "G3",
+  "dimensions": [
+    0.8222380438304314,
+    0.7976130465835221,
+    1.8034840174478075
+  ],
+  "nominal_dimensions": [
+    0.8222380438304314,
+    0.7976130465835221,
+    1.8034840174478075
+  ],
+  "bounds": [
+    [
+      -0.41111902844570336,
+      -0.398806523692335,
+      -0.901742010266897
+    ],
+    [
+      0.41111901538472806,
+      0.39880652289118707,
+      0.9017420071809105
+    ]
+  ],
+  "model": "asset.mjz",
+  "affordances": [
+    {
+      "joint": "freezer0_door_joint",
+      "role": "access",
+      "closed": 0.0,
+      "open": 0.5,
+      "requires": {},
+      "body": "freezer0",
+      "point": null
+    },
+    {
+      "joint": "fridge_door_joint",
+      "role": "access",
+      "closed": 0.0,
+      "open": 1.5707963267948966,
+      "requires": {},
+      "body": "fridge_door",
+      "point": null
+    },
+    {
+      "joint": "fridge_drawer0_joint",
+      "role": "access",
+      "closed": 0.0,
+      "open": 0.5,
+      "requires": {
+        "fridge_door_joint": 1.5707963267948966
+      },
+      "body": "fridge_drawer0",
+      "point": null
+    }
+  ],
+  "supports": [],
+  "layout": {},
+  "provenance": {
+    "kind": "retrieved_source",
+    "source": "fridges/Refrigerator055",
+    "hashes": {
+      "model.xml": "e233de572e5b363c1df21b02eed67675d41c6cdf8c5c026497a7889fe48d3d59",
+      "visuals/Body001.obj": "304d11c4672723be87b6a0b8e98d28f62554800ed7b82e0d54c3ef044cb0dd23",
+      "visuals/Body001_Clear.obj": "e8295bdee3a1b66293bd13560d8d578acdca8ebf974856a6ab8a0791b0b0bfa8",
+      "visuals/Door001.obj": "286217edd1f22e4b9347342cbcf181c01c07bbad59cc4e7426b0e2ade0481975",
+      "visuals/Door001_Clear.obj": "d196c4a6bd134b6a91ce3a6d78b791e1ae5b1145de70be090de9e075ab923697",
+      "visuals/Drawer001.obj": "48e2baf9d2d4b75edfd437c0828fb8a36056a1988b226147358cdf6197865bd7",
+      "visuals/Drawer002.obj": "42bc8113e308f905dc64a13225dc90ff274713e345fc585d09f09d9da64c00a4",
+      "visuals/T_BC001.png": "94e9322eeffd4297c772b73cba7456497259758b8af1cad428dddebc542dd9ed",
+      "visuals/freezer0.obj": "38f0e7e6669904454d043a91f6d6052744965aefd039d56acfe9ef301990c053",
+      "visuals/fridge_door.obj": "39fe82903837868d8d44376f574f57cdf5084dcafe1363d86ab9f2d9d15e19c9",
+      "visuals/fridge_door_Clear.obj": "eeff729267772b5303fa8df0ccbe757dc27976693203aa9c7d14ee33b660eaae",
+      "visuals/fridge_drawer0.obj": "ce96564b44c7b7ca4aeb8b05656efdd8a5fce5995ae4a5c54fd0e77febb97ef3"
+    },
+    "license": "CC BY 4.0",
+    "attribution": "RoboCasa Team / Lightwheel",
+    "scale": 1.0,
+    "physical_policy": "collision-only effective shell density from engineering registry",
+    "visualization_policy": "native visual meshes; collision debug overlays hidden",
+    "physical_profile": "kitchen-engineering-v1",
+    "effective_density_kg_m3": 180.0,
+    "calibrated": false
+  },
+  "capabilities": {
+    "uniform_scale": true,
+    "independent_dimensions": false,
+    "semantic_state": true,
+    "preserve_handle_size": false
+  },
+  "state": "candidate",
+  "validation": null,
+  "adapter_version": "native-mjcf-v9",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "retrieved",
+    "provider": "RoboCasa / Lightwheel",
+    "route": "G3",
+    "source_id": "fridges/Refrigerator055",
+    "asset_key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+    "dimension_basis": "native_asset_scale_not_measured_product_dimensions",
+    "physical_basis": "collision-only effective shell density from engineering registry",
+    "allowed_use": "simulation_candidate",
+    "contact_rich_certified": false,
+    "validation_state": "candidate",
+    "license": "CC BY 4.0",
+    "calibrated": false
+  }
+}

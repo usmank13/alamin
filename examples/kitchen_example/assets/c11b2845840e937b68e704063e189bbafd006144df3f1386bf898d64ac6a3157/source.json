@@ -1,0 +1,26 @@
+{
+  "kind": "generated_source",
+  "provider": "fal",
+  "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+  "request_id": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+  "source": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+  "prompt": "A worn rectangular wooden kitchen cutting board lying flat, isolated object, a single object centred on a plain background",
+  "retrieved_at": "2026-09-18T02:43:24.244974+00:00",
+  "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+  "hashes": {
+    "model_glb.glb": "bbd9efc02568f3dbe3d381cb5668fc169ceb33bab32f4e46485af909f140798e",
+    "thumbnail.png": "bc7fbc7a3522629077e5690edc8b1692af6be974e8543503538ee4f8d9522c80",
+    "mesh.obj": "6aa26e022c8fc6bad9cd1cdc136eb73ccd2c1cd8c6e120a5064fbb16ed639fc7",
+    "albedo.png": "b84eff4c5861656ef7bcc23a69140957f95d7190647887bbb043adca5402a25e"
+  },
+  "scale": 0.3168380198740956,
+  "size_basis": "agent_estimate_visual_only_not_measured",
+  "size_band_m": [
+    0.38,
+    0.38
+  ],
+  "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+  "textured": true,
+  "physical_use": "visual_only_no_contact_geometry",
+  "calibrated": false
+}

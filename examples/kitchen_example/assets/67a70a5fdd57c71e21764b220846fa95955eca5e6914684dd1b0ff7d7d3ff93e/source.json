@@ -1,0 +1,26 @@
+{
+  "kind": "generated_source",
+  "provider": "fal",
+  "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+  "request_id": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+  "source": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+  "prompt": "A partially used white kitchen paper towel roll on a simple stainless steel holder, isolated object, a single object centred on a plain background",
+  "retrieved_at": "2026-09-18T02:41:44.920607+00:00",
+  "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+  "hashes": {
+    "model_glb.glb": "d0ac84636bc57311867600843771644587f98f22a76464377c898af930ef4665",
+    "thumbnail.png": "485777e7bb0738161c1d3870a2bcca48ee6bd370bcb8f795dd9e22c439017c17",
+    "mesh.obj": "6ecae3c935c436051a65a95dd6ad630d8906bdb88435cb3d84adc0bb8cd9651b",
+    "albedo.png": "49546094f184171b6a492b7240732bc3d3844664e320f2a55d433970dc9f6a00"
+  },
+  "scale": 0.3452337767168915,
+  "size_basis": "agent_estimate_visual_only_not_measured",
+  "size_band_m": [
+    0.33,
+    0.33
+  ],
+  "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+  "textured": true,
+  "physical_use": "visual_only_no_contact_geometry",
+  "calibrated": false
+}

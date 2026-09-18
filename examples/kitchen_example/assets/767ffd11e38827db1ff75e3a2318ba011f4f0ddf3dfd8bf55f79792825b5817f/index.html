@@ -1,0 +1,197 @@
+<!doctype html><meta charset="utf-8"><title>kitchen_cooktop</title><style>body{font:16px system-ui;max-width:1300px;margin:2em auto;padding:0 1em;background:#fafafa}img,video{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}td,th{padding:.6em;text-align:left;border-bottom:1px solid #ddd}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1em}article,figure{margin:0;padding:1em;background:white;border:1px solid #ddd}a{color:#135ca4}</style><h1>kitchen_cooktop</h1><p>Retrieved source geometry. Static prop; task capability and semantic match are not certified.</p><div class="grid"><figure><figcaption>preview</figcaption><img src="preview.png"></figure><figure><figcaption>collision</figcaption><img src="collision.png"></figure></div><p><a href="asset.json">Package</a> | <a href="source.json">Source and hashes</a> | <a href="validation.json">Validation</a> | <a href="asset.mjz">MuJoCo package</a></p><pre>{
+  &quot;asset&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;key&quot;: &quot;767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f&quot;,
+    &quot;identity&quot;: {
+      &quot;source&quot;: &quot;94645ea0aae23dd557140628f3eb69546abe08d3cdd37e89e0c5a4e910264d75&quot;,
+      &quot;adapter&quot;: &quot;sdf-rigid-v4&quot;,
+      &quot;category&quot;: &quot;kitchen_cooktop&quot;,
+      &quot;mode&quot;: &quot;static&quot;,
+      &quot;placement&quot;: &quot;support&quot;,
+      &quot;policy&quot;: {
+        &quot;version&quot;: &quot;kitchen-engineering-v1&quot;,
+        &quot;status&quot;: &quot;engineering_defaults_not_hardware_calibrated&quot;,
+        &quot;density_kg_m3&quot;: {
+          &quot;panel&quot;: 600.0,
+          &quot;steel&quot;: 7800.0,
+          &quot;plastic&quot;: 950.0
+        },
+        &quot;panel_thickness_m&quot;: 0.018,
+        &quot;gap_m&quot;: 0.004,
+        &quot;aisle_m&quot;: 1.2,
+        &quot;door_clear_width_m&quot;: 0.95,
+        &quot;room_height_m&quot;: 2.8,
+        &quot;wall_thickness_m&quot;: 0.12,
+        &quot;aspect&quot;: 1.35,
+        &quot;timestep_s&quot;: 0.002,
+        &quot;settle_s&quot;: 5.0,
+        &quot;penetration_m&quot;: 0.002,
+        &quot;slide_drift_m&quot;: 0.005,
+        &quot;hinge_drift_rad&quot;: 0.008726646259971648,
+        &quot;joint_damping&quot;: 2.0,
+        &quot;joint_frictionloss&quot;: 0.2,
+        &quot;retrieved_shell_proxy_kg_m3&quot;: 180.0,
+        &quot;materials_version&quot;: &quot;fal-patina-v1&quot;,
+        &quot;robot_radius_m&quot;: 0.25,
+        &quot;robot_radius_note&quot;: &quot;Default access disc for a compact mobile base (Stretch-class footprint); override per robot.&quot;,
+        &quot;retrieved_shell_note&quot;: &quot;Effective bulk density for hollow appliance collider volumes, not material density or measured appliance mass. Explicit engineering proxy; original source remains archived.&quot;
+      }
+    },
+    &quot;category&quot;: &quot;kitchen_cooktop&quot;,
+    &quot;route&quot;: &quot;G3&quot;,
+    &quot;model&quot;: &quot;asset.mjz&quot;,
+    &quot;dimensions&quot;: [
+      0.5455292761325851,
+      1.0034300088882473,
+      0.09791499003767994
+    ],
+    &quot;nominal_dimensions&quot;: [
+      0.5455292761325851,
+      1.0034300088882473,
+      0.09791499003767994
+    ],
+    &quot;bounds&quot;: [
+      [
+        -0.27276463806629253,
+        -0.5017150044441236,
+        0.0
+      ],
+      [
+        0.27276463806629253,
+        0.5017150044441236,
+        0.09791499003767994
+      ]
+    ],
+    &quot;affordances&quot;: [],
+    &quot;supports&quot;: [],
+    &quot;layout&quot;: {
+      &quot;placement&quot;: &quot;support&quot;,
+      &quot;dynamic&quot;: false
+    },
+    &quot;provenance&quot;: {
+      &quot;kind&quot;: &quot;retrieved_source&quot;,
+      &quot;provider&quot;: &quot;GitHub SDF model catalog&quot;,
+      &quot;source&quot;: &quot;house:models/aws_robomaker_residential_CookingBench_01&quot;,
+      &quot;source_url&quot;: &quot;https://github.com/aws-robotics/aws-robomaker-small-house-world/tree/dd44be6205b2e6577bf641300dacc1699cb2ca81/models/aws_robomaker_residential_CookingBench_01&quot;,
+      &quot;revision&quot;: &quot;dd44be6205b2e6577bf641300dacc1699cb2ca81&quot;,
+      &quot;hashes&quot;: {
+        &quot;materials/textures/aws_CookingBench_01.png&quot;: &quot;bfde7283c1ce34d4f106acdc9fdd05fef9b3434ef97cb2ee8ec45f141b38d896&quot;,
+        &quot;meshes/aws_CookingBench_01.DAE&quot;: &quot;e4d9de79c4b5582a48633186b3b4704ae898c5701a378748f8cbfb298b696b22&quot;,
+        &quot;meshes/aws_CookingBench_01_collision.DAE&quot;: &quot;094106327ad818bf79f338ce9aa0b29df481664bdb4d717f491da414074739c0&quot;,
+        &quot;meshes/aws_CookingBench_01_visual.DAE&quot;: &quot;1e30b76a4f0be37d3860b4406e1bcf8f21397eb58214accb3bb938a667aed0bf&quot;,
+        &quot;model.config&quot;: &quot;056ca398bf0fea7e777cf85cfbe7ad815e8e6c92c3ab28efea81869114cf722c&quot;,
+        &quot;model.sdf&quot;: &quot;ced95a89fec4223ec3ea5863a577bc2b28d7d1f516cdfea3d9301c2eaebbf550&quot;,
+        &quot;REPOSITORY_LICENSE&quot;: &quot;ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14&quot;
+      },
+      &quot;license&quot;: &quot;MIT-0&quot;,
+      &quot;attribution&quot;: &quot;aws-robotics/aws-robomaker-small-house-world&quot;,
+      &quot;scale&quot;: 1.0,
+      &quot;physical_profile&quot;: &quot;kitchen-engineering-v1&quot;,
+      &quot;physical_policy&quot;: &quot;Static prop; source colliders with declared engineering density, not calibrated mass&quot;,
+      &quot;dimension_basis&quot;: &quot;source_model_units_not_measured_product_dimensions&quot;,
+      &quot;calibrated&quot;: false
+    },
+    &quot;capabilities&quot;: {
+      &quot;static_geometry&quot;: true,
+      &quot;articulated&quot;: false,
+      &quot;dynamic&quot;: false,
+      &quot;contact_rich_certified&quot;: false
+    },
+    &quot;state&quot;: &quot;verified&quot;,
+    &quot;validation&quot;: &quot;b1808debfcb6a4bffba3ff678118188dbd3540a5fa2451adf1485a332c56310f&quot;,
+    &quot;adapter_version&quot;: &quot;sdf-rigid-v4&quot;,
+    &quot;source_classification&quot;: {
+      &quot;schema_version&quot;: 1,
+      &quot;origin&quot;: &quot;retrieved&quot;,
+      &quot;provider&quot;: &quot;GitHub SDF model catalog&quot;,
+      &quot;route&quot;: &quot;G3&quot;,
+      &quot;source_id&quot;: &quot;house:models/aws_robomaker_residential_CookingBench_01&quot;,
+      &quot;asset_key&quot;: &quot;767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f&quot;,
+      &quot;dimension_basis&quot;: &quot;source_model_units_not_measured_product_dimensions&quot;,
+      &quot;physical_basis&quot;: &quot;Static prop; source colliders with declared engineering density, not calibrated mass&quot;,
+      &quot;allowed_use&quot;: &quot;simulation_candidate&quot;,
+      &quot;contact_rich_certified&quot;: false,
+      &quot;validation_state&quot;: &quot;verified&quot;,
+      &quot;license&quot;: &quot;MIT-0&quot;,
+      &quot;calibrated&quot;: false
+    }
+  },
+  &quot;import_report&quot;: {
+    &quot;bounds&quot;: [
+      [
+        -0.27276463806629253,
+        -0.5017150044441236,
+        0.0
+      ],
+      [
+        0.27276463806629253,
+        0.5017150044441236,
+        0.09791499003767994
+      ]
+    ],
+    &quot;dimensions&quot;: [
+      0.5455292761325851,
+      1.0034300088882473,
+      0.09791499003767994
+    ],
+    &quot;affordances&quot;: [],
+    &quot;supports&quot;: [],
+    &quot;adapter_version&quot;: &quot;sdf-rigid-v4&quot;,
+    &quot;counts&quot;: {
+      &quot;visual_parts&quot;: 1,
+      &quot;source_collisions&quot;: 1,
+      &quot;collision_hulls&quot;: 1,
+      &quot;textures&quot;: 1
+    },
+    &quot;source_static&quot;: &quot;false&quot;,
+    &quot;mode&quot;: &quot;static&quot;,
+    &quot;collision_policy&quot;: &quot;source primitives / connected convex components / bounded CoACD decomposition of source collision meshes&quot;,
+    &quot;coordinate_policy&quot;: &quot;Gazebo Classic: COLLADA node transforms and metre scale; SDF poses; no extra up_axis rotation&quot;,
+    &quot;normalized_translation_m&quot;: [
+      -8.419291094885484e-05,
+      0.000486221318432678,
+      4.8298587296269346e-08
+    ],
+    &quot;warnings&quot;: [],
+    &quot;limitations&quot;: [
+      &quot;Static rigid prop only; no rolling, lifting or actuation claimed&quot;,
+      &quot;Source SDF/COLLADA scale is not a measured product dimension&quot;,
+      &quot;Approximate source collider decomposition; cavities/contact-rich suitability need task checks&quot;,
+      &quot;No support regions inferred from visual meshes&quot;,
+      &quot;Inertia uses declared engineering density; source mass is not calibrated&quot;
+    ]
+  },
+  &quot;validation&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;passed&quot;: true,
+    &quot;checks&quot;: {
+      &quot;numerical&quot;: true,
+      &quot;stability&quot;: true,
+      &quot;collision_clearance&quot;: true,
+      &quot;physical_provenance&quot;: true
+    },
+    &quot;body_drift_m&quot;: 0.0,
+    &quot;body_angle_rad&quot;: 0.0,
+    &quot;joint_drift&quot;: [],
+    &quot;physics_penetration_m&quot;: 0.0,
+    &quot;closed_geometric_penetration_m&quot;: 0.0,
+    &quot;closed_pair&quot;: null,
+    &quot;warnings&quot;: [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    &quot;sweeps&quot;: [],
+    &quot;physical_unverified&quot;: [],
+    &quot;profile_hash&quot;: &quot;b1808debfcb6a4bffba3ff678118188dbd3540a5fa2451adf1485a332c56310f&quot;,
+    &quot;limitations&quot;: [
+      &quot;No calibrated physical accuracy claim&quot;,
+      &quot;Finite collision sampling&quot;,
+      &quot;Dynamic endpoint and robot manipulation checks are separate&quot;
+    ]
+  }
+}</pre>

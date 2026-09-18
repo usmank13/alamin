@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "status": "validated",
+  "passed": true,
+  "prompt": "Create a standard, tiled home kitchen with everyday countertop clutter. Use fal-generated clutter.",
+  "seed": 300,
+  "attempts": [
+    {
+      "attempt": 0,
+      "passed": true,
+      "seconds": 19.16943233300003,
+      "layout_seconds": 0.5251137700001891,
+      "compile_seconds": 10.239110039000025,
+      "validation_seconds": 5.016251889000159
+    }
+  ],
+  "replay_key": "6c8012b5ec22ef31c79c38474b57bc3f5300698d0bc4ac2d3ca665044ca769da",
+  "seconds": 19.442030135000095,
+  "api_spend_usd": 0,
+  "usage": {
+    "calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cost_usd": 0,
+    "known_cost_usd": 0,
+    "cost_note": "Provider-reported cost; cap checked between calls, not a hard billing ceiling"
+  },
+  "api_spend_note": "Provider-reported cost; cap checked between calls, not a hard billing ceiling",
+  "materials": "fal",
+  "clutter": "fal",
+  "fal_calls": 5,
+  "fal_spend_usd": 0.0,
+  "fal_spend_basis": "fal list price 2026-09; cache hits cost 0; not provider-reported billing",
+  "program_source": "supplied declarative program",
+  "last_failure": null,
+  "validation_scope": "implemented_scene_and_physics_checks",
+  "distribution_verified": false
+}

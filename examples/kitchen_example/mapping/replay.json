@@ -1,0 +1,8 @@
+{
+  "video": "outputs/home_kitchen/variants/variant_000/mapping/replay.mp4",
+  "fps": 5,
+  "source_sha256": "6069dfc5bc5dafabfbeee52deb8220add978d0822941a4e61d290d01db73b906",
+  "source": "Recorded live-physics qpos, not scripted joint sweeps",
+  "view": "observer cutaway; walls hidden only for visualization",
+  "task_passed": true
+}

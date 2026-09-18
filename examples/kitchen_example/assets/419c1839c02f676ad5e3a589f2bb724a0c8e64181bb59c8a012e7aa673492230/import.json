@@ -1,0 +1,10 @@
+{
+  "request": {
+    "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object",
+    "size_m": 0.12,
+    "placement": "support",
+    "physical_use": "visual_only"
+  },
+  "physical_use": "visual_only",
+  "adapter": "fal-visual-library-v1"
+}

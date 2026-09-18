@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "layout_backend": "heuristic",
+  "allow_prior_backoff": false,
+  "robot_radius": null,
+  "access_margin": 0.05,
+  "architecture_only": false,
+  "agent_backend": "codex",
+  "model": null,
+  "materials": "fal",
+  "clutter": "fal",
+  "max_fal_usd": 0.0,
+  "prior_sha256": null
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "errors": [],
+  "scope": [
+    "required_inventory",
+    "required_relations",
+    "asset_identity",
+    "dimensions",
+    "room_containment",
+    "floor",
+    "ceiling",
+    "support"
+  ],
+  "unverified": [
+    "natural_language_interpretation",
+    "functional_zone_geometry",
+    "robot_connectivity",
+    "full_scene_distribution"
+  ],
+  "note": "Physics/collisions remain separate; no LLM approval used."
+}

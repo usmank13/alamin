@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+  "category": "fruit_bowl",
+  "route": "G6",
+  "dimensions": [
+    0.30000001382445884,
+    0.2993294275166611,
+    0.22819246023420733
+  ],
+  "nominal_dimensions": [
+    0.30000001382445884,
+    0.2993294275166611,
+    0.22819246023420733
+  ],
+  "bounds": [
+    [
+      -0.15000000545261968,
+      -0.14966471064983067,
+      1.127993892735546e-09
+    ],
+    [
+      0.15000000837183916,
+      0.14966471686683042,
+      0.22819246136220123
+    ]
+  ],
+  "model": "asset.mjz",
+  "affordances": [],
+  "supports": [],
+  "layout": {
+    "placement": "support",
+    "dynamic": false,
+    "support_height_m": [
+      0.3,
+      1.6
+    ]
+  },
+  "provenance": {
+    "kind": "generated_source",
+    "provider": "fal",
+    "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+    "request_id": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+    "source": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+    "prompt": "A small wooden kitchen fruit bowl filled with apples and oranges, isolated object, a single object centred on a plain background",
+    "retrieved_at": "2026-09-18T02:42:48.562872+00:00",
+    "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+    "hashes": {
+      "model_glb.glb": "ec670546e8c9e3dfe67d5a7d157a7e1c232c27ff895ece34d76b09ff12d163b1",
+      "thumbnail.png": "6911ddd196da79b41f9c5cac742e79573be6f7d95e409f7a10afcda6ee78b1ef",
+      "mesh.obj": "239c76f5a2bbe3e219e7ea477b2dff6b35da8a9377642a8897dab9b7d1bc3f19",
+      "albedo.png": "850726d8e7e914909b4cb42d8c731b81e2e9c16a7a962d7854a5645116282672"
+    },
+    "scale": 0.2511473309845781,
+    "size_basis": "agent_estimate_visual_only_not_measured",
+    "size_band_m": [
+      0.3,
+      0.3
+    ],
+    "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+    "textured": true,
+    "physical_use": "visual_only_no_contact_geometry",
+    "calibrated": false
+  },
+  "capabilities": {
+    "static_geometry": true,
+    "articulated": false,
+    "dynamic": false,
+    "contact_rich_certified": false,
+    "visual_only": true
+  },
+  "state": "verified",
+  "validation": "982d6bcd1cda0c2b52674474db8a19dc761530d5da0b1b716b2f9a19ba13cee2",
+  "adapter_version": "fal-visual-library-v1",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "generated",
+    "provider": "fal",
+    "route": "G6",
+    "source_id": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+    "asset_key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+    "dimension_basis": "unverified_generated_geometry",
+    "physical_basis": "not_assigned_visual_only",
+    "allowed_use": "visual_only",
+    "contact_rich_certified": false,
+    "validation_state": "verified",
+    "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+    "calibrated": false
+  },
+  "identity": {
+    "generated_package": "7a8721a846ba6c0cfe83590fb81bdd8fce0a58fdc9f247e87f0e3240bfcabc5a",
+    "request": {
+      "prompt": "A small wooden kitchen fruit bowl filled with apples and oranges, isolated object",
+      "size_m": 0.3,
+      "placement": "support",
+      "physical_use": "visual_only"
+    },
+    "adapter": "fal-visual-library-v1"
+  }
+}

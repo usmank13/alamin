@@ -1,0 +1,1705 @@
+{
+  "schema_version": 1,
+  "instances": {
+    "cooktop_support_0": {
+      "id": "cooktop_support_0",
+      "category": "prep_table",
+      "class_id": 4,
+      "asset": "assets/62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf/asset.json",
+      "asset_key": "62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf",
+      "dimensions": [
+        1.2,
+        0.7000000000000001,
+        0.9
+      ],
+      "position": [
+        4.284045207910317,
+        -0.2580194846605357,
+        0.0
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "cooking",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          3.934045207910317,
+          -0.8580194846605357,
+          0.0
+        ],
+        [
+          4.634045207910317,
+          0.3419805153394643,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "prep_table",
+        "asset_key": "62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "counters_0": {
+      "id": "counters_0",
+      "category": "counter",
+      "class_id": 5,
+      "asset": "assets/9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444/asset.json",
+      "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+      "dimensions": [
+        1.2,
+        0.6000000000000001,
+        0.9
+      ],
+      "position": [
+        2.41,
+        -2.801980515339464,
+        0.0
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.81,
+          -3.101980515339464,
+          0.0
+        ],
+        [
+          3.0100000000000002,
+          -2.5019805153394636,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "counter",
+        "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "counters_1": {
+      "id": "counters_1",
+      "category": "counter",
+      "class_id": 5,
+      "asset": "assets/9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444/asset.json",
+      "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+      "dimensions": [
+        1.2,
+        0.6000000000000001,
+        0.9
+      ],
+      "position": [
+        1.0899999999999999,
+        -2.801980515339464,
+        0.0
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.4899999999999999,
+          -3.101980515339464,
+          0.0
+        ],
+        [
+          1.69,
+          -2.5019805153394636,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "counter",
+        "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "base_storage_0": {
+      "id": "base_storage_0",
+      "category": "base_cabinet",
+      "class_id": 1,
+      "asset": "assets/1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc/asset.json",
+      "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        -0.9180194846605358,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          -1.218019484660536,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          -0.6180194846605358,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "base_cabinet",
+        "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "door",
+          "role": "door",
+          "closed": 0.0,
+          "open": 1.5707963267948966,
+          "requires": {},
+          "body": "moving",
+          "point": [
+            0.49099999999999994,
+            -0.028,
+            0.54
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "base_storage_1": {
+      "id": "base_storage_1",
+      "category": "base_cabinet",
+      "class_id": 1,
+      "asset": "assets/1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc/asset.json",
+      "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        1.001980515339464,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          0.701980515339464,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          1.3019805153394641,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "base_cabinet",
+        "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "door",
+          "role": "door",
+          "closed": 0.0,
+          "open": 1.5707963267948966,
+          "requires": {},
+          "body": "moving",
+          "point": [
+            0.49099999999999994,
+            -0.028,
+            0.54
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "drawers_0": {
+      "id": "drawers_0",
+      "category": "drawer_unit",
+      "class_id": 2,
+      "asset": "assets/fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a/asset.json",
+      "asset_key": "fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        -1.6380194846605365,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          -1.9380194846605365,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          -1.3380194846605364,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "drawer_unit",
+        "asset_key": "fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "drawer",
+          "role": "drawer",
+          "closed": 0.0,
+          "open": 0.39,
+          "requires": {},
+          "body": "moving",
+          "point": [
+            0,
+            -0.328,
+            0.5850000000000001
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "upper_storage_0": {
+      "id": "upper_storage_0",
+      "category": "wall_cabinet",
+      "class_id": 3,
+      "asset": "assets/11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd/asset.json",
+      "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+      "dimensions": [
+        0.6,
+        0.394,
+        0.7
+      ],
+      "position": [
+        0.255,
+        -0.9180194846605358,
+        1.55
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.07999999999999996,
+          -1.218019484660536,
+          1.55
+        ],
+        [
+          1.0739999999999998,
+          -0.6180194846605358,
+          2.25
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "wall_cabinet",
+        "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "door",
+          "role": "door",
+          "closed": 0.0,
+          "open": 1.5707963267948966,
+          "requires": {},
+          "body": "moving",
+          "point": [
+            0.49099999999999994,
+            -0.028,
+            0.42
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "upper_storage_1": {
+      "id": "upper_storage_1",
+      "category": "wall_cabinet",
+      "class_id": 3,
+      "asset": "assets/11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd/asset.json",
+      "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+      "dimensions": [
+        0.6,
+        0.394,
+        0.7
+      ],
+      "position": [
+        0.255,
+        1.001980515339464,
+        1.55
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.07999999999999996,
+          0.701980515339464,
+          1.55
+        ],
+        [
+          1.0739999999999998,
+          1.3019805153394641,
+          2.25
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "wall_cabinet",
+        "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "door",
+          "role": "door",
+          "closed": 0.0,
+          "open": 1.5707963267948966,
+          "requires": {},
+          "body": "moving",
+          "point": [
+            0.49099999999999994,
+            -0.028,
+            0.42
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "engineering_default",
+        "policy": "kitchen-engineering-v1",
+        "calibrated": false
+      }
+    },
+    "sink_0": {
+      "id": "sink_0",
+      "category": "kitchen_sink_counter_assembly",
+      "class_id": 3000,
+      "asset": "assets/9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06/asset.json",
+      "asset_key": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06",
+      "dimensions": [
+        2.5821858298677065,
+        3.227172732353215,
+        1.1425030969896168
+      ],
+      "position": [
+        3.0204588417337095,
+        1.6908876004056106,
+        0.0
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "washing",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.406872475557102,
+          0.39979468547175734,
+          0.0
+        ],
+        [
+          4.634045207910317,
+          2.9819805153394636,
+          1.1425030969896168
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "GitHub SDF model catalog",
+        "route": "G3",
+        "source_id": "hospital:models/aws_robomaker_residential_KitchenCabinet_01",
+        "asset_key": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "physical_basis": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "MIT-0",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "retrieved_source",
+        "provider": "GitHub SDF model catalog",
+        "source": "hospital:models/aws_robomaker_residential_KitchenCabinet_01",
+        "source_url": "https://github.com/aws-robotics/aws-robomaker-hospital-world/tree/7161eb8448f5cba6a469da7a79ae5d660b0b7f58/models/aws_robomaker_residential_KitchenCabinet_01",
+        "revision": "7161eb8448f5cba6a469da7a79ae5d660b0b7f58",
+        "hashes": {
+          "materials/textures/aws_KitchenCabinet_01.png": "68d0cc8e38a11adc0d9798dc4dfed92a5c45dbf342b26f7929fe57db05a46821",
+          "meshes/aws_KitchenCabinet_01_collision.DAE": "32357200643818e37dc1ea27f419dbb8d4acd6e0a4e485f2a93239365b18740f",
+          "meshes/aws_KitchenCabinet_01_visual.DAE": "e55aab5c171aa80e262313acc8d50d6ba39f703981fd51f19f68ec4f83abf6f2",
+          "model.config": "1f0aa87f904ef9cfe96bcb5a75013ca5b032bbe853487787d7ff4a0ceaacd0d0",
+          "model.sdf": "215fe51f7a37c6f7980fe3fb9667b93a79b05624ca1fb321eeaf050d3a69654f",
+          "REPOSITORY_LICENSE": "ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14"
+        },
+        "license": "MIT-0",
+        "attribution": "aws-robotics/aws-robomaker-hospital-world",
+        "scale": 1.0,
+        "physical_profile": "kitchen-engineering-v1",
+        "physical_policy": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "calibrated": false
+      }
+    },
+    "refrigerator_0": {
+      "id": "refrigerator_0",
+      "category": "fridge",
+      "class_id": 11,
+      "asset": "assets/777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14/asset.json",
+      "asset_key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+      "dimensions": [
+        0.8222380438304314,
+        0.7976130465835221,
+        1.8034840174478075
+      ],
+      "position": [
+        0.9011190219152156,
+        2.703173992448277,
+        0.901742010266897
+      ],
+      "yaw": 0.0,
+      "zone": "cold_storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.4899999934695123,
+          1.4821294249255106,
+          0.0
+        ],
+        [
+          1.3122380372999438,
+          3.101980515339464,
+          1.8034840174478075
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "RoboCasa / Lightwheel",
+        "route": "G3",
+        "source_id": "fridges/Refrigerator055",
+        "asset_key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+        "dimension_basis": "native_asset_scale_not_measured_product_dimensions",
+        "physical_basis": "collision-only effective shell density from engineering registry",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "CC BY 4.0",
+        "calibrated": false
+      },
+      "affordances": [
+        {
+          "joint": "freezer0_door_joint",
+          "role": "access",
+          "closed": 0.0,
+          "open": 0.5,
+          "requires": {},
+          "body": "freezer0",
+          "point": null
+        },
+        {
+          "joint": "fridge_door_joint",
+          "role": "access",
+          "closed": 0.0,
+          "open": 1.5707963267948966,
+          "requires": {},
+          "body": "fridge_door",
+          "point": null
+        },
+        {
+          "joint": "fridge_drawer0_joint",
+          "role": "access",
+          "closed": 0.0,
+          "open": 0.5,
+          "requires": {
+            "fridge_door_joint": 1.5707963267948966
+          },
+          "body": "fridge_drawer0",
+          "point": null
+        }
+      ],
+      "provenance": {
+        "kind": "retrieved_source",
+        "source": "fridges/Refrigerator055",
+        "hashes": {
+          "model.xml": "e233de572e5b363c1df21b02eed67675d41c6cdf8c5c026497a7889fe48d3d59",
+          "visuals/Body001.obj": "304d11c4672723be87b6a0b8e98d28f62554800ed7b82e0d54c3ef044cb0dd23",
+          "visuals/Body001_Clear.obj": "e8295bdee3a1b66293bd13560d8d578acdca8ebf974856a6ab8a0791b0b0bfa8",
+          "visuals/Door001.obj": "286217edd1f22e4b9347342cbcf181c01c07bbad59cc4e7426b0e2ade0481975",
+          "visuals/Door001_Clear.obj": "d196c4a6bd134b6a91ce3a6d78b791e1ae5b1145de70be090de9e075ab923697",
+          "visuals/Drawer001.obj": "48e2baf9d2d4b75edfd437c0828fb8a36056a1988b226147358cdf6197865bd7",
+          "visuals/Drawer002.obj": "42bc8113e308f905dc64a13225dc90ff274713e345fc585d09f09d9da64c00a4",
+          "visuals/T_BC001.png": "94e9322eeffd4297c772b73cba7456497259758b8af1cad428dddebc542dd9ed",
+          "visuals/freezer0.obj": "38f0e7e6669904454d043a91f6d6052744965aefd039d56acfe9ef301990c053",
+          "visuals/fridge_door.obj": "39fe82903837868d8d44376f574f57cdf5084dcafe1363d86ab9f2d9d15e19c9",
+          "visuals/fridge_door_Clear.obj": "eeff729267772b5303fa8df0ccbe757dc27976693203aa9c7d14ee33b660eaae",
+          "visuals/fridge_drawer0.obj": "ce96564b44c7b7ca4aeb8b05656efdd8a5fce5995ae4a5c54fd0e77febb97ef3"
+        },
+        "license": "CC BY 4.0",
+        "attribution": "RoboCasa Team / Lightwheel",
+        "scale": 1.0,
+        "physical_policy": "collision-only effective shell density from engineering registry",
+        "visualization_policy": "native visual meshes; collision debug overlays hidden",
+        "physical_profile": "kitchen-engineering-v1",
+        "effective_density_kg_m3": 180.0,
+        "calibrated": false
+      }
+    },
+    "cooktop_0": {
+      "id": "cooktop_0",
+      "category": "kitchen_cooktop",
+      "class_id": 6728,
+      "asset": "assets/767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f/asset.json",
+      "asset_key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+      "dimensions": [
+        0.5455292761325851,
+        1.0034300088882473,
+        0.09791499003767994
+      ],
+      "position": [
+        4.25180984597661,
+        -0.2047344891046592,
+        0.901
+      ],
+      "yaw": 0.0,
+      "zone": "cooking",
+      "support_parent": "cooktop_support_0",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          3.9790452079103176,
+          -0.7064494935487828,
+          0.901
+        ],
+        [
+          4.524574484042903,
+          0.29698051533946446,
+          0.9989149900376799
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "GitHub SDF model catalog",
+        "route": "G3",
+        "source_id": "house:models/aws_robomaker_residential_CookingBench_01",
+        "asset_key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "physical_basis": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "MIT-0",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "retrieved_source",
+        "provider": "GitHub SDF model catalog",
+        "source": "house:models/aws_robomaker_residential_CookingBench_01",
+        "source_url": "https://github.com/aws-robotics/aws-robomaker-small-house-world/tree/dd44be6205b2e6577bf641300dacc1699cb2ca81/models/aws_robomaker_residential_CookingBench_01",
+        "revision": "dd44be6205b2e6577bf641300dacc1699cb2ca81",
+        "hashes": {
+          "materials/textures/aws_CookingBench_01.png": "bfde7283c1ce34d4f106acdc9fdd05fef9b3434ef97cb2ee8ec45f141b38d896",
+          "meshes/aws_CookingBench_01.DAE": "e4d9de79c4b5582a48633186b3b4704ae898c5701a378748f8cbfb298b696b22",
+          "meshes/aws_CookingBench_01_collision.DAE": "094106327ad818bf79f338ce9aa0b29df481664bdb4d717f491da414074739c0",
+          "meshes/aws_CookingBench_01_visual.DAE": "1e30b76a4f0be37d3860b4406e1bcf8f21397eb58214accb3bb938a667aed0bf",
+          "model.config": "056ca398bf0fea7e777cf85cfbe7ad815e8e6c92c3ab28efea81869114cf722c",
+          "model.sdf": "ced95a89fec4223ec3ea5863a577bc2b28d7d1f516cdfea3d9301c2eaebbf550",
+          "REPOSITORY_LICENSE": "ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14"
+        },
+        "license": "MIT-0",
+        "attribution": "aws-robotics/aws-robomaker-small-house-world",
+        "scale": 1.0,
+        "physical_profile": "kitchen-engineering-v1",
+        "physical_policy": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "calibrated": false
+      }
+    },
+    "fruit_0": {
+      "id": "fruit_0",
+      "category": "fruit_bowl",
+      "class_id": 18,
+      "asset": "assets/3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b/asset.json",
+      "asset_key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+      "dimensions": [
+        0.30000001382445884,
+        0.2993294275166611,
+        0.22819246023420733
+      ],
+      "position": [
+        0.8449999668984624,
+        -2.696645225989294,
+        0.9009999988720061
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.6949999585266231,
+          -2.8463099428561245,
+          0.901
+        ],
+        [
+          0.9949999723510821,
+          -2.5469805153394636,
+          1.1291924602342074
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+        "asset_key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+        "source": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+        "prompt": "A small wooden kitchen fruit bowl filled with apples and oranges, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:42:48.562872+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "ec670546e8c9e3dfe67d5a7d157a7e1c232c27ff895ece34d76b09ff12d163b1",
+          "thumbnail.png": "6911ddd196da79b41f9c5cac742e79573be6f7d95e409f7a10afcda6ee78b1ef",
+          "mesh.obj": "239c76f5a2bbe3e219e7ea477b2dff6b35da8a9377642a8897dab9b7d1bc3f19",
+          "albedo.png": "850726d8e7e914909b4cb42d8c731b81e2e9c16a7a962d7854a5645116282672"
+        },
+        "scale": 0.2511473309845781,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.3,
+          0.3
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "cutting_board_0": {
+      "id": "cutting_board_0",
+      "category": "cutting_board",
+      "class_id": 17,
+      "asset": "assets/c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157/asset.json",
+      "asset_key": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157",
+      "dimensions": [
+        0.37999999817111346,
+        0.17104373821193503,
+        0.022199569484241472
+      ],
+      "position": [
+        1.4550000029171186,
+        -2.8285461194529837,
+        0.901000000068678
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.2650000018288865,
+          -2.9140679917633343,
+          0.901
+        ],
+        [
+          1.645,
+          -2.743024253551399,
+          0.9231995694842414
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+        "asset_key": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+        "source": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+        "prompt": "A worn rectangular wooden kitchen cutting board lying flat, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:43:24.244974+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "bbd9efc02568f3dbe3d381cb5668fc169ceb33bab32f4e46485af909f140798e",
+          "thumbnail.png": "bc7fbc7a3522629077e5690edc8b1692af6be974e8543503538ee4f8d9522c80",
+          "mesh.obj": "6aa26e022c8fc6bad9cd1cdc136eb73ccd2c1cd8c6e120a5064fbb16ed639fc7",
+          "albedo.png": "b84eff4c5861656ef7bcc23a69140957f95d7190647887bbb043adca5402a25e"
+        },
+        "scale": 0.3168380198740956,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.38,
+          0.38
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "paper_towels_0": {
+      "id": "paper_towels_0",
+      "category": "paper_towel_roll",
+      "class_id": 19,
+      "asset": "assets/67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e/asset.json",
+      "asset_key": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e",
+      "dimensions": [
+        0.2409321091508558,
+        0.2358312651101026,
+        0.3300000083278807
+      ],
+      "position": [
+        0.5170843669495042,
+        -1.7725534288427571,
+        0.9009999998354065
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "drawers_0",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.3991687348898974,
+          -1.8930194846605364,
+          0.901
+        ],
+        [
+          0.635,
+          -1.6520873755096805,
+          1.2310000083278807
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+        "asset_key": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+        "source": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+        "prompt": "A partially used white kitchen paper towel roll on a simple stainless steel holder, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:41:44.920607+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "d0ac84636bc57311867600843771644587f98f22a76464377c898af930ef4665",
+          "thumbnail.png": "485777e7bb0738161c1d3870a2bcca48ee6bd370bcb8f795dd9e22c439017c17",
+          "mesh.obj": "6ecae3c935c436051a65a95dd6ad630d8906bdb88435cb3d84adc0bb8cd9651b",
+          "albedo.png": "49546094f184171b6a492b7240732bc3d3844664e320f2a55d433970dc9f6a00"
+        },
+        "scale": 0.3452337767168915,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.33,
+          0.33
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "mugs_0": {
+      "id": "mugs_0",
+      "category": "mug",
+      "class_id": 15,
+      "asset": "assets/419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230/asset.json",
+      "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+      "dimensions": [
+        0.11999999216054372,
+        0.08616805828594655,
+        0.0849121505395285
+      ],
+      "position": [
+        1.2684117975025309,
+        -2.6069805123500744,
+        0.9009999996175495
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.2253277668562135,
+          -2.666980507500008,
+          0.901
+        ],
+        [
+          1.31149582514216,
+          -2.546980515339464,
+          0.9859121505395285
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "source": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:41:53.351087+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "8a2fc7d345c0d6f74eb6a0a12a3d0e8d96e4a2d95a6a09ab424eb9d54fb5a816",
+          "thumbnail.png": "e9ec14e3d0963e0f8146dff6fcb1596496ff94a1d6995a4b60b4c743785a86e9",
+          "mesh.obj": "8ac35bb5c8d291444442e2902ec7e502384cf44d62e653b94f08c650021a07f3",
+          "albedo.png": "d70eeecb5147015f965847ac071d4876092983b8b15352e6425e7252d071aa62"
+        },
+        "scale": 0.12075981903175294,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.12,
+          0.12
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "mugs_1": {
+      "id": "mugs_1",
+      "category": "mug",
+      "class_id": 15,
+      "asset": "assets/419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230/asset.json",
+      "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+      "dimensions": [
+        0.11999999216054372,
+        0.08616805828594655,
+        0.0849121505395285
+      ],
+      "position": [
+        0.7150000500261273,
+        -2.9235687208436207,
+        0.9009999996175495
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.6550000548761938,
+          -2.96665274848325,
+          0.901
+        ],
+        [
+          0.7750000470367375,
+          -2.8804846901973034,
+          0.9859121505395285
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "source": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:41:53.351087+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "8a2fc7d345c0d6f74eb6a0a12a3d0e8d96e4a2d95a6a09ab424eb9d54fb5a816",
+          "thumbnail.png": "e9ec14e3d0963e0f8146dff6fcb1596496ff94a1d6995a4b60b4c743785a86e9",
+          "mesh.obj": "8ac35bb5c8d291444442e2902ec7e502384cf44d62e653b94f08c650021a07f3",
+          "albedo.png": "d70eeecb5147015f965847ac071d4876092983b8b15352e6425e7252d071aa62"
+        },
+        "scale": 0.12075981903175294,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.12,
+          0.12
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "spice_jars_0": {
+      "id": "spice_jars_0",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6078225732150144,
+        -2.9840735069242745,
+        0.9010000031581904
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5706451448674811,
+          -3.0211664965873966,
+          0.901
+        ],
+        [
+          0.645,
+          -2.9469805153394635,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "source": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "prompt": "A small clear glass kitchen spice jar filled with dried herbs and closed with a metal lid, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:43:48.215600+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "da5239e7c09a504ebde6709be559dba8293066113ec109fe90f4eb9e4e844eff",
+          "thumbnail.png": "8b94a8b0f7734f58817140d5e22431ee4a76164b1503f111796726fe252e6aa7",
+          "mesh.obj": "16908f1facc020efedea6d7ae9d38bb9e10e406bffb689a0c65c010720f7cf51",
+          "albedo.png": "2bcc2caa507aad2707dd3bdc9f7f8314da886cf9a7c1431c8e6672c78e56a5eb"
+        },
+        "scale": 0.1278358970429152,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.14,
+          0.14
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "spice_jars_1": {
+      "id": "spice_jars_1",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6078225732150144,
+        -2.884073506924275,
+        0.9010000031581904
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5706451448674811,
+          -2.921166496587397,
+          0.901
+        ],
+        [
+          0.645,
+          -2.846980515339464,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "source": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "prompt": "A small clear glass kitchen spice jar filled with dried herbs and closed with a metal lid, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:43:48.215600+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "da5239e7c09a504ebde6709be559dba8293066113ec109fe90f4eb9e4e844eff",
+          "thumbnail.png": "8b94a8b0f7734f58817140d5e22431ee4a76164b1503f111796726fe252e6aa7",
+          "mesh.obj": "16908f1facc020efedea6d7ae9d38bb9e10e406bffb689a0c65c010720f7cf51",
+          "albedo.png": "2bcc2caa507aad2707dd3bdc9f7f8314da886cf9a7c1431c8e6672c78e56a5eb"
+        },
+        "scale": 0.1278358970429152,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.14,
+          0.14
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    },
+    "spice_jars_2": {
+      "id": "spice_jars_2",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6079070084151891,
+        -2.7841579436869974,
+        0.9010000031581904
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5708140187520669,
+          -2.8213353704719832,
+          0.901
+        ],
+        [
+          0.645,
+          -2.746980515339464,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      },
+      "affordances": [],
+      "provenance": {
+        "kind": "generated_source",
+        "provider": "fal",
+        "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+        "request_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "source": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "prompt": "A small clear glass kitchen spice jar filled with dried herbs and closed with a metal lid, isolated object, a single object centred on a plain background",
+        "retrieved_at": "2026-09-18T02:43:48.215600+00:00",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "hashes": {
+          "model_glb.glb": "da5239e7c09a504ebde6709be559dba8293066113ec109fe90f4eb9e4e844eff",
+          "thumbnail.png": "8b94a8b0f7734f58817140d5e22431ee4a76164b1503f111796726fe252e6aa7",
+          "mesh.obj": "16908f1facc020efedea6d7ae9d38bb9e10e406bffb689a0c65c010720f7cf51",
+          "albedo.png": "2bcc2caa507aad2707dd3bdc9f7f8314da886cf9a7c1431c8e6672c78e56a5eb"
+        },
+        "scale": 0.1278358970429152,
+        "size_basis": "agent_estimate_visual_only_not_measured",
+        "size_band_m": [
+          0.14,
+          0.14
+        ],
+        "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+        "textured": true,
+        "physical_use": "visual_only_no_contact_geometry",
+        "calibrated": false
+      }
+    }
+  },
+  "class_names": {
+    "4": "prep_table",
+    "5": "counter",
+    "1": "base_cabinet",
+    "2": "drawer_unit",
+    "3": "wall_cabinet",
+    "3000": "kitchen_sink_counter_assembly",
+    "11": "fridge",
+    "6728": "kitchen_cooktop",
+    "18": "fruit_bowl",
+    "17": "cutting_board",
+    "19": "paper_towel_roll",
+    "15": "mug",
+    "12": "jar"
+  },
+  "geom_instances": {
+    "12": "cooktop_support_0",
+    "13": "cooktop_support_0",
+    "14": "cooktop_support_0",
+    "15": "cooktop_support_0",
+    "16": "cooktop_support_0",
+    "17": "cooktop_support_0",
+    "18": "cooktop_support_0",
+    "19": "cooktop_support_0",
+    "20": "cooktop_support_0",
+    "21": "cooktop_support_0",
+    "22": "counters_0",
+    "23": "counters_0",
+    "24": "counters_0",
+    "25": "counters_0",
+    "26": "counters_0",
+    "27": "counters_0",
+    "28": "counters_0",
+    "29": "counters_0",
+    "30": "counters_0",
+    "31": "counters_0",
+    "32": "counters_1",
+    "33": "counters_1",
+    "34": "counters_1",
+    "35": "counters_1",
+    "36": "counters_1",
+    "37": "counters_1",
+    "38": "counters_1",
+    "39": "counters_1",
+    "40": "counters_1",
+    "41": "counters_1",
+    "42": "base_storage_0",
+    "43": "base_storage_0",
+    "44": "base_storage_0",
+    "45": "base_storage_0",
+    "46": "base_storage_0",
+    "47": "base_storage_0",
+    "48": "base_storage_0",
+    "49": "base_storage_0",
+    "50": "base_storage_0",
+    "51": "base_storage_0",
+    "52": "base_storage_0",
+    "53": "base_storage_0",
+    "54": "base_storage_0",
+    "55": "base_storage_0",
+    "56": "base_storage_1",
+    "57": "base_storage_1",
+    "58": "base_storage_1",
+    "59": "base_storage_1",
+    "60": "base_storage_1",
+    "61": "base_storage_1",
+    "62": "base_storage_1",
+    "63": "base_storage_1",
+    "64": "base_storage_1",
+    "65": "base_storage_1",
+    "66": "base_storage_1",
+    "67": "base_storage_1",
+    "68": "base_storage_1",
+    "69": "base_storage_1",
+    "70": "drawers_0",
+    "71": "drawers_0",
+    "72": "drawers_0",
+    "73": "drawers_0",
+    "74": "drawers_0",
+    "75": "drawers_0",
+    "76": "drawers_0",
+    "77": "drawers_0",
+    "78": "drawers_0",
+    "79": "drawers_0",
+    "80": "drawers_0",
+    "81": "drawers_0",
+    "82": "drawers_0",
+    "83": "drawers_0",
+    "84": "drawers_0",
+    "85": "drawers_0",
+    "86": "upper_storage_0",
+    "87": "upper_storage_0",
+    "88": "upper_storage_0",
+    "89": "upper_storage_0",
+    "90": "upper_storage_0",
+    "91": "upper_storage_0",
+    "92": "upper_storage_0",
+    "93": "upper_storage_0",
+    "94": "upper_storage_0",
+    "95": "upper_storage_0",
+    "96": "upper_storage_0",
+    "97": "upper_storage_0",
+    "98": "upper_storage_0",
+    "99": "upper_storage_0",
+    "100": "upper_storage_1",
+    "101": "upper_storage_1",
+    "102": "upper_storage_1",
+    "103": "upper_storage_1",
+    "104": "upper_storage_1",
+    "105": "upper_storage_1",
+    "106": "upper_storage_1",
+    "107": "upper_storage_1",
+    "108": "upper_storage_1",
+    "109": "upper_storage_1",
+    "110": "upper_storage_1",
+    "111": "upper_storage_1",
+    "112": "upper_storage_1",
+    "113": "upper_storage_1",
+    "114": "sink_0",
+    "115": "sink_0",
+    "116": "sink_0",
+    "117": "sink_0",
+    "118": "sink_0",
+    "132": "refrigerator_0",
+    "133": "refrigerator_0",
+    "134": "refrigerator_0",
+    "135": "refrigerator_0",
+    "137": "refrigerator_0",
+    "138": "refrigerator_0",
+    "139": "refrigerator_0",
+    "140": "refrigerator_0",
+    "148": "refrigerator_0",
+    "149": "refrigerator_0",
+    "150": "refrigerator_0",
+    "151": "refrigerator_0",
+    "195": "refrigerator_0",
+    "209": "cooktop_0",
+    "210": "cooktop_0",
+    "211": "fruit_0",
+    "212": "cutting_board_0",
+    "213": "paper_towels_0",
+    "214": "mugs_0",
+    "215": "mugs_1",
+    "216": "spice_jars_0",
+    "217": "spice_jars_1",
+    "218": "spice_jars_2"
+  },
+  "joint_instances": {
+    "base_storage_0/door": "base_storage_0",
+    "base_storage_1/door": "base_storage_1",
+    "drawers_0/drawer": "drawers_0",
+    "upper_storage_0/door": "upper_storage_0",
+    "upper_storage_1/door": "upper_storage_1",
+    "refrigerator_0/freezer0_door_joint": "refrigerator_0",
+    "refrigerator_0/fridge_door_joint": "refrigerator_0",
+    "refrigerator_0/fridge_drawer0_joint": "refrigerator_0"
+  },
+  "layout_provenance": {
+    "program_sha256": "2739f3b9e4684370eecb5fdfea3e08f027f373d301c60adad22324c1641e2a58",
+    "registry_sha256": "8969aafb13a67d9b93daf43f953837c919fe3682d922bf282e57e231ee41676a",
+    "dropped": [
+      {
+        "id": "microwave_0",
+        "reason": "no collision-free placement"
+      }
+    ],
+    "relations": [
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "sink"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "counters"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "base_storage"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "drawers"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "upper_storage"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "refrigerator"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "cooktop_support"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      }
+    ],
+    "layout_generator": {
+      "name": "heuristic",
+      "grounding": "engineering_defaults_not_empirical",
+      "requested_seed": 300,
+      "selected_seed": 300,
+      "candidate_count": 1
+    },
+    "dataset_variant": {
+      "source_scene": "/home/usman/Desktop/code/alamin/deliverables/outputs/home_kitchen/scene",
+      "source_ir_sha256": "da2547b9567b4e8dcc339ba98ff5341d34265df816e3e98fe34b9d8d504e5208",
+      "variant": 0,
+      "layout_seed": 300
+    }
+  },
+  "materials": {
+    "source": "fal",
+    "seed": 7100,
+    "realized": {
+      "floor_tile": {
+        "model": "fal-ai/patina/material",
+        "request_id": "01a0b2fd-e5c8-7390-9e08-f353b529683a",
+        "seed": 7100,
+        "tile_m": 0.6,
+        "prompt": "Seamless matte terracotta quarry tiles with light grey grout, uniform material surface, no objects or perspective",
+        "files": {
+          "images.png": "64cf85211dbea5c451f5ff08a74693020e492a561205fa62b81c5156b749b3a7",
+          "basecolor.png": "6d25407ccf65642f78cdf324c7f9dae15ca7f50289865e87ea5fac30dc2593fb",
+          "normal.png": "7477ed6aff3a7dd2c53c8b1cf189095a2b5f736a4be2a68ca9f63ae2b96c4b2e",
+          "roughness.png": "b175978b914c7d7094a949914b4702131b97127bb90a3054d09b38c1f66bf256",
+          "metalness.png": "79238174f0b3e2441720c46339b8cce2c8be2c19a1507831e726b51b8bbe3b82"
+        }
+      },
+      "wall_paint": {
+        "model": "fal-ai/patina/material",
+        "request_id": "01a0b2fd-e84a-73e1-978f-383217436959",
+        "seed": 7100,
+        "tile_m": 1.0,
+        "prompt": "Seamless warm cream washable plaster, uniform material surface, no objects or perspective",
+        "files": {
+          "images.png": "17106cc4d5566d2cc8cb9c821e2f5fca84003ce3e4e7e357c334ee3ffb5d68f0",
+          "basecolor.png": "379a388abf33e5ed619a06857dca965e3a3938597bbabea7c99d599f9f23f08c",
+          "normal.png": "5d7bddfd861f53e5d29f3bf8804f4da494a1744f762c35a5cc01e5dc1964bacb",
+          "roughness.png": "b78035c9388d0b5b6a2837a4d996fc705677bcfc4577ac4c899f58784937fa88",
+          "metalness.png": "79238174f0b3e2441720c46339b8cce2c8be2c19a1507831e726b51b8bbe3b82"
+        }
+      },
+      "paint": {
+        "model": "fal-ai/patina/material",
+        "request_id": "01a0b2fd-ead2-76b1-9b2f-df29319e7679",
+        "seed": 7100,
+        "tile_m": 0.5,
+        "prompt": "Seamless sage green satin cabinet paint, uniform material surface, no objects or perspective",
+        "files": {
+          "images.png": "375998a795ad48acb8c650c5e9389d77bb46db181cf8ea900f681b0a9924eac6",
+          "basecolor.png": "4a76ff0868eca799840147fd87e48a53141e4ec863f5cbde59ac70e9b9335a75",
+          "normal.png": "29951246b458fb79446a13701083a3e2fc0468104d2a9c0efd04934245fe8503",
+          "roughness.png": "4308f252b08d032cd40c839bf20dbc3d292f4eadf2291a8fde3c2227bf633fc7",
+          "metalness.png": "79238174f0b3e2441720c46339b8cce2c8be2c19a1507831e726b51b8bbe3b82"
+        }
+      },
+      "stainless": {
+        "model": "fal-ai/patina/material",
+        "request_id": "01a0b2fd-ed5f-7b40-a0e2-8bbffa052ee8",
+        "seed": 7100,
+        "tile_m": 0.5,
+        "prompt": "brushed stainless steel sheet with fine horizontal grain",
+        "files": {
+          "images.png": "2fc01408686ccca76236ee93bb2e9f9838053d21d25f5a98bb7e6864a0d4e866",
+          "basecolor.png": "4f116469d5b1922e49d1308ba60aac6724180bff82a654c8acea98b3c8fe7641",
+          "normal.png": "0dd59b89bcb054cc533a8024b258957cb4b1eb503a0f5ec8b1cffed424b5a441",
+          "roughness.png": "f65f81c6424a47145cae17b9f14e9970adc299a6f22fcadf05e0451196f91788",
+          "metalness.png": "79238174f0b3e2441720c46339b8cce2c8be2c19a1507831e726b51b8bbe3b82"
+        }
+      },
+      "wood": {
+        "model": "fal-ai/patina/material",
+        "request_id": "01a0b301-41c1-7501-aa93-d0710878667d",
+        "seed": 7100,
+        "tile_m": 0.6,
+        "prompt": "Seamless honey oak veneer, uniform material surface, no objects or perspective",
+        "files": {
+          "images.png": "51bdef15403f987a992d58aafca723099eb426f1d325794752d81cb6d26a49af",
+          "basecolor.png": "d345cbc52ee433d5057346e1176a9b3a793e538a76d5eaecf6d60baa4d7f31a3",
+          "normal.png": "eb6b1d25897a438af5f88900052b65512772bddf384d0efdc32b9a40e34fe953",
+          "roughness.png": "546d5fa6c8228baa88275650508d8142476a5b1ffff085a38679935d93e8b603",
+          "metalness.png": "79238174f0b3e2441720c46339b8cce2c8be2c19a1507831e726b51b8bbe3b82"
+        }
+      }
+    },
+    "fallback": [],
+    "rebound_geoms": 57,
+    "note": "MuJoCo material texture layers (rgb/normal/roughness/metallic) with metric repeat; Cycles reads them from this compiled model. Flat finishes are declared engineering colours."
+  }
+}

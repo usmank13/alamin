@@ -1,0 +1,45 @@
+{
+  "bounds": [
+    [
+      -1.2910929149338533,
+      -1.6135863661766074,
+      0.0
+    ],
+    [
+      1.2910929149338533,
+      1.6135863661766074,
+      1.1425030969896168
+    ]
+  ],
+  "dimensions": [
+    2.5821858298677065,
+    3.227172732353215,
+    1.1425030969896168
+  ],
+  "affordances": [],
+  "supports": [],
+  "adapter_version": "sdf-rigid-v4",
+  "counts": {
+    "visual_parts": 1,
+    "source_collisions": 1,
+    "collision_hulls": 4,
+    "textures": 1
+  },
+  "source_static": "1",
+  "mode": "static",
+  "collision_policy": "source primitives / connected convex components / bounded CoACD decomposition of source collision meshes",
+  "coordinate_policy": "Gazebo Classic: COLLADA node transforms and metre scale; SDF poses; no extra up_axis rotation",
+  "normalized_translation_m": [
+    4.2742283102636947e-05,
+    0.0018688433515903213,
+    0.004782985666828332
+  ],
+  "warnings": [],
+  "limitations": [
+    "Static rigid prop only; no rolling, lifting or actuation claimed",
+    "Source SDF/COLLADA scale is not a measured product dimension",
+    "Approximate source collider decomposition; cavities/contact-rich suitability need task checks",
+    "No support regions inferred from visual meshes",
+    "Inertia uses declared engineering density; source mass is not calibrated"
+  ]
+}

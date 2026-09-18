@@ -1,0 +1,10 @@
+{
+  "request": {
+    "prompt": "A worn rectangular wooden kitchen cutting board lying flat, isolated object",
+    "size_m": 0.38,
+    "placement": "support",
+    "physical_use": "visual_only"
+  },
+  "physical_use": "visual_only",
+  "adapter": "fal-visual-library-v1"
+}

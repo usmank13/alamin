@@ -1,0 +1,26 @@
+{
+  "kind": "generated_source",
+  "provider": "fal",
+  "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+  "request_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+  "source": "01a0b261-cf98-7040-ab61-973c2840e96f",
+  "prompt": "A small clear glass kitchen spice jar filled with dried herbs and closed with a metal lid, isolated object, a single object centred on a plain background",
+  "retrieved_at": "2026-09-18T02:43:48.215600+00:00",
+  "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+  "hashes": {
+    "model_glb.glb": "da5239e7c09a504ebde6709be559dba8293066113ec109fe90f4eb9e4e844eff",
+    "thumbnail.png": "8b94a8b0f7734f58817140d5e22431ee4a76164b1503f111796726fe252e6aa7",
+    "mesh.obj": "16908f1facc020efedea6d7ae9d38bb9e10e406bffb689a0c65c010720f7cf51",
+    "albedo.png": "2bcc2caa507aad2707dd3bdc9f7f8314da886cf9a7c1431c8e6672c78e56a5eb"
+  },
+  "scale": 0.1278358970429152,
+  "size_basis": "agent_estimate_visual_only_not_measured",
+  "size_band_m": [
+    0.14,
+    0.14
+  ],
+  "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+  "textured": true,
+  "physical_use": "visual_only_no_contact_geometry",
+  "calibrated": false
+}

@@ -1,0 +1,107 @@
+<!doctype html><meta charset="utf-8"><title>Scene inspection</title><style>body{font:16px system-ui;max-width:1300px;margin:2em auto;padding:0 1em;background:#fafafa}img,video{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}td,th{padding:.6em;text-align:left;border-bottom:1px solid #ddd}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1em}article,figure{margin:0;padding:1em;background:white;border:1px solid #ddd}a{color:#135ca4}</style><h1>Scene inspection</h1><p>Physics, evidence coverage and task success are separate. A loadable proxy is not a verified functional object.</p><pre>pipeline inspect /home/usman/Desktop/code/alamin/deliverables/outputs/home_kitchen/variants/variant_000/mapping --viewer</pre><div class="grid"><figure><figcaption>Range reconstruction</figcaption><img loading="lazy" src="map.png"></figure><figure><figcaption>Recorded physics replay</figcaption><video controls preload="metadata" src="replay.mp4"></video></figure></div><p><a href="agent_calls.json">agent_calls.json</a></p><table><tr><th>Instance</th><th>Category</th><th>Origin</th><th>Affordances</th><th>Scope</th></tr></table><h2>Reports and failures</h2><pre>{
+  &quot;report.json&quot;: {
+    &quot;metric_version&quot;: &quot;mapping-v2-cell-intersection&quot;,
+    &quot;occupancy_iou&quot;: 0.9032258064516129,
+    &quot;legacy_cell_center_iou&quot;: 0.5286343612334802,
+    &quot;reachable_coverage&quot;: 0.989522700814901,
+    &quot;mean_occupied_distance_to_truth_m&quot;: 0.0008849557522123895,
+    &quot;odometry_travel_m&quot;: 10.725596694754524,
+    &quot;occupied_true_positive&quot;: 224,
+    &quot;occupied_false_positive&quot;: 2,
+    &quot;occupied_false_negative&quot;: 22,
+    &quot;scan_matching_residual_m&quot;: 0.010493723989353082,
+    &quot;passed&quot;: true,
+    &quot;acceptance&quot;: &quot;finite reported reconstruction metric with observations; no spec accuracy threshold&quot;,
+    &quot;evaluation&quot;: &quot;10 cm cell-intersection occupancy; observed-cell IoU; reachable free-space coverage; collider AABBs at 0.23m; not directly comparable to v1 center metric&quot;,
+    &quot;actual_travel_m&quot;: 5.488891784825771,
+    &quot;controller_inputs&quot;: [
+      &quot;noisy rangefinder readings&quot;,
+      &quot;noisy wheel angular velocities&quot;,
+      &quot;noisy IMU gyro&quot;,
+      &quot;known spawn pose&quot;,
+      &quot;configured map bounds&quot;,
+      &quot;robot wheel geometry&quot;
+    ],
+    &quot;ground_truth_usage&quot;: &quot;post-rollout scoring only; not localization, scan matching or navigation&quot;,
+    &quot;flow&quot;: &quot;mapping&quot;,
+    &quot;simulated_seconds&quot;: 60.00000000002736,
+    &quot;wall_seconds&quot;: 893.5273614499997,
+    &quot;warnings&quot;: [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    &quot;streams&quot;: {
+      &quot;camera&quot;: {
+        &quot;samples&quot;: 601,
+        &quot;fields&quot;: [
+          &quot;depth&quot;,
+          &quot;depth_truth&quot;,
+          &quot;instance&quot;,
+          &quot;rgb&quot;,
+          &quot;rgb_truth&quot;,
+          &quot;semantic&quot;,
+          &quot;time&quot;
+        ]
+      },
+      &quot;imu&quot;: {
+        &quot;samples&quot;: 6001,
+        &quot;fields&quot;: [
+          &quot;accelerometer&quot;,
+          &quot;accelerometer_truth&quot;,
+          &quot;gyro&quot;,
+          &quot;gyro_truth&quot;,
+          &quot;time&quot;
+        ]
+      },
+      &quot;localization&quot;: {
+        &quot;samples&quot;: 1201,
+        &quot;fields&quot;: [
+          &quot;pose&quot;,
+          &quot;scan_residual_m&quot;,
+          &quot;time&quot;
+        ]
+      },
+      &quot;odometry&quot;: {
+        &quot;samples&quot;: 6001,
+        &quot;fields&quot;: [
+          &quot;pose&quot;,
+          &quot;time&quot;,
+          &quot;wheel_velocity&quot;
+        ]
+      },
+      &quot;range&quot;: {
+        &quot;samples&quot;: 1201,
+        &quot;fields&quot;: [
+          &quot;observation&quot;,
+          &quot;time&quot;,
+          &quot;truth&quot;,
+          &quot;valid&quot;
+        ]
+      },
+      &quot;state&quot;: {
+        &quot;samples&quot;: 6001,
+        &quot;fields&quot;: [
+          &quot;body_position&quot;,
+          &quot;body_quaternion&quot;,
+          &quot;ctrl&quot;,
+          &quot;qpos&quot;,
+          &quot;qvel&quot;,
+          &quot;time&quot;
+        ]
+      }
+    },
+    &quot;video&quot;: &quot;outputs/home_kitchen/variants/variant_000/mapping/replay.mp4&quot;,
+    &quot;rendering&quot;: {
+      &quot;backend&quot;: &quot;egl&quot;,
+      &quot;vendor&quot;: &quot;NVIDIA Corporation&quot;,
+      &quot;renderer&quot;: &quot;NVIDIA GeForce RTX 3070 Ti Laptop GPU/PCIe/SSE2&quot;,
+      &quot;physics&quot;: &quot;CPU&quot;,
+      &quot;video_encoding&quot;: &quot;CPU ffmpeg&quot;
+    }
+  }
+}</pre>

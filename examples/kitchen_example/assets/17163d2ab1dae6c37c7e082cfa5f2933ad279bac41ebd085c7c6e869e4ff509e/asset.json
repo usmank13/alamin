@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "key": "17163d2ab1dae6c37c7e082cfa5f2933ad279bac41ebd085c7c6e869e4ff509e",
+  "category": "microwave",
+  "route": "G3",
+  "dimensions": [
+    0.6245840449197209,
+    0.5597599882259093,
+    0.3504580070779332
+  ],
+  "nominal_dimensions": [
+    0.6245840449197209,
+    0.5597599882259093,
+    0.3504580070779332
+  ],
+  "bounds": [
+    [
+      -0.31229202357036434,
+      -0.27987998724992047,
+      -0.17522900223097887
+    ],
+    [
+      0.31229202134935646,
+      0.27988000097598886,
+      0.1752290048469543
+    ]
+  ],
+  "model": "asset.mjz",
+  "affordances": [
+    {
+      "joint": "microjoint",
+      "role": "access",
+      "closed": 0.0,
+      "open": -1.5707963267948966,
+      "requires": {},
+      "body": "door",
+      "point": null
+    },
+    {
+      "joint": "Button001_joint",
+      "role": "button",
+      "closed": 0.0,
+      "open": 0.0025,
+      "requires": {},
+      "body": "Button001",
+      "point": null
+    },
+    {
+      "joint": "Button002_joint",
+      "role": "button",
+      "closed": 0.0,
+      "open": 0.0025,
+      "requires": {},
+      "body": "Button002",
+      "point": null
+    }
+  ],
+  "supports": [],
+  "layout": {
+    "placement": "support",
+    "support_height_m": [
+      0.7,
+      1.2
+    ]
+  },
+  "provenance": {
+    "kind": "retrieved_source",
+    "source": "microwaves/Microwave075",
+    "hashes": {
+      "model.xml": "9072bcb78de2e4b9e3967d9b5551a033c6f0ea3f3fb4c0cfed5e146c4f30880b",
+      "visuals/Body001.obj": "428ba9a2aa94226954456a0e138496d4cb1ac45667e06a018afe49cca8ef3d84",
+      "visuals/Button001.obj": "c0656a1e4ae23b421722ccf4c5cd753a52df8f0b40cc05d1d14171932a02b3dc",
+      "visuals/Button002.obj": "8cf21015aececad23d5c395defc2bc1933cde752352e938e9b2ff882c8fd5573",
+      "visuals/Disc001.obj": "0794d8f42cd8b49fd69147de7337eb15f1c7ab451856ab36637e06c0ba5336ad",
+      "visuals/T_BC001.png": "3c306fe0df64bf4065be76fec6a89b2ded18896af2111ceb80816b1e7cabad83",
+      "visuals/door.obj": "62b54729e4d475668415348df53074dca464b4c1a43c7523c8507bc73edff15a",
+      "visuals/door_Clear.obj": "1b24430d5929f838124314c9b4834d9b33f43297bb15f8fcedbd704d00149e44"
+    },
+    "license": "CC BY 4.0",
+    "attribution": "RoboCasa Team / Lightwheel",
+    "scale": 1.0,
+    "physical_policy": "collision-only effective shell density from engineering registry",
+    "visualization_policy": "native visual meshes; collision debug overlays hidden",
+    "physical_profile": "kitchen-engineering-v1",
+    "effective_density_kg_m3": 180.0,
+    "calibrated": false
+  },
+  "capabilities": {
+    "uniform_scale": true,
+    "independent_dimensions": false,
+    "semantic_state": true,
+    "preserve_handle_size": false
+  },
+  "state": "candidate",
+  "validation": null,
+  "adapter_version": "native-mjcf-v9",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "retrieved",
+    "provider": "RoboCasa / Lightwheel",
+    "route": "G3",
+    "source_id": "microwaves/Microwave075",
+    "asset_key": "17163d2ab1dae6c37c7e082cfa5f2933ad279bac41ebd085c7c6e869e4ff509e",
+    "dimension_basis": "native_asset_scale_not_measured_product_dimensions",
+    "physical_basis": "collision-only effective shell density from engineering registry",
+    "allowed_use": "simulation_candidate",
+    "contact_rich_certified": false,
+    "validation_state": "candidate",
+    "license": "CC BY 4.0",
+    "calibrated": false
+  }
+}

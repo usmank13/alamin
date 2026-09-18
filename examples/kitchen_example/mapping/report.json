@@ -1,0 +1,105 @@
+{
+  "metric_version": "mapping-v2-cell-intersection",
+  "occupancy_iou": 0.9032258064516129,
+  "legacy_cell_center_iou": 0.5286343612334802,
+  "reachable_coverage": 0.989522700814901,
+  "mean_occupied_distance_to_truth_m": 0.0008849557522123895,
+  "odometry_travel_m": 10.725596694754524,
+  "occupied_true_positive": 224,
+  "occupied_false_positive": 2,
+  "occupied_false_negative": 22,
+  "scan_matching_residual_m": 0.010493723989353082,
+  "passed": true,
+  "acceptance": "finite reported reconstruction metric with observations; no spec accuracy threshold",
+  "evaluation": "10 cm cell-intersection occupancy; observed-cell IoU; reachable free-space coverage; collider AABBs at 0.23m; not directly comparable to v1 center metric",
+  "actual_travel_m": 5.488891784825771,
+  "controller_inputs": [
+    "noisy rangefinder readings",
+    "noisy wheel angular velocities",
+    "noisy IMU gyro",
+    "known spawn pose",
+    "configured map bounds",
+    "robot wheel geometry"
+  ],
+  "ground_truth_usage": "post-rollout scoring only; not localization, scan matching or navigation",
+  "flow": "mapping",
+  "simulated_seconds": 60.00000000002736,
+  "wall_seconds": 893.5273614499997,
+  "warnings": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "streams": {
+    "camera": {
+      "samples": 601,
+      "fields": [
+        "depth",
+        "depth_truth",
+        "instance",
+        "rgb",
+        "rgb_truth",
+        "semantic",
+        "time"
+      ]
+    },
+    "imu": {
+      "samples": 6001,
+      "fields": [
+        "accelerometer",
+        "accelerometer_truth",
+        "gyro",
+        "gyro_truth",
+        "time"
+      ]
+    },
+    "localization": {
+      "samples": 1201,
+      "fields": [
+        "pose",
+        "scan_residual_m",
+        "time"
+      ]
+    },
+    "odometry": {
+      "samples": 6001,
+      "fields": [
+        "pose",
+        "time",
+        "wheel_velocity"
+      ]
+    },
+    "range": {
+      "samples": 1201,
+      "fields": [
+        "observation",
+        "time",
+        "truth",
+        "valid"
+      ]
+    },
+    "state": {
+      "samples": 6001,
+      "fields": [
+        "body_position",
+        "body_quaternion",
+        "ctrl",
+        "qpos",
+        "qvel",
+        "time"
+      ]
+    }
+  },
+  "video": "outputs/home_kitchen/variants/variant_000/mapping/replay.mp4",
+  "rendering": {
+    "backend": "egl",
+    "vendor": "NVIDIA Corporation",
+    "renderer": "NVIDIA GeForce RTX 3070 Ti Laptop GPU/PCIe/SSE2",
+    "physics": "CPU",
+    "video_encoding": "CPU ffmpeg"
+  }
+}

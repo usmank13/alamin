@@ -1,0 +1,133 @@
+{
+  "sink": {
+    "asset_ref": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06",
+    "candidate": "hospital:models/aws_robomaker_residential_KitchenCabinet_01",
+    "dimensions_m": [
+      2.5821858298677065,
+      3.227172732353215,
+      1.1425030969896168
+    ],
+    "dimension_basis": "source_model_units_not_measured_product_dimensions",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "cooktop": {
+    "asset_ref": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+    "candidate": "house:models/aws_robomaker_residential_CookingBench_01",
+    "dimensions_m": [
+      0.5455292761325851,
+      1.0034300088882473,
+      0.09791499003767994
+    ],
+    "dimension_basis": "source_model_units_not_measured_product_dimensions",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "fruit": {
+    "asset_ref": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+    "candidate": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+    "dimensions_m": [
+      0.30000001382445884,
+      0.2993294275166611,
+      0.22819246023420733
+    ],
+    "dimension_basis": "agent_estimate_visual_only_not_measured",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false,
+      "visual_only": true
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "mugs": {
+    "asset_ref": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+    "candidate": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+    "dimensions_m": [
+      0.11999999216054372,
+      0.08616805828594655,
+      0.0849121505395285
+    ],
+    "dimension_basis": "agent_estimate_visual_only_not_measured",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false,
+      "visual_only": true
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "paper_towels": {
+    "asset_ref": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e",
+    "candidate": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+    "dimensions_m": [
+      0.2409321091508558,
+      0.2358312651101026,
+      0.3300000083278807
+    ],
+    "dimension_basis": "agent_estimate_visual_only_not_measured",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false,
+      "visual_only": true
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "spice_jars": {
+    "asset_ref": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+    "candidate": "01a0b261-cf98-7040-ab61-973c2840e96f",
+    "dimensions_m": [
+      0.07418598124793313,
+      0.074354855132519,
+      0.14000000446573008
+    ],
+    "dimension_basis": "agent_estimate_visual_only_not_measured",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false,
+      "visual_only": true
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  },
+  "cutting_board": {
+    "asset_ref": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157",
+    "candidate": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+    "dimensions_m": [
+      0.37999999817111346,
+      0.17104373821193503,
+      0.022199569484241472
+    ],
+    "dimension_basis": "agent_estimate_visual_only_not_measured",
+    "capabilities": {
+      "static_geometry": true,
+      "articulated": false,
+      "dynamic": false,
+      "contact_rich_certified": false,
+      "visual_only": true
+    },
+    "selection": null,
+    "semantic_match": "agent_or_caller_selected_not_independently_verified"
+  }
+}

@@ -1,0 +1,420 @@
+<!doctype html><meta charset="utf-8"><title>Scene inspection</title><style>body{font:16px system-ui;max-width:1300px;margin:2em auto;padding:0 1em;background:#fafafa}img,video{max-width:100%}pre{white-space:pre-wrap;overflow-wrap:anywhere}td,th{padding:.6em;text-align:left;border-bottom:1px solid #ddd}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1em}article,figure{margin:0;padding:1em;background:white;border:1px solid #ddd}a{color:#135ca4}</style><h1>Scene inspection</h1><p>Physics, evidence coverage and task success are separate. A loadable proxy is not a verified functional object.</p><pre>pipeline inspect /home/usman/Desktop/code/alamin/deliverables/outputs/home_kitchen/variants/variant_000 --viewer</pre><div class="grid"><figure><figcaption>MuJoCo perspective</figcaption><img loading="lazy" src="preview.png"></figure><figure><figcaption>Plan: object footprint bounds</figcaption><img loading="lazy" src="topdown.png"></figure><figure><figcaption>Object provenance; origin is not functional verification</figcaption><img loading="lazy" src="provenance.png"></figure><figure><figcaption>Kinematic sweep — not robot interaction</figcaption><img loading="lazy" src="articulation.gif"></figure><figure><figcaption>Cycles — same compiled scene</figcaption><img loading="lazy" src="render/cycles.png"></figure></div><p><a href="ir.json">ir.json</a> | <a href="program.json">program.json</a> | <a href="manifest.json">manifest.json</a> | <a href="provenance.json">provenance.json</a> | <a href="dimension_sources.json">dimension_sources.json</a> | <a href="asset_resolutions.json">asset_resolutions.json</a> | <a href="cost.json">cost.json</a> | <a href="validation.json">validation.json</a> | <a href="agent_calls.json">agent_calls.json</a> | <a href="fal_calls.json">fal_calls.json</a> | <a href="render/report.json">render/report.json</a> | <a href="mapping/index.html">mapping/index.html</a></p><table><tr><th>Instance</th><th>Category</th><th>Origin</th><th>Affordances</th><th>Scope</th></tr><tr><td>cooktop_support_0</td><td>prep_table</td><td>procedural</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>counters_0</td><td>counter</td><td>procedural</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>counters_1</td><td>counter</td><td>procedural</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>base_storage_0</td><td>base_cabinet</td><td>procedural</td><td>1</td><td>functional suitability not certified</td></tr><tr><td>base_storage_1</td><td>base_cabinet</td><td>procedural</td><td>1</td><td>functional suitability not certified</td></tr><tr><td>drawers_0</td><td>drawer_unit</td><td>procedural</td><td>1</td><td>functional suitability not certified</td></tr><tr><td>upper_storage_0</td><td>wall_cabinet</td><td>procedural</td><td>1</td><td>functional suitability not certified</td></tr><tr><td>upper_storage_1</td><td>wall_cabinet</td><td>procedural</td><td>1</td><td>functional suitability not certified</td></tr><tr><td>sink_0</td><td>kitchen_sink_counter_assembly</td><td>retrieved</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>refrigerator_0</td><td>fridge</td><td>retrieved</td><td>3</td><td>functional suitability not certified</td></tr><tr><td>cooktop_0</td><td>kitchen_cooktop</td><td>retrieved</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>fruit_0</td><td>fruit_bowl</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>cutting_board_0</td><td>cutting_board</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>paper_towels_0</td><td>paper_towel_roll</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>mugs_0</td><td>mug</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>mugs_1</td><td>mug</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>spice_jars_0</td><td>jar</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>spice_jars_1</td><td>jar</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr><tr><td>spice_jars_2</td><td>jar</td><td>generated</td><td>0</td><td>functional suitability not certified</td></tr></table><h2>Reports and failures</h2><pre>{
+  &quot;cost.json&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;status&quot;: &quot;validated&quot;,
+    &quot;passed&quot;: true,
+    &quot;prompt&quot;: &quot;Create a standard, tiled home kitchen with everyday countertop clutter. Use fal-generated clutter.&quot;,
+    &quot;seed&quot;: 300,
+    &quot;attempts&quot;: [
+      {
+        &quot;attempt&quot;: 0,
+        &quot;passed&quot;: true,
+        &quot;seconds&quot;: 19.16943233300003,
+        &quot;layout_seconds&quot;: 0.5251137700001891,
+        &quot;compile_seconds&quot;: 10.239110039000025,
+        &quot;validation_seconds&quot;: 5.016251889000159
+      }
+    ],
+    &quot;replay_key&quot;: &quot;6c8012b5ec22ef31c79c38474b57bc3f5300698d0bc4ac2d3ca665044ca769da&quot;,
+    &quot;seconds&quot;: 19.442030135000095,
+    &quot;api_spend_usd&quot;: 0,
+    &quot;usage&quot;: {
+      &quot;calls&quot;: 0,
+      &quot;input_tokens&quot;: 0,
+      &quot;output_tokens&quot;: 0,
+      &quot;cost_usd&quot;: 0,
+      &quot;known_cost_usd&quot;: 0,
+      &quot;cost_note&quot;: &quot;Provider-reported cost; cap checked between calls, not a hard billing ceiling&quot;
+    },
+    &quot;api_spend_note&quot;: &quot;Provider-reported cost; cap checked between calls, not a hard billing ceiling&quot;,
+    &quot;materials&quot;: &quot;fal&quot;,
+    &quot;clutter&quot;: &quot;fal&quot;,
+    &quot;fal_calls&quot;: 5,
+    &quot;fal_spend_usd&quot;: 0.0,
+    &quot;fal_spend_basis&quot;: &quot;fal list price 2026-09; cache hits cost 0; not provider-reported billing&quot;,
+    &quot;program_source&quot;: &quot;supplied declarative program&quot;,
+    &quot;last_failure&quot;: null,
+    &quot;validation_scope&quot;: &quot;implemented_scene_and_physics_checks&quot;,
+    &quot;distribution_verified&quot;: false
+  },
+  &quot;validation.json&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;passed&quot;: true,
+    &quot;checks&quot;: {
+      &quot;numerical&quot;: true,
+      &quot;stability&quot;: true,
+      &quot;collision_clearance&quot;: true,
+      &quot;physical_provenance&quot;: true,
+      &quot;five_articulated_objects&quot;: true,
+      &quot;metric_bands&quot;: true,
+      &quot;door_widths&quot;: true,
+      &quot;robot_access&quot;: true,
+      &quot;pairwise_articulation&quot;: true
+    },
+    &quot;body_drift_m&quot;: 0.0,
+    &quot;body_angle_rad&quot;: 4.2146848510894035e-08,
+    &quot;joint_drift&quot;: [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    &quot;physics_penetration_m&quot;: 0.0,
+    &quot;closed_geometric_penetration_m&quot;: 0.0,
+    &quot;closed_pair&quot;: null,
+    &quot;warnings&quot;: [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    &quot;sweeps&quot;: [
+      {
+        &quot;joint&quot;: &quot;base_storage_0/door&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;base_storage_1/door&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;drawers_0/drawer&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;upper_storage_0/door&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;upper_storage_1/door&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;refrigerator_0/freezer0_door_joint&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;refrigerator_0/fridge_door_joint&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {},
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      },
+      {
+        &quot;joint&quot;: &quot;refrigerator_0/fridge_drawer0_joint&quot;,
+        &quot;max_penetration_m&quot;: 0.0,
+        &quot;pair&quot;: null,
+        &quot;prerequisites&quot;: {
+          &quot;refrigerator_0/fridge_door_joint&quot;: 1.5707963267948966
+        },
+        &quot;passed&quot;: true,
+        &quot;method&quot;: &quot;21 kinematic samples; not dynamic reach proof&quot;
+      }
+    ],
+    &quot;physical_unverified&quot;: [],
+    &quot;profile_hash&quot;: &quot;982d6bcd1cda0c2b52674474db8a19dc761530d5da0b1b716b2f9a19ba13cee2&quot;,
+    &quot;limitations&quot;: [
+      &quot;No calibrated physical accuracy claim&quot;,
+      &quot;Finite collision sampling&quot;,
+      &quot;Dynamic endpoint and robot manipulation checks are separate&quot;
+    ],
+    &quot;articulated_objects&quot;: 6,
+    &quot;metrics&quot;: [
+      {
+        &quot;instance&quot;: &quot;cooktop_support_0&quot;,
+        &quot;category&quot;: &quot;prep_table&quot;,
+        &quot;mass_kg&quot;: 14.364,
+        &quot;mass_band_kg&quot;: [
+          10,
+          150
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.8999999999999998,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;counters_0&quot;,
+        &quot;category&quot;: &quot;counter&quot;,
+        &quot;mass_kg&quot;: 13.068,
+        &quot;mass_band_kg&quot;: [
+          10,
+          150
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.9,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;counters_1&quot;,
+        &quot;category&quot;: &quot;counter&quot;,
+        &quot;mass_kg&quot;: 13.068,
+        &quot;mass_band_kg&quot;: [
+          10,
+          150
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.9,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;base_storage_0&quot;,
+        &quot;category&quot;: &quot;base_cabinet&quot;,
+        &quot;mass_kg&quot;: 29.97535,
+        &quot;mass_band_kg&quot;: [
+          15,
+          80
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.8999999999999998,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;base_storage_1&quot;,
+        &quot;category&quot;: &quot;base_cabinet&quot;,
+        &quot;mass_kg&quot;: 29.97535,
+        &quot;mass_band_kg&quot;: [
+          15,
+          80
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.8999999999999998,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;drawers_0&quot;,
+        &quot;category&quot;: &quot;drawer_unit&quot;,
+        &quot;mass_kg&quot;: 33.43383,
+        &quot;mass_band_kg&quot;: [
+          15,
+          80
+        ],
+        &quot;mass_ok&quot;: true,
+        &quot;top_m&quot;: 0.8999999999999998,
+        &quot;top_band_m&quot;: [
+          0.85,
+          0.95
+        ],
+        &quot;top_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;upper_storage_0&quot;,
+        &quot;category&quot;: &quot;wall_cabinet&quot;,
+        &quot;mass_kg&quot;: 18.13859,
+        &quot;mass_band_kg&quot;: [
+          8,
+          50
+        ],
+        &quot;mass_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;upper_storage_1&quot;,
+        &quot;category&quot;: &quot;wall_cabinet&quot;,
+        &quot;mass_kg&quot;: 18.13859,
+        &quot;mass_band_kg&quot;: [
+          8,
+          50
+        ],
+        &quot;mass_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;sink_0&quot;,
+        &quot;category&quot;: &quot;kitchen_sink_counter_assembly&quot;,
+        &quot;mass_kg&quot;: 518.643,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null
+      },
+      {
+        &quot;instance&quot;: &quot;refrigerator_0&quot;,
+        &quot;category&quot;: &quot;fridge&quot;,
+        &quot;mass_kg&quot;: 92.7481,
+        &quot;mass_band_kg&quot;: [
+          40,
+          250
+        ],
+        &quot;mass_ok&quot;: true
+      },
+      {
+        &quot;instance&quot;: &quot;cooktop_0&quot;,
+        &quot;category&quot;: &quot;kitchen_cooktop&quot;,
+        &quot;mass_kg&quot;: 9.64775,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null
+      },
+      {
+        &quot;instance&quot;: &quot;fruit_0&quot;,
+        &quot;category&quot;: &quot;fruit_bowl&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;cutting_board_0&quot;,
+        &quot;category&quot;: &quot;cutting_board&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;paper_towels_0&quot;,
+        &quot;category&quot;: &quot;paper_towel_roll&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;mugs_0&quot;,
+        &quot;category&quot;: &quot;mug&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;mugs_1&quot;,
+        &quot;category&quot;: &quot;mug&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;spice_jars_0&quot;,
+        &quot;category&quot;: &quot;jar&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;spice_jars_1&quot;,
+        &quot;category&quot;: &quot;jar&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      },
+      {
+        &quot;instance&quot;: &quot;spice_jars_2&quot;,
+        &quot;category&quot;: &quot;jar&quot;,
+        &quot;mass_kg&quot;: 0.0,
+        &quot;mass_band_kg&quot;: null,
+        &quot;mass_ok&quot;: null,
+        &quot;mass_check_scope&quot;: &quot;not_applicable_visual_only_no_contact_geometry&quot;
+      }
+    ],
+    &quot;openings&quot;: [
+      {
+        &quot;id&quot;: &quot;entrance&quot;,
+        &quot;clear_width_m&quot;: 0.95,
+        &quot;ok&quot;: true
+      }
+    ],
+    &quot;access&quot;: {
+      &quot;robot_radius_m&quot;: 0.25,
+      &quot;entrance_reachable&quot;: true,
+      &quot;unreachable&quot;: [],
+      &quot;components&quot;: 1,
+      &quot;model&quot;: &quot;disc through compiled closed-state colliders; not manipulation reachability&quot;
+    },
+    &quot;pairwise_articulation&quot;: [],
+    &quot;density&quot;: {
+      &quot;objects_per_m2&quot;: 0.6333333333333333,
+      &quot;articulated&quot;: 6,
+      &quot;supported&quot;: 9,
+      &quot;note&quot;: &quot;reported, not gated&quot;
+    },
+    &quot;acceptance_profile&quot;: &quot;brief_five_articulated&quot;,
+    &quot;area_m2&quot;: 30
+  },
+  &quot;scene_checks.json&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;passed&quot;: true,
+    &quot;errors&quot;: [],
+    &quot;scope&quot;: [
+      &quot;required_inventory&quot;,
+      &quot;required_relations&quot;,
+      &quot;asset_identity&quot;,
+      &quot;dimensions&quot;,
+      &quot;room_containment&quot;,
+      &quot;floor&quot;,
+      &quot;ceiling&quot;,
+      &quot;support&quot;
+    ],
+    &quot;unverified&quot;: [
+      &quot;natural_language_interpretation&quot;,
+      &quot;functional_zone_geometry&quot;,
+      &quot;robot_connectivity&quot;,
+      &quot;full_scene_distribution&quot;
+    ],
+    &quot;note&quot;: &quot;Physics/collisions remain separate; no LLM approval used.&quot;
+  },
+  &quot;generation.json&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;layout_backend&quot;: &quot;heuristic&quot;,
+    &quot;allow_prior_backoff&quot;: false,
+    &quot;robot_radius&quot;: null,
+    &quot;access_margin&quot;: 0.05,
+    &quot;architecture_only&quot;: false,
+    &quot;agent_backend&quot;: &quot;codex&quot;,
+    &quot;model&quot;: null,
+    &quot;materials&quot;: &quot;fal&quot;,
+    &quot;clutter&quot;: &quot;fal&quot;,
+    &quot;max_fal_usd&quot;: 0.0,
+    &quot;prior_sha256&quot;: null
+  }
+}</pre>

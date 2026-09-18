@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "prompt": "Create a standard, tiled home kitchen with everyday countertop clutter. Use fal-generated clutter.",
+  "space": {
+    "kind": "home_kitchen",
+    "area_m2": 30,
+    "shape": "rectangle",
+    "annexes": 0
+  },
+  "objects": [
+    {
+      "id": "sink",
+      "category": "kitchen_sink_counter_assembly",
+      "count": 1,
+      "zone": "washing",
+      "required": true,
+      "asset_ref": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06"
+    },
+    {
+      "id": "counters",
+      "category": "counter",
+      "count": 2,
+      "zone": "preparation",
+      "required": true,
+      "family": "table"
+    },
+    {
+      "id": "base_storage",
+      "category": "base_cabinet",
+      "count": 2,
+      "zone": "storage",
+      "required": true,
+      "family": "cabinet"
+    },
+    {
+      "id": "drawers",
+      "category": "drawer_unit",
+      "count": 1,
+      "zone": "storage",
+      "required": true,
+      "family": "drawer"
+    },
+    {
+      "id": "upper_storage",
+      "category": "wall_cabinet",
+      "count": 2,
+      "zone": "storage",
+      "required": true,
+      "family": "cabinet"
+    },
+    {
+      "id": "refrigerator",
+      "category": "fridge",
+      "count": 1,
+      "zone": "cold_storage",
+      "required": true
+    },
+    {
+      "id": "cooktop_support",
+      "category": "prep_table",
+      "count": 1,
+      "zone": "cooking",
+      "required": false,
+      "family": "table"
+    },
+    {
+      "id": "cooktop",
+      "category": "kitchen_cooktop",
+      "count": 1,
+      "zone": "cooking",
+      "required": true,
+      "asset_ref": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f"
+    },
+    {
+      "id": "microwave",
+      "category": "microwave",
+      "count": 1,
+      "zone": "preparation",
+      "required": false
+    },
+    {
+      "id": "fruit",
+      "category": "fruit_bowl",
+      "count": 1,
+      "zone": "preparation",
+      "required": true,
+      "asset_ref": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b"
+    },
+    {
+      "id": "mugs",
+      "category": "mug",
+      "count": 2,
+      "zone": "preparation",
+      "required": true,
+      "asset_ref": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230"
+    },
+    {
+      "id": "paper_towels",
+      "category": "paper_towel_roll",
+      "count": 1,
+      "zone": "preparation",
+      "required": true,
+      "asset_ref": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e"
+    },
+    {
+      "id": "spice_jars",
+      "category": "jar",
+      "count": 3,
+      "zone": "preparation",
+      "required": true,
+      "asset_ref": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af"
+    },
+    {
+      "id": "cutting_board",
+      "category": "cutting_board",
+      "count": 1,
+      "zone": "preparation",
+      "required": true,
+      "asset_ref": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157"
+    }
+  ],
+  "relations": [
+    {
+      "kind": "against_wall",
+      "objects": [
+        "sink"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "counters"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "base_storage"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "drawers"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "upper_storage"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "refrigerator"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "cooktop_support"
+      ],
+      "required": false
+    }
+  ]
+}

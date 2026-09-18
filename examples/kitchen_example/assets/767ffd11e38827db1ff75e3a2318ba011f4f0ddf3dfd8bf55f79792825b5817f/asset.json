@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+  "identity": {
+    "source": "94645ea0aae23dd557140628f3eb69546abe08d3cdd37e89e0c5a4e910264d75",
+    "adapter": "sdf-rigid-v4",
+    "category": "kitchen_cooktop",
+    "mode": "static",
+    "placement": "support",
+    "policy": {
+      "version": "kitchen-engineering-v1",
+      "status": "engineering_defaults_not_hardware_calibrated",
+      "density_kg_m3": {
+        "panel": 600.0,
+        "steel": 7800.0,
+        "plastic": 950.0
+      },
+      "panel_thickness_m": 0.018,
+      "gap_m": 0.004,
+      "aisle_m": 1.2,
+      "door_clear_width_m": 0.95,
+      "room_height_m": 2.8,
+      "wall_thickness_m": 0.12,
+      "aspect": 1.35,
+      "timestep_s": 0.002,
+      "settle_s": 5.0,
+      "penetration_m": 0.002,
+      "slide_drift_m": 0.005,
+      "hinge_drift_rad": 0.008726646259971648,
+      "joint_damping": 2.0,
+      "joint_frictionloss": 0.2,
+      "retrieved_shell_proxy_kg_m3": 180.0,
+      "materials_version": "fal-patina-v1",
+      "robot_radius_m": 0.25,
+      "robot_radius_note": "Default access disc for a compact mobile base (Stretch-class footprint); override per robot.",
+      "retrieved_shell_note": "Effective bulk density for hollow appliance collider volumes, not material density or measured appliance mass. Explicit engineering proxy; original source remains archived."
+    }
+  },
+  "category": "kitchen_cooktop",
+  "route": "G3",
+  "model": "asset.mjz",
+  "dimensions": [
+    0.5455292761325851,
+    1.0034300088882473,
+    0.09791499003767994
+  ],
+  "nominal_dimensions": [
+    0.5455292761325851,
+    1.0034300088882473,
+    0.09791499003767994
+  ],
+  "bounds": [
+    [
+      -0.27276463806629253,
+      -0.5017150044441236,
+      0.0
+    ],
+    [
+      0.27276463806629253,
+      0.5017150044441236,
+      0.09791499003767994
+    ]
+  ],
+  "affordances": [],
+  "supports": [],
+  "layout": {
+    "placement": "support",
+    "dynamic": false
+  },
+  "provenance": {
+    "kind": "retrieved_source",
+    "provider": "GitHub SDF model catalog",
+    "source": "house:models/aws_robomaker_residential_CookingBench_01",
+    "source_url": "https://github.com/aws-robotics/aws-robomaker-small-house-world/tree/dd44be6205b2e6577bf641300dacc1699cb2ca81/models/aws_robomaker_residential_CookingBench_01",
+    "revision": "dd44be6205b2e6577bf641300dacc1699cb2ca81",
+    "hashes": {
+      "materials/textures/aws_CookingBench_01.png": "bfde7283c1ce34d4f106acdc9fdd05fef9b3434ef97cb2ee8ec45f141b38d896",
+      "meshes/aws_CookingBench_01.DAE": "e4d9de79c4b5582a48633186b3b4704ae898c5701a378748f8cbfb298b696b22",
+      "meshes/aws_CookingBench_01_collision.DAE": "094106327ad818bf79f338ce9aa0b29df481664bdb4d717f491da414074739c0",
+      "meshes/aws_CookingBench_01_visual.DAE": "1e30b76a4f0be37d3860b4406e1bcf8f21397eb58214accb3bb938a667aed0bf",
+      "model.config": "056ca398bf0fea7e777cf85cfbe7ad815e8e6c92c3ab28efea81869114cf722c",
+      "model.sdf": "ced95a89fec4223ec3ea5863a577bc2b28d7d1f516cdfea3d9301c2eaebbf550",
+      "REPOSITORY_LICENSE": "ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14"
+    },
+    "license": "MIT-0",
+    "attribution": "aws-robotics/aws-robomaker-small-house-world",
+    "scale": 1.0,
+    "physical_profile": "kitchen-engineering-v1",
+    "physical_policy": "Static prop; source colliders with declared engineering density, not calibrated mass",
+    "dimension_basis": "source_model_units_not_measured_product_dimensions",
+    "calibrated": false
+  },
+  "capabilities": {
+    "static_geometry": true,
+    "articulated": false,
+    "dynamic": false,
+    "contact_rich_certified": false
+  },
+  "state": "verified",
+  "validation": "b1808debfcb6a4bffba3ff678118188dbd3540a5fa2451adf1485a332c56310f",
+  "adapter_version": "sdf-rigid-v4",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "retrieved",
+    "provider": "GitHub SDF model catalog",
+    "route": "G3",
+    "source_id": "house:models/aws_robomaker_residential_CookingBench_01",
+    "asset_key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+    "dimension_basis": "source_model_units_not_measured_product_dimensions",
+    "physical_basis": "Static prop; source colliders with declared engineering density, not calibrated mass",
+    "allowed_use": "simulation_candidate",
+    "contact_rich_certified": false,
+    "validation_state": "verified",
+    "license": "MIT-0",
+    "calibrated": false
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "kind": "material",
+    "finish": "floor_tile",
+    "seed": 0,
+    "model": "fal-ai/patina/material",
+    "cached": true,
+    "cost_usd": 0.0,
+    "request_id": "01a0b24a-8856-7c73-bd5c-170caaa0caab"
+  },
+  {
+    "kind": "material",
+    "finish": "wall_paint",
+    "seed": 0,
+    "model": "fal-ai/patina/material",
+    "cached": true,
+    "cost_usd": 0.0,
+    "request_id": "01a0b24a-8b8d-7a60-83fd-e338fa314af7"
+  },
+  {
+    "kind": "material",
+    "finish": "paint",
+    "seed": 0,
+    "model": "fal-ai/patina/material",
+    "cached": true,
+    "cost_usd": 0.0,
+    "request_id": "01a0b24a-8e62-7902-9b5e-ca279f61eae1"
+  },
+  {
+    "kind": "material",
+    "finish": "stainless",
+    "seed": 0,
+    "model": "fal-ai/patina/material",
+    "cached": true,
+    "cost_usd": 0.0,
+    "request_id": "01a0b24a-918c-7553-a758-30135c5668d3"
+  },
+  {
+    "kind": "material",
+    "finish": "wood",
+    "seed": 0,
+    "model": "fal-ai/patina/material",
+    "cached": true,
+    "cost_usd": 0.0,
+    "request_id": "01a0b24a-9402-7f53-af08-2e6454f5ebb4"
+  }
+]

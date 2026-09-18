@@ -1,0 +1,57 @@
+{
+  "candidate": {
+    "candidate_id": "hospital:models/aws_robomaker_residential_KitchenCabinet_01",
+    "label": "aws robomaker residential Kitchen Cabinet 01",
+    "source": {
+      "id": "hospital",
+      "repo": "aws-robotics/aws-robomaker-hospital-world",
+      "revision": "7161eb8448f5cba6a469da7a79ae5d660b0b7f58",
+      "prefix": "models/",
+      "license_file": "LICENSE",
+      "license": "MIT-0"
+    },
+    "folder": "models/aws_robomaker_residential_KitchenCabinet_01",
+    "files": [
+      {
+        "path": "models/aws_robomaker_residential_KitchenCabinet_01/materials/textures/aws_KitchenCabinet_01.png",
+        "sha": "5fdf5fb9ede7da941eb9dc9afcd520f3bee9c327",
+        "size": 448416
+      },
+      {
+        "path": "models/aws_robomaker_residential_KitchenCabinet_01/meshes/aws_KitchenCabinet_01_collision.DAE",
+        "sha": "df990ad5a8ddf269ccf588f78998133b7d648fa2",
+        "size": 12138
+      },
+      {
+        "path": "models/aws_robomaker_residential_KitchenCabinet_01/meshes/aws_KitchenCabinet_01_visual.DAE",
+        "sha": "6e1f776d27ef25beb8c91f5ca59756cd0ea30d9e",
+        "size": 2165232
+      },
+      {
+        "path": "models/aws_robomaker_residential_KitchenCabinet_01/model.config",
+        "sha": "dd05094f55f27b52b69a81f19b4235248c9d0127",
+        "size": 283
+      },
+      {
+        "path": "models/aws_robomaker_residential_KitchenCabinet_01/model.sdf",
+        "sha": "07086307b81b421c9f2d25f5b3d23ec53455953a",
+        "size": 1832
+      }
+    ],
+    "license_blob": {
+      "path": "LICENSE",
+      "sha": "e0d30fcd310e254efc2a0090193d14a4562d07be",
+      "size": 931
+    },
+    "source_url": "https://github.com/aws-robotics/aws-robomaker-hospital-world/tree/7161eb8448f5cba6a469da7a79ae5d660b0b7f58/models/aws_robomaker_residential_KitchenCabinet_01"
+  },
+  "sha256": {
+    "materials/textures/aws_KitchenCabinet_01.png": "68d0cc8e38a11adc0d9798dc4dfed92a5c45dbf342b26f7929fe57db05a46821",
+    "meshes/aws_KitchenCabinet_01_collision.DAE": "32357200643818e37dc1ea27f419dbb8d4acd6e0a4e485f2a93239365b18740f",
+    "meshes/aws_KitchenCabinet_01_visual.DAE": "e55aab5c171aa80e262313acc8d50d6ba39f703981fd51f19f68ec4f83abf6f2",
+    "model.config": "1f0aa87f904ef9cfe96bcb5a75013ca5b032bbe853487787d7ff4a0ceaacd0d0",
+    "model.sdf": "215fe51f7a37c6f7980fe3fb9667b93a79b05624ca1fb321eeaf050d3a69654f",
+    "REPOSITORY_LICENSE": "ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14"
+  },
+  "units": "SDF metres; source-model scale, not product measurement"
+}

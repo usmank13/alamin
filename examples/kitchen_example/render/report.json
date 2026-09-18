@@ -1,0 +1,10 @@
+{
+  "engine": "Cycles",
+  "device": "CPU",
+  "samples": 32,
+  "resolution": 1024,
+  "seconds": 29.229549464,
+  "geometry_source": "same compiled SceneIR",
+  "materials": "MuJoCo material texture layers (rgb/normal/roughness/metallic) mapped one-to-one onto Principled BSDF from the same compiled model; flat finishes use the MuJoCo shininess/reflectance scalars",
+  "diffusion": false
+}

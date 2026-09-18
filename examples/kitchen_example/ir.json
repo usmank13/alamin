@@ -1,0 +1,1113 @@
+{
+  "schema_version": 1,
+  "meta": {
+    "prompt": "Create a standard, tiled home kitchen with everyday countertop clutter. Use fal-generated clutter.",
+    "seed": 300,
+    "area_m2": 30,
+    "units": "metres",
+    "up": "Z",
+    "origin": "entrance threshold",
+    "pipeline_version": "0.1.0",
+    "appearance": {
+      "light_multiplier": 1.132496203004414,
+      "tint": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "texture_repeat": 8.34469815864415,
+      "materials": {
+        "source": "fal",
+        "seed": 7100,
+        "overrides": {
+          "floor_tile": {
+            "prompt": "Seamless matte terracotta quarry tiles with light grey grout, uniform material surface, no objects or perspective",
+            "tile_m": 0.6
+          },
+          "wall_paint": {
+            "prompt": "Seamless warm cream washable plaster, uniform material surface, no objects or perspective",
+            "tile_m": 1.0
+          },
+          "paint": {
+            "prompt": "Seamless sage green satin cabinet paint, uniform material surface, no objects or perspective",
+            "tile_m": 0.5
+          },
+          "wood": {
+            "prompt": "Seamless honey oak veneer, uniform material surface, no objects or perspective",
+            "tile_m": 0.6
+          }
+        }
+      }
+    }
+  },
+  "rooms": [
+    {
+      "id": "main",
+      "polygon": [
+        [
+          0,
+          3.181980515339464
+        ],
+        [
+          0,
+          -3.181980515339464
+        ],
+        [
+          4.714045207910317,
+          -3.181980515339464
+        ],
+        [
+          4.714045207910317,
+          3.181980515339464
+        ]
+      ],
+      "height": 2.8,
+      "role": "home_kitchen"
+    }
+  ],
+  "openings": [
+    {
+      "id": "entrance",
+      "position": [
+        0,
+        0.0,
+        0
+      ],
+      "width": 0.95,
+      "height": 2.1,
+      "rooms": [
+        "main",
+        "exterior"
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "sink_0",
+      "category": "kitchen_sink_counter_assembly",
+      "class_id": 3000,
+      "asset": "assets/9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06/asset.json",
+      "asset_key": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06",
+      "dimensions": [
+        2.5821858298677065,
+        3.227172732353215,
+        1.1425030969896168
+      ],
+      "position": [
+        3.0204588417337095,
+        1.6908876004056106,
+        0.0
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "washing",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.406872475557102,
+          0.39979468547175734,
+          0.0
+        ],
+        [
+          4.634045207910317,
+          2.9819805153394636,
+          1.1425030969896168
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "GitHub SDF model catalog",
+        "route": "G3",
+        "source_id": "hospital:models/aws_robomaker_residential_KitchenCabinet_01",
+        "asset_key": "9eb0835bf86c4eff7804a9e28f1b0e569048b24c3720dd04f2d57f8233585a06",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "physical_basis": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "MIT-0",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "cooktop_support_0",
+      "category": "prep_table",
+      "class_id": 4,
+      "asset": "assets/62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf/asset.json",
+      "asset_key": "62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf",
+      "dimensions": [
+        1.2,
+        0.7000000000000001,
+        0.9
+      ],
+      "position": [
+        4.284045207910317,
+        -0.2580194846605357,
+        0.0
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "cooking",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          3.934045207910317,
+          -0.8580194846605357,
+          0.0
+        ],
+        [
+          4.634045207910317,
+          0.3419805153394643,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "prep_table",
+        "asset_key": "62ffafd6aaa663117b70205e4c50a6afddd4a555f580f6a8a447c198a32e01bf",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "counters_0",
+      "category": "counter",
+      "class_id": 5,
+      "asset": "assets/9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444/asset.json",
+      "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+      "dimensions": [
+        1.2,
+        0.6000000000000001,
+        0.9
+      ],
+      "position": [
+        2.41,
+        -2.801980515339464,
+        0.0
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.81,
+          -3.101980515339464,
+          0.0
+        ],
+        [
+          3.0100000000000002,
+          -2.5019805153394636,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "counter",
+        "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "counters_1",
+      "category": "counter",
+      "class_id": 5,
+      "asset": "assets/9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444/asset.json",
+      "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+      "dimensions": [
+        1.2,
+        0.6000000000000001,
+        0.9
+      ],
+      "position": [
+        1.0899999999999999,
+        -2.801980515339464,
+        0.0
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.4899999999999999,
+          -3.101980515339464,
+          0.0
+        ],
+        [
+          1.69,
+          -2.5019805153394636,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "counter",
+        "asset_key": "9cd85f56ac569af6f5da2ae5d76374283b65d1f900dc2f739f1204fdfd9fa444",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "refrigerator_0",
+      "category": "fridge",
+      "class_id": 11,
+      "asset": "assets/777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14/asset.json",
+      "asset_key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+      "dimensions": [
+        0.8222380438304314,
+        0.7976130465835221,
+        1.8034840174478075
+      ],
+      "position": [
+        0.9011190219152156,
+        2.703173992448277,
+        0.901742010266897
+      ],
+      "yaw": 0.0,
+      "zone": "cold_storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.4899999934695123,
+          1.4821294249255106,
+          0.0
+        ],
+        [
+          1.3122380372999438,
+          3.101980515339464,
+          1.8034840174478075
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "RoboCasa / Lightwheel",
+        "route": "G3",
+        "source_id": "fridges/Refrigerator055",
+        "asset_key": "777c3457bb392479cb66e85621bb1e97c7b5ba0c1194e61b3c46f30284d10d14",
+        "dimension_basis": "native_asset_scale_not_measured_product_dimensions",
+        "physical_basis": "collision-only effective shell density from engineering registry",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "CC BY 4.0",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "base_storage_0",
+      "category": "base_cabinet",
+      "class_id": 1,
+      "asset": "assets/1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc/asset.json",
+      "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        -0.9180194846605358,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          -1.218019484660536,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          -0.6180194846605358,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "base_cabinet",
+        "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "base_storage_1",
+      "category": "base_cabinet",
+      "class_id": 1,
+      "asset": "assets/1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc/asset.json",
+      "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        1.001980515339464,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          0.701980515339464,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          1.3019805153394641,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "base_cabinet",
+        "asset_key": "1a968cd58a7beae42d52507f61fb05508ef90c6c324a0c7d21736356d221fffc",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "drawers_0",
+      "category": "drawer_unit",
+      "class_id": 2,
+      "asset": "assets/fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a/asset.json",
+      "asset_key": "fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a",
+      "dimensions": [
+        0.6,
+        0.644,
+        0.9
+      ],
+      "position": [
+        0.38,
+        -1.6380194846605365,
+        0.0
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.08000000000000002,
+          -1.9380194846605365,
+          0.0
+        ],
+        [
+          1.3679999999999999,
+          -1.3380194846605364,
+          0.9
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "drawer_unit",
+        "asset_key": "fc652f288343545539af12eb39466ddf50e538054190d7307b2128a813f14e7a",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "upper_storage_0",
+      "category": "wall_cabinet",
+      "class_id": 3,
+      "asset": "assets/11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd/asset.json",
+      "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+      "dimensions": [
+        0.6,
+        0.394,
+        0.7
+      ],
+      "position": [
+        0.255,
+        -0.9180194846605358,
+        1.55
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.07999999999999996,
+          -1.218019484660536,
+          1.55
+        ],
+        [
+          1.0739999999999998,
+          -0.6180194846605358,
+          2.25
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "wall_cabinet",
+        "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "upper_storage_1",
+      "category": "wall_cabinet",
+      "class_id": 3,
+      "asset": "assets/11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd/asset.json",
+      "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+      "dimensions": [
+        0.6,
+        0.394,
+        0.7
+      ],
+      "position": [
+        0.255,
+        1.001980515339464,
+        1.55
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "storage",
+      "support_parent": null,
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.07999999999999996,
+          0.701980515339464,
+          1.55
+        ],
+        [
+          1.0739999999999998,
+          1.3019805153394641,
+          2.25
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "procedural",
+        "provider": "scene_pipeline.templates",
+        "route": "G1",
+        "source_id": "wall_cabinet",
+        "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+        "dimension_basis": "engineering_design_parameters",
+        "physical_basis": "engineering_density_proxy",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "candidate",
+        "license": "unspecified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "cooktop_0",
+      "category": "kitchen_cooktop",
+      "class_id": 6728,
+      "asset": "assets/767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f/asset.json",
+      "asset_key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+      "dimensions": [
+        0.5455292761325851,
+        1.0034300088882473,
+        0.09791499003767994
+      ],
+      "position": [
+        4.25180984597661,
+        -0.2047344891046592,
+        0.901
+      ],
+      "yaw": 0.0,
+      "zone": "cooking",
+      "support_parent": "cooktop_support_0",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          3.9790452079103176,
+          -0.7064494935487828,
+          0.901
+        ],
+        [
+          4.524574484042903,
+          0.29698051533946446,
+          0.9989149900376799
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "retrieved",
+        "provider": "GitHub SDF model catalog",
+        "route": "G3",
+        "source_id": "house:models/aws_robomaker_residential_CookingBench_01",
+        "asset_key": "767ffd11e38827db1ff75e3a2318ba011f4f0ddf3dfd8bf55f79792825b5817f",
+        "dimension_basis": "source_model_units_not_measured_product_dimensions",
+        "physical_basis": "Static prop; source colliders with declared engineering density, not calibrated mass",
+        "allowed_use": "simulation_candidate",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "MIT-0",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "fruit_0",
+      "category": "fruit_bowl",
+      "class_id": 18,
+      "asset": "assets/3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b/asset.json",
+      "asset_key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+      "dimensions": [
+        0.30000001382445884,
+        0.2993294275166611,
+        0.22819246023420733
+      ],
+      "position": [
+        0.8449999668984624,
+        -2.696645225989294,
+        0.9009999988720061
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.6949999585266231,
+          -2.8463099428561245,
+          0.901
+        ],
+        [
+          0.9949999723510821,
+          -2.5469805153394636,
+          1.1291924602342074
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c733-7ac1-a65a-f81aa1d49d1d",
+        "asset_key": "3adbcde11dc92ece71e81bbffe91d1a76596c492e793eb6c110b0a68c8d5e15b",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "cutting_board_0",
+      "category": "cutting_board",
+      "class_id": 17,
+      "asset": "assets/c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157/asset.json",
+      "asset_key": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157",
+      "dimensions": [
+        0.37999999817111346,
+        0.17104373821193503,
+        0.022199569484241472
+      ],
+      "position": [
+        1.4550000029171186,
+        -2.8285461194529837,
+        0.901000000068678
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.2650000018288865,
+          -2.9140679917633343,
+          0.901
+        ],
+        [
+          1.645,
+          -2.743024253551399,
+          0.9231995694842414
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cd03-7f23-ae4c-45a2a5a188d8",
+        "asset_key": "c11b2845840e937b68e704063e189bbafd006144df3f1386bf898d64ac6a3157",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "paper_towels_0",
+      "category": "paper_towel_roll",
+      "class_id": 19,
+      "asset": "assets/67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e/asset.json",
+      "asset_key": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e",
+      "dimensions": [
+        0.2409321091508558,
+        0.2358312651101026,
+        0.3300000083278807
+      ],
+      "position": [
+        0.5170843669495042,
+        -1.7725534288427571,
+        0.9009999998354065
+      ],
+      "yaw": 1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "drawers_0",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.3991687348898974,
+          -1.8930194846605364,
+          0.901
+        ],
+        [
+          0.635,
+          -1.6520873755096805,
+          1.2310000083278807
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-ca2a-76b2-8b92-f0be4c9ae17e",
+        "asset_key": "67a70a5fdd57c71e21764b220846fa95955eca5e6914684dd1b0ff7d7d3ff93e",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "mugs_0",
+      "category": "mug",
+      "class_id": 15,
+      "asset": "assets/419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230/asset.json",
+      "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+      "dimensions": [
+        0.11999999216054372,
+        0.08616805828594655,
+        0.0849121505395285
+      ],
+      "position": [
+        1.2684117975025309,
+        -2.6069805123500744,
+        0.9009999996175495
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          1.2253277668562135,
+          -2.666980507500008,
+          0.901
+        ],
+        [
+          1.31149582514216,
+          -2.546980515339464,
+          0.9859121505395285
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "mugs_1",
+      "category": "mug",
+      "class_id": 15,
+      "asset": "assets/419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230/asset.json",
+      "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+      "dimensions": [
+        0.11999999216054372,
+        0.08616805828594655,
+        0.0849121505395285
+      ],
+      "position": [
+        0.7150000500261273,
+        -2.9235687208436207,
+        0.9009999996175495
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.6550000548761938,
+          -2.96665274848325,
+          0.901
+        ],
+        [
+          0.7750000470367375,
+          -2.8804846901973034,
+          0.9859121505395285
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+        "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "spice_jars_0",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6078225732150144,
+        -2.9840735069242745,
+        0.9010000031581904
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5706451448674811,
+          -3.0211664965873966,
+          0.901
+        ],
+        [
+          0.645,
+          -2.9469805153394635,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "spice_jars_1",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6078225732150144,
+        -2.884073506924275,
+        0.9010000031581904
+      ],
+      "yaw": -1.5707963267948966,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5706451448674811,
+          -2.921166496587397,
+          0.901
+        ],
+        [
+          0.645,
+          -2.846980515339464,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    },
+    {
+      "id": "spice_jars_2",
+      "category": "jar",
+      "class_id": 12,
+      "asset": "assets/b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af/asset.json",
+      "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+      "dimensions": [
+        0.07418598124793313,
+        0.074354855132519,
+        0.14000000446573008
+      ],
+      "position": [
+        0.6079070084151891,
+        -2.7841579436869974,
+        0.9010000031581904
+      ],
+      "yaw": -3.141592653589793,
+      "zone": "preparation",
+      "support_parent": "counters_1",
+      "dynamic": false,
+      "initial_state": {},
+      "bounds": [
+        [
+          0.5708140187520669,
+          -2.8213353704719832,
+          0.901
+        ],
+        [
+          0.645,
+          -2.746980515339464,
+          1.0410000044657302
+        ]
+      ],
+      "source_classification": {
+        "schema_version": 1,
+        "origin": "generated",
+        "provider": "fal",
+        "route": "G6",
+        "source_id": "01a0b261-cf98-7040-ab61-973c2840e96f",
+        "asset_key": "b3b7117774b1fffe9f2a5d101e88ef2f73196ca85bfb27c748490ee27b8b78af",
+        "dimension_basis": "unverified_generated_geometry",
+        "physical_basis": "not_assigned_visual_only",
+        "allowed_use": "visual_only",
+        "contact_rich_certified": false,
+        "validation_state": "verified",
+        "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+        "calibrated": false
+      }
+    }
+  ],
+  "robots": [],
+  "provenance": {
+    "program_sha256": "2739f3b9e4684370eecb5fdfea3e08f027f373d301c60adad22324c1641e2a58",
+    "registry_sha256": "8969aafb13a67d9b93daf43f953837c919fe3682d922bf282e57e231ee41676a",
+    "dropped": [
+      {
+        "id": "microwave_0",
+        "reason": "no collision-free placement"
+      }
+    ],
+    "relations": [
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "sink"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "counters"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "base_storage"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "drawers"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "upper_storage"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "refrigerator"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      },
+      {
+        "constraint": {
+          "kind": "against_wall",
+          "objects": [
+            "cooktop_support"
+          ],
+          "required": false
+        },
+        "satisfied": true
+      }
+    ],
+    "layout_generator": {
+      "name": "heuristic",
+      "grounding": "engineering_defaults_not_empirical",
+      "requested_seed": 300,
+      "selected_seed": 300,
+      "candidate_count": 1
+    },
+    "dataset_variant": {
+      "source_scene": "/home/usman/Desktop/code/alamin/deliverables/outputs/home_kitchen/scene",
+      "source_ir_sha256": "da2547b9567b4e8dcc339ba98ff5341d34265df816e3e98fe34b9d8d504e5208",
+      "variant": 0,
+      "layout_seed": 300
+    }
+  }
+}

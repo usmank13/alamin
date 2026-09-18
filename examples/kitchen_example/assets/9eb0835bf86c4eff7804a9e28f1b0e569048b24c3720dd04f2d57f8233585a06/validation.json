@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": {
+    "numerical": true,
+    "stability": true,
+    "collision_clearance": true,
+    "physical_provenance": true
+  },
+  "body_drift_m": 0.0,
+  "body_angle_rad": 0.0,
+  "joint_drift": [],
+  "physics_penetration_m": 0.0,
+  "closed_geometric_penetration_m": 0.0,
+  "closed_pair": null,
+  "warnings": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "sweeps": [],
+  "physical_unverified": [],
+  "profile_hash": "b1808debfcb6a4bffba3ff678118188dbd3540a5fa2451adf1485a332c56310f",
+  "limitations": [
+    "No calibrated physical accuracy claim",
+    "Finite collision sampling",
+    "Dynamic endpoint and robot manipulation checks are separate"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "request": {
+    "prompt": "A small clear glass kitchen spice jar filled with dried herbs and closed with a metal lid, isolated object",
+    "size_m": 0.14,
+    "placement": "support",
+    "physical_use": "visual_only"
+  },
+  "physical_use": "visual_only",
+  "adapter": "fal-visual-library-v1"
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+  "category": "mug",
+  "route": "G6",
+  "dimensions": [
+    0.11999999216054372,
+    0.08616805828594655,
+    0.0849121505395285
+  ],
+  "nominal_dimensions": [
+    0.11999999216054372,
+    0.08616805828594655,
+    0.0849121505395285
+  ],
+  "bounds": [
+    [
+      -0.059999997010610255,
+      -0.043084030646317335,
+      3.824505157012936e-10
+    ],
+    [
+      0.059999995149933455,
+      0.043084027639629215,
+      0.08491215092197901
+    ]
+  ],
+  "model": "asset.mjz",
+  "affordances": [],
+  "supports": [],
+  "layout": {
+    "placement": "support",
+    "dynamic": false,
+    "support_height_m": [
+      0.3,
+      1.6
+    ]
+  },
+  "provenance": {
+    "kind": "generated_source",
+    "provider": "fal",
+    "model": "fal-ai/hunyuan3d-v3/text-to-3d",
+    "request_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+    "source": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+    "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object, a single object centred on a plain background",
+    "retrieved_at": "2026-09-18T02:41:53.351087+00:00",
+    "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+    "hashes": {
+      "model_glb.glb": "8a2fc7d345c0d6f74eb6a0a12a3d0e8d96e4a2d95a6a09ab424eb9d54fb5a816",
+      "thumbnail.png": "e9ec14e3d0963e0f8146dff6fcb1596496ff94a1d6995a4b60b4c743785a86e9",
+      "mesh.obj": "8ac35bb5c8d291444442e2902ec7e502384cf44d62e653b94f08c650021a07f3",
+      "albedo.png": "d70eeecb5147015f965847ac071d4876092983b8b15352e6425e7252d071aa62"
+    },
+    "scale": 0.12075981903175294,
+    "size_basis": "agent_estimate_visual_only_not_measured",
+    "size_band_m": [
+      0.12,
+      0.12
+    ],
+    "orientation": "gltf_y_up_to_mujoco_z_up_explicit_rx_90",
+    "textured": true,
+    "physical_use": "visual_only_no_contact_geometry",
+    "calibrated": false
+  },
+  "capabilities": {
+    "static_geometry": true,
+    "articulated": false,
+    "dynamic": false,
+    "contact_rich_certified": false,
+    "visual_only": true
+  },
+  "state": "verified",
+  "validation": "982d6bcd1cda0c2b52674474db8a19dc761530d5da0b1b716b2f9a19ba13cee2",
+  "adapter_version": "fal-visual-library-v1",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "generated",
+    "provider": "fal",
+    "route": "G6",
+    "source_id": "01a0b261-c464-7942-b7b2-b8e616d490ab",
+    "asset_key": "419c1839c02f676ad5e3a589f2bb724a0c8e64181bb59c8a012e7aa673492230",
+    "dimension_basis": "unverified_generated_geometry",
+    "physical_basis": "not_assigned_visual_only",
+    "allowed_use": "visual_only",
+    "contact_rich_certified": false,
+    "validation_state": "verified",
+    "license": "fal.ai and Tencent Hunyuan3D terms; not independently verified",
+    "calibrated": false
+  },
+  "identity": {
+    "generated_package": "5bdff652f58ae38e434c6157eedb0077e0f1df1abf575d4043868858c3f502b3",
+    "request": {
+      "prompt": "An everyday glazed ceramic coffee mug with a handle, slightly used, isolated object",
+      "size_m": 0.12,
+      "placement": "support",
+      "physical_use": "visual_only"
+    },
+    "adapter": "fal-visual-library-v1"
+  }
+}

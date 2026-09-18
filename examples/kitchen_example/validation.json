@@ -1,0 +1,344 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": {
+    "numerical": true,
+    "stability": true,
+    "collision_clearance": true,
+    "physical_provenance": true,
+    "five_articulated_objects": true,
+    "metric_bands": true,
+    "door_widths": true,
+    "robot_access": true,
+    "pairwise_articulation": true
+  },
+  "body_drift_m": 0.0,
+  "body_angle_rad": 4.2146848510894035e-08,
+  "joint_drift": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "physics_penetration_m": 0.0,
+  "closed_geometric_penetration_m": 0.0,
+  "closed_pair": null,
+  "warnings": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "sweeps": [
+    {
+      "joint": "base_storage_0/door",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "base_storage_1/door",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "drawers_0/drawer",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "upper_storage_0/door",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "upper_storage_1/door",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "refrigerator_0/freezer0_door_joint",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "refrigerator_0/fridge_door_joint",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {},
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    },
+    {
+      "joint": "refrigerator_0/fridge_drawer0_joint",
+      "max_penetration_m": 0.0,
+      "pair": null,
+      "prerequisites": {
+        "refrigerator_0/fridge_door_joint": 1.5707963267948966
+      },
+      "passed": true,
+      "method": "21 kinematic samples; not dynamic reach proof"
+    }
+  ],
+  "physical_unverified": [],
+  "profile_hash": "982d6bcd1cda0c2b52674474db8a19dc761530d5da0b1b716b2f9a19ba13cee2",
+  "limitations": [
+    "No calibrated physical accuracy claim",
+    "Finite collision sampling",
+    "Dynamic endpoint and robot manipulation checks are separate"
+  ],
+  "articulated_objects": 6,
+  "metrics": [
+    {
+      "instance": "cooktop_support_0",
+      "category": "prep_table",
+      "mass_kg": 14.364,
+      "mass_band_kg": [
+        10,
+        150
+      ],
+      "mass_ok": true,
+      "top_m": 0.8999999999999998,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "counters_0",
+      "category": "counter",
+      "mass_kg": 13.068,
+      "mass_band_kg": [
+        10,
+        150
+      ],
+      "mass_ok": true,
+      "top_m": 0.9,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "counters_1",
+      "category": "counter",
+      "mass_kg": 13.068,
+      "mass_band_kg": [
+        10,
+        150
+      ],
+      "mass_ok": true,
+      "top_m": 0.9,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "base_storage_0",
+      "category": "base_cabinet",
+      "mass_kg": 29.97535,
+      "mass_band_kg": [
+        15,
+        80
+      ],
+      "mass_ok": true,
+      "top_m": 0.8999999999999998,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "base_storage_1",
+      "category": "base_cabinet",
+      "mass_kg": 29.97535,
+      "mass_band_kg": [
+        15,
+        80
+      ],
+      "mass_ok": true,
+      "top_m": 0.8999999999999998,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "drawers_0",
+      "category": "drawer_unit",
+      "mass_kg": 33.43383,
+      "mass_band_kg": [
+        15,
+        80
+      ],
+      "mass_ok": true,
+      "top_m": 0.8999999999999998,
+      "top_band_m": [
+        0.85,
+        0.95
+      ],
+      "top_ok": true
+    },
+    {
+      "instance": "upper_storage_0",
+      "category": "wall_cabinet",
+      "mass_kg": 18.13859,
+      "mass_band_kg": [
+        8,
+        50
+      ],
+      "mass_ok": true
+    },
+    {
+      "instance": "upper_storage_1",
+      "category": "wall_cabinet",
+      "mass_kg": 18.13859,
+      "mass_band_kg": [
+        8,
+        50
+      ],
+      "mass_ok": true
+    },
+    {
+      "instance": "sink_0",
+      "category": "kitchen_sink_counter_assembly",
+      "mass_kg": 518.643,
+      "mass_band_kg": null,
+      "mass_ok": null
+    },
+    {
+      "instance": "refrigerator_0",
+      "category": "fridge",
+      "mass_kg": 92.7481,
+      "mass_band_kg": [
+        40,
+        250
+      ],
+      "mass_ok": true
+    },
+    {
+      "instance": "cooktop_0",
+      "category": "kitchen_cooktop",
+      "mass_kg": 9.64775,
+      "mass_band_kg": null,
+      "mass_ok": null
+    },
+    {
+      "instance": "fruit_0",
+      "category": "fruit_bowl",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "cutting_board_0",
+      "category": "cutting_board",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "paper_towels_0",
+      "category": "paper_towel_roll",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "mugs_0",
+      "category": "mug",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "mugs_1",
+      "category": "mug",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "spice_jars_0",
+      "category": "jar",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "spice_jars_1",
+      "category": "jar",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    },
+    {
+      "instance": "spice_jars_2",
+      "category": "jar",
+      "mass_kg": 0.0,
+      "mass_band_kg": null,
+      "mass_ok": null,
+      "mass_check_scope": "not_applicable_visual_only_no_contact_geometry"
+    }
+  ],
+  "openings": [
+    {
+      "id": "entrance",
+      "clear_width_m": 0.95,
+      "ok": true
+    }
+  ],
+  "access": {
+    "robot_radius_m": 0.25,
+    "entrance_reachable": true,
+    "unreachable": [],
+    "components": 1,
+    "model": "disc through compiled closed-state colliders; not manipulation reachability"
+  },
+  "pairwise_articulation": [],
+  "density": {
+    "objects_per_m2": 0.6333333333333333,
+    "articulated": 6,
+    "supported": 9,
+    "note": "reported, not gated"
+  },
+  "acceptance_profile": "brief_five_articulated",
+  "area_m2": 30
+}

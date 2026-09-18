@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+  "category": "wall_cabinet",
+  "route": "G1",
+  "dimensions": [
+    0.6,
+    0.394,
+    0.7
+  ],
+  "nominal_dimensions": [
+    0.6,
+    0.35,
+    0.7
+  ],
+  "bounds": [
+    [
+      -0.3,
+      -0.21899999999999997,
+      0.0
+    ],
+    [
+      0.3,
+      0.17500000000000002,
+      0.7
+    ]
+  ],
+  "model": "asset.mjz",
+  "affordances": [
+    {
+      "joint": "door",
+      "role": "door",
+      "closed": 0.0,
+      "open": 1.5707963267948966,
+      "requires": {},
+      "body": "moving",
+      "point": [
+        0.49099999999999994,
+        -0.028,
+        0.42
+      ]
+    }
+  ],
+  "supports": [
+    {
+      "center": [
+        0,
+        0,
+        0.7
+      ],
+      "size": [
+        0.52,
+        0.26999999999999996
+      ]
+    }
+  ],
+  "layout": {
+    "mount_height_m": 1.55
+  },
+  "provenance": {
+    "kind": "engineering_default",
+    "policy": "kitchen-engineering-v1",
+    "calibrated": false
+  },
+  "capabilities": {
+    "uniform_scale": false,
+    "independent_dimensions": false,
+    "semantic_state": true,
+    "preserve_handle_size": false
+  },
+  "state": "candidate",
+  "validation": null,
+  "adapter_version": "native-mjcf-v9",
+  "source_classification": {
+    "schema_version": 1,
+    "origin": "procedural",
+    "provider": "scene_pipeline.templates",
+    "route": "G1",
+    "source_id": "wall_cabinet",
+    "asset_key": "11baf3632dd46be7e4a7982f860d64026a488c5274dab0f300534c6f5ca9e7cd",
+    "dimension_basis": "engineering_design_parameters",
+    "physical_basis": "engineering_density_proxy",
+    "allowed_use": "simulation_candidate",
+    "contact_rich_certified": false,
+    "validation_state": "candidate",
+    "license": "unspecified",
+    "calibrated": false
+  }
+}

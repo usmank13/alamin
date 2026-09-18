@@ -1,0 +1,10 @@
+{
+  "request": {
+    "prompt": "A small wooden kitchen fruit bowl filled with apples and oranges, isolated object",
+    "size_m": 0.3,
+    "placement": "support",
+    "physical_use": "visual_only"
+  },
+  "physical_use": "visual_only",
+  "adapter": "fal-visual-library-v1"
+}

@@ -1,0 +1,10 @@
+{
+  "request": {
+    "prompt": "A partially used white kitchen paper towel roll on a simple stainless steel holder, isolated object",
+    "size_m": 0.33,
+    "placement": "support",
+    "physical_use": "visual_only"
+  },
+  "physical_use": "visual_only",
+  "adapter": "fal-visual-library-v1"
+}

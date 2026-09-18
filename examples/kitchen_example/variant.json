@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "variant": 0,
+  "tier": "full",
+  "theme": "terracotta_cream",
+  "factors": {
+    "layout_seed": 300,
+    "clutter_counts": {
+      "fruit": 1,
+      "mugs": 2,
+      "paper_towels": 1,
+      "spice_jars": 3,
+      "cutting_board": 1
+    },
+    "light_multiplier": 1.132496203004414,
+    "tint": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "texture_repeat": 8.34469815864415,
+    "materials": {
+      "source": "fal",
+      "seed": 7100,
+      "overrides": {
+        "floor_tile": {
+          "prompt": "Seamless matte terracotta quarry tiles with light grey grout, uniform material surface, no objects or perspective",
+          "tile_m": 0.6
+        },
+        "wall_paint": {
+          "prompt": "Seamless warm cream washable plaster, uniform material surface, no objects or perspective",
+          "tile_m": 1.0
+        },
+        "paint": {
+          "prompt": "Seamless sage green satin cabinet paint, uniform material surface, no objects or perspective",
+          "tile_m": 0.5
+        },
+        "wood": {
+          "prompt": "Seamless honey oak veneer, uniform material surface, no objects or perspective",
+          "tile_m": 0.6
+        }
+      }
+    }
+  },
+  "seconds": 186.617303494,
+  "source_scene": "/home/usman/Desktop/code/alamin/deliverables/outputs/home_kitchen/scene",
+  "new_fal_usd": 0.0,
+  "new_model_calls": 0
+}

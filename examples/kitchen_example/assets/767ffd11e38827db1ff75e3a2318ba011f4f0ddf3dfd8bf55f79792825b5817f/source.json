@@ -1,0 +1,63 @@
+{
+  "candidate": {
+    "candidate_id": "house:models/aws_robomaker_residential_CookingBench_01",
+    "label": "aws robomaker residential Cooking Bench 01",
+    "source": {
+      "id": "house",
+      "repo": "aws-robotics/aws-robomaker-small-house-world",
+      "revision": "dd44be6205b2e6577bf641300dacc1699cb2ca81",
+      "prefix": "models/",
+      "license_file": "LICENSE",
+      "license": "MIT-0"
+    },
+    "folder": "models/aws_robomaker_residential_CookingBench_01",
+    "files": [
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/materials/textures/aws_CookingBench_01.png",
+        "sha": "520d520ca757d8ebceb590f9f5e3db15cfa2f3a1",
+        "size": 318518
+      },
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/meshes/aws_CookingBench_01.DAE",
+        "sha": "f7cb472133372d02eac7503c859b3f57edcaaa00",
+        "size": 206985
+      },
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/meshes/aws_CookingBench_01_collision.DAE",
+        "sha": "83c48548ec6e9f80ff1b7d31875f9a7272605043",
+        "size": 5161
+      },
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/meshes/aws_CookingBench_01_visual.DAE",
+        "sha": "6a0a4972839fb96de1e83a8622d2f85885c9cf16",
+        "size": 203020
+      },
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/model.config",
+        "sha": "2898335ef143316e0fb7e68f33921d168a402646",
+        "size": 281
+      },
+      {
+        "path": "models/aws_robomaker_residential_CookingBench_01/model.sdf",
+        "sha": "dcc266c1588ccafd90d91db4bde796a7c96a11b5",
+        "size": 774
+      }
+    ],
+    "license_blob": {
+      "path": "LICENSE",
+      "sha": "e0d30fcd310e254efc2a0090193d14a4562d07be",
+      "size": 931
+    },
+    "source_url": "https://github.com/aws-robotics/aws-robomaker-small-house-world/tree/dd44be6205b2e6577bf641300dacc1699cb2ca81/models/aws_robomaker_residential_CookingBench_01"
+  },
+  "sha256": {
+    "materials/textures/aws_CookingBench_01.png": "bfde7283c1ce34d4f106acdc9fdd05fef9b3434ef97cb2ee8ec45f141b38d896",
+    "meshes/aws_CookingBench_01.DAE": "e4d9de79c4b5582a48633186b3b4704ae898c5701a378748f8cbfb298b696b22",
+    "meshes/aws_CookingBench_01_collision.DAE": "094106327ad818bf79f338ce9aa0b29df481664bdb4d717f491da414074739c0",
+    "meshes/aws_CookingBench_01_visual.DAE": "1e30b76a4f0be37d3860b4406e1bcf8f21397eb58214accb3bb938a667aed0bf",
+    "model.config": "056ca398bf0fea7e777cf85cfbe7ad815e8e6c92c3ab28efea81869114cf722c",
+    "model.sdf": "ced95a89fec4223ec3ea5863a577bc2b28d7d1f516cdfea3d9301c2eaebbf550",
+    "REPOSITORY_LICENSE": "ddf9b5d9dd2fded18653e0ca4c5934008d4faea1161d754493b54a23c25eac14"
+  },
+  "units": "SDF metres; source-model scale, not product measurement"
+}
