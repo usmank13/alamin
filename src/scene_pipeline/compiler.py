@@ -113,12 +113,14 @@ def compile_scene(ir, root):
         existing=manifest['class_names'].get(str(instance['class_id']))
         if existing is not None and existing!=instance['category']:
             raise PipelineError('SEMANTIC_ID_COLLISION','Two categories share a class ID',dict(categories=[existing,instance['category']],class_id=instance['class_id']))
-        if classification['allowed_use']=='visual_only':
+        if classification['origin']=='generated':
             if instance['dynamic'] or list(child.joints):
-                raise PipelineError('DECORATION_PHYSICS','Generated visual-only assets cannot have dynamics or articulation')
-            for geom in child.geoms:
-                if geom.contype or geom.conaffinity:
-                    raise PipelineError('DECORATION_PHYSICS','Generated visual-only assets cannot supply contact geometry')
+                raise PipelineError('DECORATION_PHYSICS','Generated static assets cannot have dynamics or articulation')
+            contacts=any(geom.contype or geom.conaffinity for geom in child.geoms)
+            if classification['allowed_use']=='visual_only' and contacts:
+                raise PipelineError('DECORATION_PHYSICS','Generated visual-only assets cannot supply contact geometry')
+            if classification['allowed_use']=='static_collision' and not contacts:
+                raise PipelineError('DECORATION_PHYSICS','Generated collision proxies must supply contact geometry')
         # Global scene inertia policy cannot reinterpret retrieved group numbers.
         source_model=child.compile()
         for body,compiled in zip(child.bodies,range(source_model.nbody)):

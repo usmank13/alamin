@@ -291,7 +291,7 @@ into scenes and URDF exports. A bowl with a solid source collider is not a verif
 container; a static pallet jack is not a lifting mechanism.
 
 The registry is not a closed vocabulary for generated dressing. `asset-generate`
-accepts any category and registers its generated visual in the same asset library:
+accepts any category and registers its generated static prop in the same asset library:
 
 ```bash
 pipeline asset-generate --category tea_towel --prompt 'a folded cotton tea towel' \
@@ -302,10 +302,13 @@ pipeline asset-search 'tea towel'
 Set `FAL_KEY` or `FAL_API_KEY` in the environment for direct CLI calls. Use the
 returned `asset_ref` in subsequent scenes; it replays without a fal call. The
 one-prompt runner also accepts agent-created `generated_request` objects containing
-`prompt`, `size_m`, `placement` and `physical_use: "visual_only"` when clutter is
-enabled. The estimated largest extent is labeled unverified; no collision geometry,
-support surface or articulation is invented. The importer explicitly converts GLB
-Y-up into MuJoCo Z-up. Source prompts, hashes and provider request IDs travel with
+`prompt`, `size_m`, `placement` and `physical_use: "static_collision"` when clutter is
+enabled. The estimated largest extent is labeled unverified. A single convex hull
+provides approximate static collision, filling cavities and gaps; no support surface
+or articulation is inferred. Legacy `physical_use: "visual_only"` requests are accepted
+and now import with this proxy. Old asset references must be re-registered from the
+cached GLB to gain collision; existing scene archives are unchanged. The importer
+explicitly converts GLB Y-up into MuJoCo Z-up. Source prompts, hashes and provider request IDs travel with
 the package. Retrieval selection can decline all candidates; an unrelated room
 keyword no longer forces a match. This is not deterministic semantic verification.
 
@@ -333,8 +336,10 @@ pipeline generate --program examples/pbr_kitchen_program.py \
 
 This richer fixture requires its source assets to be available; inspect its program
 and registry entries before running it. PATINA supplies PBR finishes and Hunyuan3D
-supplies visual-only clutter. Clutter has no collision geometry and cannot serve as
-a manipulation target. Both MuJoCo and Cycles consume the compiled material/mesh
+supplies clutter with static convex collision hulls that block robot contact. Props
+remain fixed; grasping, calibrated dynamics and contact-rich use are not certified.
+Provenance records generated geometry, approximate collision, and unmeasured density
+and friction defaults. Both MuJoCo and Cycles consume the compiled material/mesh
 assets; RGB-D must be re-recorded after changing them. Existing captures cannot be
 made consistent with new textures by replacing thumbnails or replay videos.
 
@@ -446,7 +451,8 @@ Required checks are not weakened to accept a replacement. The resulting dataset
 is conditioned on passing validation and does not imply 100% generation success.
 Source clutter counts/placement, light intensity and texture repeat vary. Five
 cached fal kitchen themes are reused across distinct accepted layouts; they are
-not ten new API generations. The source's generated props remain visual-only.
+not ten new API generations. Older source archives contain visual-only props;
+rebuilding from cached fal meshes adds static collision.
 
 `capture` records 60 simulated seconds per variant, with full RGB-D for indices
 0–2 and state/range/IMU for 3–9. It writes rendering-device metadata into completed
@@ -499,7 +505,7 @@ Cycles still and HTML inspection page), use the thin wrapper:
 Only the prompt is required; otherwise a timestamped output directory is created.
 The wrapper reads supported API credentials from the repo `.env`, without executing
 it. Existing environment variables take precedence. Fal is opt-in and paid;
-generated clutter is visual-only, not contact geometry. The cap is a list-price
+generated clutter includes approximate static convex collision. The cap is a list-price
 estimate, not an account billing limit. Default agent authentication is your Codex
 CLI login; `--agent-backend openrouter --model PROVIDER/MODEL` is also supported.
 No authored SceneProgram is supplied: the agent creates it internally. Attempts,
@@ -512,6 +518,15 @@ agent to repair. The agent can revise room fields explicitly marked as its own
 cannot drop required inventory, change quoted dimensions or weaken required
 relations. Supplied programs and unannotated room fields remain fixed. Initial
 prompt interpretation is still agent-authored, not independently certified.
+
+`--max-iterations` is the total agent attempt limit, including the first proposal.
+Validation and recoverable generation failures feed the existing repair loop;
+repeated failed proposals no longer stop that loop before its configured limit.
+Each retry uses a fresh deterministic placement seed. `progress.json` reports the
+current attempt/stage; `cost.json` includes `attempts_used`, `max_attempts` and
+`stop_reason`. Credential/configuration errors and exhausted budgets can stop early.
+Supplied JSON still runs once without agent repair. The dashboard passes this same
+attempt limit through to the CLI; it does not wrap generation in another retry loop.
 
 Before fal spending, `attempts/N/preflight/report.json` records a layout check of
 known geometry and the presence of supports for required generated clutter.

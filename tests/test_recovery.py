@@ -164,3 +164,49 @@ def test_recorded_repair_completes_across_seeds_and_domain_labels(tmp_path,monke
     assert read_json(root/'program.json')['objects'][:len(p['objects'])]==p['objects']
     assert read_json(root/'attempts/1/repair.json')['objects'][0]['id']=='table'
     assert result['fal_spend_usd']==0
+
+
+def test_physics_validation_failure_repairs_until_success(tmp_path,capsys):
+    p=parse('''scene("storage room",space(area_m2=40),[
+        place("cab","base_cabinet",count=2),place("prep","prep_table")])''')
+    p['space']['inferred_fields']=[]
+    runtime=Runtime(backend='recorded',responses=[dict(kind='program',output=p),
+        dict(kind='repair',output={}),dict(kind='repair',output=dict(objects=[
+            dict(id='drawers',category='drawer_unit',count=3,zone='main',required=False)]))])
+    root=tmp_path/'scene'
+    result=orchestrator.generate(p['prompt'],1,root,runtime=runtime,preview=False,max_iterations=5)
+    assert result['passed'] and result['attempts_used']==3
+    assert result['stop_reason']=='validated'
+    assert [a['seed'] for a in result['attempts']]==[1,4,7]
+    assert all(a['error']['code']=='VALIDATION_FAILED' for a in result['attempts'][:2])
+    assert read_json(root/'validation.json')['passed']
+    progress=read_json(root/'progress.json')
+    assert progress['attempt']==3 and progress['max_attempts']==5 and progress['status']=='validated'
+    assert progress['last_failure'] is None
+    captured=capsys.readouterr()
+    assert not captured.out  # Keep CLI stdout available for the final JSON result.
+    assert 'Attempt 3/5' in captured.err
+
+
+def test_transient_codex_failures_retry_up_to_limit(tmp_path,monkeypatch):
+    contexts=[]
+    def failed(prompt,work,feedback,*args,**kwargs):
+        contexts.append(feedback)
+        raise PipelineError('AGENT_FAILED','Temporary worker failure')
+    monkeypatch.setattr(orchestrator,'agent_program',failed)
+    with pytest.raises(PipelineError) as error:
+        orchestrator.generate('room',0,tmp_path/'scene',max_iterations=3,preview=False)
+    assert len(contexts)==3 and len(contexts[2]['failure_history'])==2
+    assert error.value.details['attempts_used']==3
+    assert read_json(tmp_path/'scene/progress.json')['stop_reason']=='attempt_limit'
+
+
+@pytest.mark.parametrize('code',['AGENT_CREDENTIALS','AGENT_REQUEST_INVALID','COST_UNKNOWN','BUDGET_EXHAUSTED'])
+def test_unrecoverable_errors_stop_and_explain_why(tmp_path,monkeypatch,code):
+    def failed(*args,**kwargs):raise PipelineError(code,'Cannot continue')
+    monkeypatch.setattr(orchestrator,'agent_program',failed)
+    with pytest.raises(PipelineError) as error:
+        orchestrator.generate('room',0,tmp_path/'scene',max_iterations=5,preview=False)
+    assert error.value.details['attempts_used']==1
+    assert error.value.details['stop_reason']==code
+    assert read_json(tmp_path/'scene/progress.json')['stop_reason']==code

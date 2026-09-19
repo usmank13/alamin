@@ -21,7 +21,8 @@ placement. Checks cover dimensions, inventory, support, containment, clearance,
 passive stability and sampled articulation. They do not certify semantics, calibrated
 dynamics or functional suitability. MuJoCo, Cycles and export consume the same
 compiled geometry. Optional fal PBR textures and generated clutter improve appearance;
-generated props are visual-only, without contact geometry.
+newly imported generated props include approximate static convex collision hulls,
+with unverified geometry and physical defaults recorded in provenance.
 
 ## Simulator and export tradeoffs
 

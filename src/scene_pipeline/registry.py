@@ -37,7 +37,7 @@ MATERIALS = {
 
 
 def decor(prompt, low, high):
-    """Visual-only dressing (route G6): a fal-generated mesh, static, no contact geometry, sized to the band midpoint
+    """Generated dressing (route G6): a static mesh with approximate convex collision, sized to the band midpoint
     of its largest extent. Needs `generate --clutter fal`; otherwise the request is dropped with a reason."""
     return dict(route='G6', prompt=prompt, size_m=[low, high], placement='support', dynamic=False, support_height_m=[.3, 1.6])
 
@@ -84,7 +84,7 @@ CLASS_IDS = {'base_cabinet':1,'drawer_unit':2,'wall_cabinet':3,'prep_table':4,
              'counter':5,'shelf':6,'door':7,'container':8,'microwave':9,'dishwasher':10,'fridge':11,'jar':12,'bottle':13,'tray':14,
              'mug':15,'potted_plant':16,'cutting_board':17,'fruit_bowl':18,'paper_towel_roll':19,'kettle':20,'tissue_box':21,
              'hand_sanitizer_bottle':22,'knife_block':23,'stack_of_plates':24}
-PROVENANCE_KIND={'G1':'engineering_default','G3':'retrieved_source','G6':'generated_visual_only_decor'}
+PROVENANCE_KIND={'G1':'engineering_default','G3':'retrieved_source','G6':'generated_static_collision_decor'}
 
 
 def class_id(category):

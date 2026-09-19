@@ -26,6 +26,7 @@ pipeline = [
 [project.scripts]
 sim = "sim_harness.cli:main"
 pipeline = "scene_pipeline.cli:main"
+pipeline-ui = "scene_pipeline.web:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sim_harness", "src/scene_pipeline"]

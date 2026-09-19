@@ -14,10 +14,11 @@ def classify(asset):
         origin,provider,basis='generated',source.get('provider','unspecified'),'unverified_generated_geometry'
     else:
         raise PipelineError('PROVENANCE_UNKNOWN','Cannot classify contradictory or unsupported asset provenance')
+    generated_collision=origin=='generated' and source.get('physical_use')=='static_collision'
     return dict(schema_version=1,origin=origin,provider=provider,route=route,
                 source_id=source.get('source',asset.get('category')),asset_key=asset.get('key'),
-                dimension_basis=basis,physical_basis='not_assigned_visual_only' if origin=='generated' else source.get('physical_policy','engineering_density_proxy'),
-                allowed_use='visual_only' if origin=='generated' else 'simulation_candidate',
+                dimension_basis=basis,physical_basis='not_assigned_visual_only' if origin=='generated' and not generated_collision else source.get('physical_policy','engineering_density_proxy'),
+                allowed_use=('static_collision' if generated_collision else 'visual_only') if origin=='generated' else 'simulation_candidate',
                 contact_rich_certified=False,validation_state=asset.get('state','candidate'),
                 license=source.get('license','unspecified'),calibrated=source.get('calibrated',False))
 

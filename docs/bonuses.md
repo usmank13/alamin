@@ -11,7 +11,7 @@ commands below assume an activated `.venv` and stock robot resources. Saved
 | Semantic navigation | Text/instance goal → semantic manifest → online-map planner → robot wheel actions | Measured example below; one scene/goal is not a navigation benchmark |
 | Mobile manipulator | Stock Stretch 2 model, programmatic placement, drive/lift/extension/turn controls, portable MJZ | Loading/control checks, not autonomous mobile manipulation |
 | Action-chunk policy interface | Planner and optional VLM emit body-frame velocity chunks into the same recorder/controller | Working interface, not a trained VLA or demonstrated live VLM policy |
-| Articulating a generated mesh | Not completed | Generated fal props remain visual-only; retrieved/procedural articulation is separate |
+| Articulating a generated mesh | Not completed | Generated fal props have static collision only; retrieved/procedural articulation is separate |
 
 ## Semantic navigation
 
@@ -161,7 +161,7 @@ sensor-complete training dataset. No humanoid is implemented.
 
 ## Generated-mesh articulation: unfinished
 
-Fal generates static, visual-only meshes here. No implementation segments an
+Fal meshes receive approximate static convex collision hulls here. No implementation segments an
 arbitrary generated mesh, discovers parts/attachment frames and authors functioning
 joints from its prompt. Enabling fal clutter therefore does not claim this bonus.
 

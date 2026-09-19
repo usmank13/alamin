@@ -94,7 +94,7 @@ def test_brief_gates_pass_on_example_and_fail_when_robot_cannot_fit(tmp_path):
     assert huge['access']['unreachable'] or not huge['access']['entrance_reachable']
 
 
-def test_generate_degrades_to_partial_and_stops_on_repeated_failure(tmp_path,monkeypatch):
+def test_generate_degrades_to_partial_and_uses_attempt_limit_on_repeated_failure(tmp_path,monkeypatch):
     from scene_pipeline import orchestrator
     two=parse('scene(prompt="two",space=space(kind="kitchen",area_m2=36),objects=[place("cab","base_cabinet",count=2),place("prep","prep_table")])')
     result=orchestrator.generate('two',1,tmp_path/'partial',program=two,preview=False)
@@ -104,7 +104,8 @@ def test_generate_degrades_to_partial_and_stops_on_repeated_failure(tmp_path,mon
     monkeypatch.setattr(orchestrator,'source_dimensions',lambda *a,**k:dict(url='https://example.test/none',identity='Nothing',family='box',fields=FIELDS))
     monkeypatch.setattr(orchestrator,'fetch',lambda url:'<p>unrelated page</p>')
     with pytest.raises(PipelineError) as info:orchestrator.generate('x',0,tmp_path/'loop',preview=False,max_iterations=6)
-    assert [a['error']['code'] for a in info.value.details['attempts']]==['DIMENSION_UNSOURCED']*2
+    assert [a['error']['code'] for a in info.value.details['attempts']]==['DIMENSION_UNSOURCED']*6
+    assert info.value.details['stop_reason']=='attempt_limit'
 
 
 def test_agent_schema_is_strict_mode_compatible_and_nulls_are_stripped():
@@ -113,7 +114,7 @@ def test_agent_schema_is_strict_mode_compatible_and_nulls_are_stripped():
     from scene_pipeline.orchestrator import strict,_strip_null
     def walk(s):
         if isinstance(s,dict):
-            assert 'oneOf' not in s
+            assert 'oneOf' not in s and 'uniqueItems' not in s
             if s.get('type')=='object':assert set(s['required'])==set(s['properties'])
             for v in s.values():walk(v)
         elif isinstance(s,list):
@@ -170,6 +171,52 @@ def test_sourcing_retries_with_verifier_feedback(tmp_path):
     resolved=resolve_program(p,tmp_path,sourcing=sourcing,cache_path=tmp_path/'cache.json',fetcher=lambda u:DOC)
     assert seen==[None,'UNIT'] and resolved['objects'][0]['dimension_basis']=='sourced'
     assert Path(tmp_path/'sourcing/sterilizer_unit_1').exists() or True  # per-try work dirs are the sourcing agent's, absent with a fake
+
+
+def test_mixed_fraction_dimensions_are_verified_and_cached(tmp_path):
+    fields=dict(width=['Width','46 1/8','"'],depth=['Depth','21 5/8','"'],height=['Height','69 1/4','"'])
+    document='<h1>KLEPPSTAD Wardrobe with 3 doors</h1>'+''.join(
+        f'<p>{label} {number} {unit}</p>' for label,number,unit in fields.values())
+    item=dict(id='wardrobe',category='wardrobe',family='cabinet',dimension_evidence=dict(
+        url='https://example.test/wardrobe',identity='KLEPPSTAD Wardrobe with 3 doors',fields=fields))
+    cache=tmp_path/'cache.json'
+    dims,record=resolve(item,'a dorm room',cache_path=cache,fetcher=lambda url:document)
+    assert dims==pytest.approx([1.171575,.549275,1.75895])
+    assert record['quotes'][0]=='Width 46 1/8 "'
+    cached,_=resolve(dict(id='other',category='wardrobe'),'a dorm room',cache_path=cache,
+                     fetcher=lambda url:pytest.fail('cached source must not be fetched'))
+    assert cached==dims
+
+
+def test_quoted_mixed_fractions_bind_entire_number():
+    from scene_pipeline.evidence import quoted_axes,quoted_values
+    quote='46 1/8 inches wide, 21 5/8 inches deep, 69 1/4 inches high'
+    assert quoted_axes(quote)==pytest.approx(dict(w=1.171575,d=.549275,h=1.75895))
+    assert quoted_values(quote)==pytest.approx([.549275,1.171575,1.75895])
+    assert quoted_values('width 1/2 m, height 1.25 m')==[.5,1.25]
+
+
+@pytest.mark.parametrize('number',['1/0','46 1/0','NaN','0','-2','-2 1/2','invalid'])
+def test_bad_source_numbers_produce_recoverable_dimension_errors(number):
+    from scene_pipeline.evidence import measurement
+    with pytest.raises(PipelineError) as error:
+        measurement(f'<h1>Product</h1><p>Width {number} in</p>',identity='Product',
+                    label='Width',number=number,unit='in',url='https://example.test/p',axis='width')
+    assert error.value.code=='DIMENSION'
+
+
+def test_sourcing_retries_invalid_number_with_verifier_feedback(tmp_path):
+    from scene_pipeline.orchestrator import resolve_program
+    seen=[]
+    def sourcing(category,prompt,work,model=None,timeout=180,feedback=None):
+        seen.append(feedback and feedback['code'])
+        fields=dict(FIELDS,width=['Overall Width','1/0' if len(seen)==1 else '48','in'])
+        return dict(url='https://example.test/s',identity='Steri-500',family='table',fields=fields)
+    program=parse('scene(prompt="a clinic",space=space(),objects=[place("s","sterilizer_unit")])')
+    document=DOC+'<p>Overall Width 1/0 in</p>'
+    resolved=resolve_program(program,tmp_path,sourcing=sourcing,cache_path=tmp_path/'cache.json',fetcher=lambda url:document)
+    assert seen==[None,'DIMENSION']
+    assert resolved['objects'][0]['dimensions_m']==pytest.approx([48*.0254,28*.0254,36*.0254])
 
 
 def test_required_near_group_packs_onto_the_shelf(tmp_path):

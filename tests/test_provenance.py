@@ -36,6 +36,24 @@ def test_compiler_rejects_contact_enabled_generated_decoration(tmp_path):
     with pytest.raises(PipelineError,match='contact geometry'):compile_scene(ir,tmp_path)
 
 
+def test_generated_collision_is_still_unverified_generated_geometry():
+    p=classify(dict(route='G6',category='fruit',provenance=dict(kind='generated_source',provider='fal',
+        physical_use='static_collision',physical_policy='generated_static_convex_hull_v1')))
+    assert p['origin']=='generated' and p['allowed_use']=='static_collision'
+    assert p['dimension_basis']=='unverified_generated_geometry'
+    assert p['physical_basis']=='generated_static_convex_hull_v1'
+    assert not p['calibrated'] and not p['contact_rich_certified']
+
+
+def test_generated_collision_cannot_claim_articulation(tmp_path):
+    ir=solve(load('examples/cafe_program.py'),1,tmp_path)
+    item=next(o for o in ir['objects'] if o['category']=='base_cabinet')
+    path=tmp_path/item['asset'];asset=json.loads(path.read_text())
+    asset['route']='G6';asset['provenance']=dict(kind='generated_source',provider='fal',physical_use='static_collision')
+    write_json(path,asset)
+    with pytest.raises(PipelineError,match='dynamics or articulation'):compile_scene(ir,tmp_path)
+
+
 def test_retrieved_sources_and_countertop_support(tmp_path):
     if not Path('vendor/robocasa_native/fixtures/microwaves/Microwave075/model.xml').exists():pytest.skip('Optional native sources absent')
     ir=solve(load('examples/rich_kitchen_program.py'),17,tmp_path)

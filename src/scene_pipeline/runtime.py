@@ -25,9 +25,15 @@ def redact(text):
 
 
 def strict(schema):
+    """Provider schema; the original contract is still validated locally.
+
+    Codex structured output rejects uniqueItems. Keep uniqueness enforcement in
+    jsonschema.validate below, rather than weakening the scene contract itself.
+    https://developers.openai.com/api/docs/guides/structured-outputs
+    """
     if isinstance(schema, list): return [strict(s) for s in schema]
     if not isinstance(schema, dict): return schema
-    out = {('anyOf' if k == 'oneOf' else k): strict(v) for k, v in schema.items()}
+    out = {('anyOf' if k == 'oneOf' else k): strict(v) for k, v in schema.items() if k != 'uniqueItems'}
     if out.get('type') == 'object' and 'properties' in out:
         required = set(out.get('required', []))
         for key, prop in out['properties'].items():
@@ -106,7 +112,16 @@ class Runtime:
                     except ValueError: continue
                     if event.get('type') == 'turn.completed': record.update(event.get('usage', {}))
                 if result.returncode or not (work/f'{name}.json').exists():
-                    raise PipelineError('AGENT_FAILED', 'Codex failed; see redacted logs', dict(returncode=result.returncode))
+                    failures=[]
+                    for line in result.stdout.splitlines():
+                        try:event=json.loads(line)
+                        except ValueError:continue
+                        if event.get('type') in ('error','turn.failed'):
+                            failures.append(event.get('message') or event.get('error'))
+                    message=redact(json.dumps(failures,ensure_ascii=False))[:2000] if failures else 'See redacted agent logs'
+                    code='AGENT_REQUEST_INVALID' if 'invalid_json_schema' in message else 'AGENT_CREDENTIALS' if any(
+                        marker in message for marker in ('invalid_api_key','authentication_error')) else 'AGENT_FAILED'
+                    raise PipelineError(code, f'Codex failed: {message}', dict(returncode=result.returncode))
                 output = read_json(work/f'{name}.json')
             else:
                 if not self.model: raise PipelineError('AGENT_MODEL', 'OpenRouter requires an explicit model ID')

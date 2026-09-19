@@ -40,7 +40,7 @@ def verify(folder,ref=None):
     return asset
 
 
-GENERATED_VERSION='fal-visual-library-v1'
+GENERATED_VERSION='fal-collision-library-v2'
 
 
 def registered_assets(query='',store=None,limit=20):
@@ -49,6 +49,7 @@ def registered_assets(query='',store=None,limit=20):
     for path in sorted((store_root(store)/'packages').glob('*/asset.json')):
         asset=read_json(path)
         if asset.get('state')!='verified' or not asset.get('identity'):continue
+        if asset.get('route')=='G6' and asset.get('adapter_version')!=GENERATED_VERSION:continue
         words=set(re.findall('[a-z0-9]+',(asset['category']+' '+asset.get('provenance',{}).get('prompt','')).lower()))
         if tokens and not tokens&words:continue
         results.append(dict(category=asset['category'],asset_ref=asset['key'],dimensions_m=asset['dimensions'],
@@ -58,7 +59,7 @@ def registered_assets(query='',store=None,limit=20):
 
 
 def register_generated(category,request,*,store=None):
-    """Register a cached generated visual using the same portable asset_ref contract."""
+    """Register a cached generated static collider using the portable asset_ref contract."""
     from .assets import instantiate
     from .validation import validate_asset
     root=store_root(store)/'packages';root.mkdir(parents=True,exist_ok=True)
@@ -70,16 +71,16 @@ def register_generated(category,request,*,store=None):
     shutil.copy2(folder/'asset.mjz',staging/'asset.mjz')
     asset.update(key=key,identity=identity,adapter_version=GENERATED_VERSION,
                  capabilities=dict(static_geometry=True,articulated=False,dynamic=False,
-                                   contact_rich_certified=False,visual_only=True))
+                                   contact_rich_certified=False,visual_only=False,static_collision=True))
     write_json(staging/'asset.json',asset)
     write_json(staging/'source.json',asset['provenance'])
-    write_json(staging/'import.json',dict(request=request,physical_use='visual_only',adapter=GENERATED_VERSION))
+    write_json(staging/'import.json',dict(request=request,physical_use='static_collision',adapter=GENERATED_VERSION))
     validate_asset(staging,promote=True)
-    # Registration must never give a generated visual contact geometry or joints.
+    # These proxies block motion but do not claim dynamics or articulation.
     import mujoco
     model=mujoco.MjSpec.from_zip(str(staging/'asset.mjz')).compile()
-    if model.njnt or np.any(model.geom_contype) or np.any(model.geom_conaffinity):
-        raise PipelineError('GENERATED_CAPABILITY','Generated visuals cannot acquire physics capabilities')
+    if model.njnt or not np.any(model.geom_contype | model.geom_conaffinity):
+        raise PipelineError('GENERATED_CAPABILITY','Generated props require static contact geometry without joints')
     write_json(staging/'seal.json',{n:sha(staging/n) for n in ('asset.mjz','asset.json','validation.json','source.json','import.json')})
     try:staging.rename(target)
     except FileExistsError:pass

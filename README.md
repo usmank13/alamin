@@ -45,6 +45,10 @@ textures/clutter, variants, data loading and reproducibility limits.
 
 ## Where to look
 
+For a local demo UI, run `.venv/bin/python -m scene_pipeline.web` and open
+**http://127.0.0.1:8765**. Generate scenes, launch mapping/drawer/navigation flows,
+and inspect recorded maps, replays, checks and job logs. See [the dashboard guide](docs/ui.md).
+
 | Need | Entry point |
 | --- | --- |
 | Setup, end-to-end commands and reproduction | [docs/running.md](docs/running.md) |

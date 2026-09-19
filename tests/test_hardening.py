@@ -93,6 +93,30 @@ def test_codex_stdin_closed_and_transport_timeout(tmp_path,monkeypatch):
     assert runtime.calls[0]['passed'] is False
 
 
+def test_codex_schema_omits_unsupported_keyword_but_local_validation_keeps_it(tmp_path,monkeypatch):
+    from scene_pipeline import runtime as module
+    schema=dict(type='object',properties={'names':dict(type='array',uniqueItems=True,items=dict(type='string'))},
+                required=['names'],additionalProperties=False)
+    def reply(command,**kwargs):
+        submitted=read_json(command[command.index('--output-schema')+1])
+        assert 'uniqueItems' not in submitted['properties']['names']
+        write_json(command[command.index('--output-last-message')+1],{'names':['same','same']})
+        return subprocess.CompletedProcess(command,0,stdout='',stderr='')
+    monkeypatch.setattr(module.subprocess,'run',reply)
+    with pytest.raises(PipelineError,match='schema'):
+        Runtime(backend='codex').request('x',schema,tmp_path)
+    assert schema['properties']['names']['uniqueItems'] is True
+
+
+def test_codex_reports_schema_rejection_instead_of_generic_agent_failure(tmp_path,monkeypatch):
+    from scene_pipeline import runtime as module
+    stdout=json.dumps(dict(type='turn.failed',error={'message':'invalid_json_schema: uniqueItems is not permitted'}))
+    monkeypatch.setattr(module.subprocess,'run',lambda command,**kwargs:subprocess.CompletedProcess(command,1,stdout=stdout,stderr=''))
+    with pytest.raises(PipelineError) as error:Runtime().request('x',SCHEMA,tmp_path)
+    assert error.value.code=='AGENT_REQUEST_INVALID'
+    assert 'uniqueItems' in str(error.value)
+
+
 def test_pydantic_adapter_offline():
     pytest.importorskip('pydantic_ai')
     from pydantic_ai.models.test import TestModel

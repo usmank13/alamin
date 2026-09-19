@@ -19,6 +19,7 @@ def main(argv=None):
     sub=parser.add_subparsers(dest='command',required=True)
     p=sub.add_parser('generate');p.add_argument('--prompt',required=True);p.add_argument('--seed',type=int,default=0);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--program',type=Path);p.add_argument('--model');p.add_argument('--max-iterations',type=int,default=20);p.add_argument('--timeout',type=float,default=900);p.add_argument('--no-preview',action='store_true')
+    p.add_argument('--use-skill',action='store_true',help='Let one Codex agent follow the repository pipeline skill and run the scene tools')
     p.add_argument('--layout-backend',choices=['heuristic','empirical','architecture'],default='heuristic');p.add_argument('--priors',type=Path);p.add_argument('--allow-prior-backoff',action='store_true')
     p.add_argument('--robot-radius',type=float);p.add_argument('--access-margin',type=float,default=.05)
     p=sub.add_parser('architecture');p.add_argument('--prompt',required=True);p.add_argument('--program',type=Path);p.add_argument('--priors',type=Path,required=True)
@@ -37,7 +38,7 @@ def main(argv=None):
     sub.add_parser('registry')
     p=sub.add_parser('asset-index');p.add_argument('--sources',type=Path,help='JSON list of revision-pinned GitHub SDF sources')
     p=sub.add_parser('asset-search');p.add_argument('query');p.add_argument('--limit',type=int,default=12)
-    p=sub.add_parser('asset-generate',help='Generate and register any visual-only prop using fal')
+    p=sub.add_parser('asset-generate',help='Generate and register any static prop with approximate collision using fal')
     p.add_argument('--category',required=True);p.add_argument('--prompt',required=True)
     p.add_argument('--size-m',type=float,required=True,help='Estimated largest extent; not a measured dimension')
     p.add_argument('--placement',choices=['support','freestanding'],default='support')
@@ -59,7 +60,7 @@ def main(argv=None):
     p=sub.add_parser('costs');p.add_argument('artifacts',type=Path,nargs='+');p.add_argument('--output',type=Path,required=True);p.add_argument('--usd-per-mtok-in',type=float);p.add_argument('--usd-per-mtok-out',type=float)
     for command in ('generate','architecture'):
         p=sub.choices[command];p.add_argument('--materials',choices=['flat','fal'],default='flat',help='PBR material sets from fal PATINA (needs FAL_KEY)')
-        p.add_argument('--clutter',choices=['off','fal'],default='off',help='Offer fal-generated visual-only decor categories to the agent')
+        p.add_argument('--clutter',choices=['off','fal'],default='off',help='Offer fal-generated decor categories with approximate collision to the agent')
         p.add_argument('--max-fal-usd',type=float,help='List-price cap on new fal jobs; cache hits are free')
     p=sub.add_parser('doctor');p.add_argument('--smoke',action='store_true')
     p=sub.add_parser('inspect');p.add_argument('path',type=Path);p.add_argument('--viewer',action='store_true');p.add_argument('--no-open',action='store_true')
@@ -79,6 +80,9 @@ def main(argv=None):
     if args.cache_dir:os.environ['SCENE_PIPELINE_CACHE']=str(args.cache_dir.resolve())
     if args.asset_store:os.environ['SCENE_PIPELINE_ASSET_STORE']=str(args.asset_store.resolve())
     try:
+        if os.environ.get('SCENE_PIPELINE_SKILL_JOB'):
+            from .skill_runner import prepare_build
+            prepare_build(args)
         agent_options={}
         if args.command in ('generate','architecture','run'):
             from .runtime import Runtime
@@ -99,7 +103,7 @@ def main(argv=None):
             from .contracts import ID
             import jsonschema
             jsonschema.validate(args.category,ID)
-            request=dict(prompt=args.prompt,size_m=args.size_m,placement=args.placement,physical_use='visual_only')
+            request=dict(prompt=args.prompt,size_m=args.size_m,placement=args.placement,physical_use='static_collision')
             calls=fal.prefetch(fal.decor_jobs({'objects':[dict(category=args.category,generated_request=request)]}),budget_usd=args.max_fal_usd)
             if any(c.get('error') for c in calls):raise PipelineError('FAL_JOB','Generated asset unavailable',calls)
             folder,asset=register_generated(args.category,request)
@@ -129,9 +133,16 @@ def main(argv=None):
             from .registry import search
             result=search()
         elif args.command=='generate':
-            from .orchestrator import generate
-            from .dsl import load
-            result=generate(args.prompt,args.seed,args.output,program=load(args.program) if args.program else None,model=args.model,
+            if args.use_skill:
+                if args.agent_backend!='codex' or args.program or args.layout_backend!='heuristic' or args.priors or args.robot_radius is not None or args.access_margin!=.05 or args.max_cost_usd is not None:
+                    raise PipelineError('SKILL_OPTIONS','--use-skill supports Codex prompt generation with default layout settings and token/time limits')
+                from .skill_runner import generate
+                result=generate(args.prompt,args.seed,args.output,model=args.model,max_iterations=args.max_iterations,
+                                timeout=args.timeout,materials=args.materials,clutter=args.clutter,max_fal_usd=args.max_fal_usd)
+            else:
+                from .orchestrator import generate
+                from .dsl import load
+                result=generate(args.prompt,args.seed,args.output,program=load(args.program) if args.program else None,model=args.model,
                             max_iterations=args.max_iterations,timeout=args.timeout,preview=not args.no_preview,
                             layout_backend=args.layout_backend,priors=read_json(args.priors) if args.priors else None,allow_prior_backoff=args.allow_prior_backoff,
                             robot_radius=args.robot_radius,access_margin=args.access_margin,

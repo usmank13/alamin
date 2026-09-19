@@ -1,9 +1,9 @@
 """Field-bound measurements; source text is evidence, never executable content."""
 import datetime
 import json
+import math
 from pathlib import Path
 import re
-from decimal import Decimal
 from fractions import Fraction
 from html import unescape
 from html.parser import HTMLParser
@@ -23,7 +23,25 @@ from .contracts import PipelineError, digest, read_json, write_json
 UNITS = {'m': 1., 'cm': .01, 'mm': .001, 'in': .0254, 'inch': .0254, 'inches': .0254, 'ft': .3048, 'foot': .3048, 'feet': .3048,
          '″': .0254, '"': .0254, "''": .0254, '′': .3048, "'": .3048}  # inch/foot marks as spec pages print them
 CACHE = Path(os.environ.get('SCENE_PIPELINE_CACHE',Path(os.environ.get('XDG_CACHE_HOME',Path.home()/'.cache'))/'scene-pipeline'))/'dimensions.json'
-QUANTITY = re.compile(r'(\d+(?:\.\d+)?|\d+/\d+)\s*(mm|cm|m|inches|inch|in|feet|foot|ft|″|"|\'\'|′|\')(?![\w.])')
+QUANTITY = re.compile(r'(?<![\w./+-])([+-]?(?:\d+\s+\d+/\d+|\d+/\d+|\d+(?:\.\d+)?))\s*(mm|cm|m|inches|inch|in|feet|foot|ft|″|"|\'\'|′|\')(?![\w.])')
+
+
+def measurement_number(number):
+    """Parse decimal, fractional, and mixed-fraction product measurements."""
+    number = ' '.join(number.split())
+    try:
+        mixed = re.fullmatch(r'([+-]?)(\d+) (\d+/\d+)', number)
+        if mixed:
+            value = float(Fraction(mixed[2]) + Fraction(mixed[3]))
+            if mixed[1] == '-':
+                value = -value
+        else:
+            value = float(Fraction(number))
+    except (ValueError, ZeroDivisionError, OverflowError) as exc:
+        raise PipelineError('DIMENSION', f'Invalid measurement number: {number}') from exc
+    if not math.isfinite(value) or value <= 0:
+        raise PipelineError('DIMENSION', 'Measurement must be finite and positive')
+    return value
 
 
 def unit_factor(unit):
@@ -76,9 +94,7 @@ def measurement(document, *, identity, label, number, unit, url, axis=None):
     if not match:
         raise PipelineError('UNBOUND_MEASUREMENT', f'Field not found: {quote}')
     quote = match.group(0)
-    value = float(Fraction(number)) * factor
-    if value <= 0:
-        raise PipelineError('DIMENSION', 'Measurement must be positive')
+    value = measurement_number(number) * factor
     return dict(value_m=value, kind='sourced', identity=identity, field=label, quote=quote,
                 source_url=url, document_sha256=digest(document))
 
@@ -179,7 +195,7 @@ def quoted_axes(text):
         axes=[axis for axis,label in labels.items() if re.search(r'\b'+label+r'\s*[:=]?\s*$',before,re.I)
               or re.match(r'\s*'+label+r'\b',after,re.I)]
         if len(axes)==1:
-            axis=axes[0];value=round(float(Fraction(match[1]))*unit_factor(match[2]),9)
+            axis=axes[0];value=round(measurement_number(match[1])*unit_factor(match[2]),9)
             if axis in out and out[axis]!=value:raise PipelineError('UNBOUND_MEASUREMENT','Ambiguous repeated axis')
             out[axis]=value
     return out
@@ -187,7 +203,7 @@ def quoted_axes(text):
 
 def quoted_values(text):
     """Every number-with-unit in the text, in metres. Numbers without units bind nothing."""
-    return sorted({round(float(Fraction(n))*unit_factor(u), 9) for n, u in QUANTITY.findall(text)})
+    return sorted({round(measurement_number(n)*unit_factor(u), 9) for n, u in QUANTITY.findall(text)})
 
 
 def resolve(item, prompt, *, default=None, cache_path=None, fetcher=fetch):

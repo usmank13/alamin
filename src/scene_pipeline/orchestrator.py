@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import time
 import traceback
 from copy import deepcopy
@@ -184,13 +185,13 @@ def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_back
               f'For requested furnishings, select asset categories from {registry}. '+OPEN_VOCABULARY)
             +f'Prompt: {prompt}\nLast deterministic failure: {feedback}\n')
     if clutter=='fal':
-        instruction+=('\nVisual-only generation is enabled. The catalog is not a closed vocabulary: '
+        instruction+=('\nGenerated clutter with approximate static collision is enabled. The catalog is not a closed vocabulary: '
             'for any decorative category, generated_request accepts prompt, size_m (estimated largest extent, metres), '
-            'placement (support or freestanding), and physical_use="visual_only". Use generated_request '
+            'placement (support or freestanding), and physical_use="static_collision". Use generated_request '
             'when stock decor does not fit; the tool caches it and registers a reusable asset_ref automatically. '
-            'These are static visuals, never contact, support surfaces or articulation. Do not substitute them for requested functional equipment. '
+            'These have static convex collision proxies, no support surfaces or articulation; contact-rich use is not certified. Do not substitute them for requested functional equipment. '
             'Include some required generated clutter when the user explicitly requests it. Never invent measurements: size_m here '
-            'is labeled an unverified visual estimate, not a sourced dimension. Retrieval can return no suitable match; '
+            'is labeled an unverified size estimate, not a sourced dimension. Retrieval can return no suitable match; '
             'revise the query or report an unavailable object rather than relabel a weak candidate.')
         instruction+=f'\nRemaining fal estimate budget: {fal_budget_usd}; each new distinct decor prompt costs {fal.PRICE_USD[fal.HUNYUAN]} USD; exact cache hits are free.'
     from .asset_library import registered_assets
@@ -215,7 +216,7 @@ def agent_program(prompt,work,feedback=None,model=None,timeout=180,*,layout_back
             'space, relations and architecture, if supplied, replace those sections; otherwise leave them out. '
             'Fix the reported failure with the smallest change. Keep successful asset/evidence choices. '
             'For a rejected retrieval, use a genuinely different query/candidate or a verified library reference. '
-            'Do not repeat rejected queries or swap functional equipment for visual-only clutter. '
+            'Do not repeat rejected queries or swap functional equipment for generated clutter. '
             'Failure history and resolved asset dimensions in the context are tool feedback, not new user requirements.')
     result=_codex(instruction,schema,work,model,timeout,name='repair' if previous else 'program')
     if previous:
@@ -298,23 +299,41 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
                        robot_radius=robot_radius,access_margin=access_margin,architecture_only=architecture_only,
                        agent_backend=CURRENT.get().backend,model=CURRENT.get().model,
                        materials=materials,clutter=clutter,max_fal_usd=max_fal_usd,
+                       max_attempts=max_iterations if program is None else 1,timeout=timeout,seed=seed,
                        prior_sha256=priors.get('sha256') if priors else None)
     write_json(output/'generation.json',configuration)
     if priors is not None:write_json(output/'priors.json',priors)
     started=time.perf_counter();attempts=[];feedback=None;intent=None;revisions=[]
-    status='failed';chosen=None;best=None;previous=None;last_program=None;resolution_cache={}
+    status='failed';chosen=None;best=None;last_program=None;resolution_cache={}
+    limit=max_iterations if program is None else 1
+    stop_reason='attempt_limit' if program is None else 'supplied_program'
+    def progress(attempt,phase,*,state='running'):
+        value=dict(status=state,attempt=attempt+1,max_attempts=limit,phase=phase,
+                   attempts_completed=len(attempts),attempts=attempts,last_failure=None if state=='validated' else feedback,
+                   stop_reason=stop_reason if state!='running' else None)
+        temporary=output/'progress.tmp'
+        write_json(temporary,value);temporary.replace(output/'progress.json')
+        print(f'Attempt {attempt+1}/{limit}: {phase}',file=sys.stderr,flush=True)
     layout_options=dict(backend=layout_backend,priors=priors,allow_prior_backoff=allow_prior_backoff,
                         robot_radius=robot_radius,access_margin=access_margin)
-    for attempt in range(max_iterations if program is None else 1):
+    for attempt in range(limit):
         directory=output/'attempts'/str(attempt);directory.mkdir(parents=True)
+        # Heuristic layout already tries three placements. Start the next repair
+        # with a fresh deterministic group instead of repeating the failed poses.
+        attempt_seed=seed+3*attempt
         start=time.perf_counter()
         try:
+            progress(attempt,'Authoring scene' if program is None else 'Loading supplied JSON')
             remaining=timeout-(time.perf_counter()-started)
             if remaining<=0: raise PipelineError('BUDGET_EXHAUSTED','Generation wall-time budget exhausted')
             context=None if feedback is None else dict(failure=feedback,previous_program=last_program,
                 initial_space=intent['space'] if intent else None,required_objects=[r for r in intent['requirements'] if r['required']] if intent else [],
                 required_relations=[r for r in intent['relations'] if r['required']] if intent else [],
                 rejected_retrievals=[v['error'] for v in resolution_cache.values() if 'error' in v],
+                attempt=attempt+1,max_attempts=limit,attempt_seed=attempt_seed,
+                failure_history=[dict(attempt=a['attempt']+1,code=a.get('error',{}).get('code'),
+                    message=a.get('error',{}).get('message'),
+                    failed_checks=[k for k,v in a.get('error',{}).get('report',{}).get('checks',{}).items() if not v]) for a in attempts],
                 resolved_assets=[v['records']['asset_resolutions'] for v in resolution_cache.values() if 'records' in v and v['records']['asset_resolutions']])
             selected=program if program is not None else agent_program(prompt,directory,context,model,min(180,remaining),
                 layout_backend=layout_backend,architecture_only=architecture_only,clutter=clutter,
@@ -337,6 +356,7 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
             # Retain the last intent-safe proposal, never an invalid repair, as the
             # base for the next patch. Evidence requests stay replayable as inputs.
             last_program=deepcopy(selected)
+            progress(attempt,'Resolving assets')
             selected=resolve_program(selected,directory,model=model,timeout=CURRENT.get().remaining(),sourcing=source_dimensions if program is None else None,
                                      fetcher=fetch,cache_path=cache_path,asset_store=asset_store,resolution_cache=resolution_cache)
             CURRENT.get().remaining()
@@ -345,7 +365,7 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
             # layout and physics still validate the actual generated geometry.
             jobs=(fal.material_jobs(0) if materials=='fal' else [])+(fal.decor_jobs(selected) if clutter=='fal' else [])
             if jobs:
-                preflight_layout(selected,seed,directory/'preflight',asset_store=asset_store,**layout_options)
+                preflight_layout(selected,attempt_seed,directory/'preflight',asset_store=asset_store,**layout_options)
                 remaining=CURRENT.get().remaining()
                 fal_records+=fal.prefetch(jobs,budget_usd=max_fal_usd,spent_usd=sum(r['cost_usd'] for r in fal_records),deadline_s=remaining)
                 write_json(directory/'fal_prefetch.json',fal_records)
@@ -362,7 +382,8 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
             if intent.get('architecture')!=selected.get('architecture'):
                 revisions.append(dict(attempt=attempt,reason=feedback,architecture=selected.get('architecture')))
                 write_json(output/'architecture_revisions.json',revisions)
-            t=time.perf_counter();ir=generate_layout(selected,seed,directory,**layout_options);layout_seconds=time.perf_counter()-t
+            progress(attempt,'Building layout')
+            t=time.perf_counter();ir=generate_layout(selected,attempt_seed,directory,**layout_options);layout_seconds=time.perf_counter()-t
             ir['meta']['appearance']={**ir['meta'].get('appearance',{}),'materials':dict(source=materials,seed=0)}
             scene_report=check_scene(intent,ir,directory)
             write_json(directory/'scene_checks.json',scene_report)
@@ -375,34 +396,39 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
                                                       model=compiled_model,data=compiled_data,allow_backoff=allow_prior_backoff,asset_root=directory)
                 write_json(directory/'architecture_validation.json',architecture_report)
                 if not architecture_report['passed']:raise PipelineError('ARCHITECTURE_CHECKS','Independent architecture validation failed',architecture_report)
+            progress(attempt,'Validating scene')
             t=time.perf_counter();report=validate_scene(directory,require_articulated=layout_backend!='architecture',robot_radius=robot_radius);validation_seconds=time.perf_counter()-t
             CURRENT.get().remaining()
             if preview:
                 from .render import preview as render_preview
                 render_preview(directory,cutaway=layout_backend!='architecture')
-            attempts.append(dict(attempt=attempt,passed=report['passed'],seconds=time.perf_counter()-start,
+            attempts.append(dict(attempt=attempt,seed=attempt_seed,passed=report['passed'],seconds=time.perf_counter()-start,
                                  layout_seconds=layout_seconds,compile_seconds=compile_seconds,validation_seconds=validation_seconds))
             if report['passed']:
-                chosen=directory;status='validated';break
+                chosen=directory;status='validated';stop_reason='validated';break
             feedback=dict(code='VALIDATION_FAILED',report=report)
+            attempts[-1]['error']=feedback
             # A compiled scene that failed some checks is still loadable evidence; keep the best.
             score=sum(bool(v) for v in report['checks'].values())
             if best is None or score>best[0]:best=(score,directory,report)
         except PipelineError as exc:
             feedback=exc.as_dict();write_json(directory/'failure.json',feedback)
-            attempts.append(dict(attempt=attempt,passed=False,error=feedback,seconds=time.perf_counter()-start))
-            if exc.code in ('BUDGET_EXHAUSTED','AGENT_UNAVAILABLE','AGENT_FAILED','AGENT_CREDENTIALS','AGENT_TIMEOUT','COST_UNKNOWN','FAL_CREDENTIALS'): break
-            signature=(feedback,digest(last_program))
-            if signature==previous: break  # Identical failure AND unchanged proposal; no progress.
-            previous=signature
+            attempts.append(dict(attempt=attempt,seed=attempt_seed,passed=False,error=feedback,seconds=time.perf_counter()-start))
+            if exc.code in ('BUDGET_EXHAUSTED','AGENT_UNAVAILABLE','AGENT_CREDENTIALS','AGENT_REQUEST_INVALID',
+                            'AGENT_MODEL','AGENT_DEPENDENCY','COST_UNKNOWN','FAL_CREDENTIALS'):
+                stop_reason=exc.code;break
+            # Identical repair failures still consume the configured attempt
+            # limit. The next agent receives the history and can try another fix.
         except Exception as exc:
             # Tool failures retain diagnostics and costs instead of leaving an
             # apparently unfinished output with no machine-readable outcome.
             feedback=dict(code='TOOL_ERROR',message=str(exc),exception_type=type(exc).__name__)
             write_json(directory/'failure.json',feedback)
             (directory/'traceback.log').write_text(traceback.format_exc())
-            attempts.append(dict(attempt=attempt,passed=False,error=feedback,seconds=time.perf_counter()-start))
+            attempts.append(dict(attempt=attempt,seed=attempt_seed,passed=False,error=feedback,seconds=time.perf_counter()-start))
+            stop_reason='TOOL_ERROR'
             break
+        if attempt+1<limit:progress(attempt,'Checks failed; retrying with failure feedback')
     if not chosen and best is not None:
         # Degrade explicitly rather than emit nothing: the scene loads, and unmet.json says what failed.
         chosen=best[1];status='partial';report=best[2]
@@ -416,10 +442,12 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
             if path.is_dir(): shutil.copytree(path,output/path.name)
             else: shutil.copy2(path,output/path.name)
     result=dict(schema_version=1,status=status,passed=status=='validated',prompt=prompt,seed=seed,attempts=attempts,
+                max_attempts=limit,attempts_used=len(attempts),stop_reason=stop_reason,
+                selected_seed=read_json(chosen/'ir.json')['meta']['seed'] if chosen else None,
                 replay_key=digest(dict(prompt=prompt,seed=seed,registry=fingerprint(),version=VERSION,program=program,
                                       layout_backend=layout_backend,prior_sha256=priors.get('sha256') if priors else None,
                                       allow_prior_backoff=allow_prior_backoff,robot_radius=robot_radius,access_margin=access_margin,
-                                      materials=materials,clutter=clutter)),
+                                      materials=materials,clutter=clutter,max_attempts=limit,retry_policy='validation_repair_v2')),
                 seconds=time.perf_counter()-started,api_spend_usd=CURRENT.get().summary()['cost_usd'],usage=CURRENT.get().summary(),
                 api_spend_note=CURRENT.get().summary()['cost_note'],
                 materials=materials,clutter=clutter,fal_calls=len(fal_records),fal_spend_usd=sum(r['cost_usd'] for r in fal_records),fal_spend_basis=fal.PRICE_BASIS,
@@ -433,5 +461,6 @@ def _generate(prompt,seed,output,*,program=None,model=None,max_iterations=20,tim
     write_json(output/'cost.json',result)
     write_json(output/'fal_calls.json',fal_records)
     write_json(output/'agent_calls.json',CURRENT.get().calls)
+    progress(attempt,'Validated scene produced' if status=='validated' else f'No validated scene; stopped: {stop_reason}',state=status)
     if not chosen: raise PipelineError('GENERATION_FAILED','No validated scene produced',result)
     return result

@@ -1,99 +1,344 @@
 {
-  "rows": [
+  "schema_version": 2,
+  "analysis": {
+    "updated_at_utc": "2026-09-18T06:59:15.818635+00:00",
+    "basis": "Basic analysis of saved artifact reports; sums of overlapping worker durations are not elapsed batch times.",
+    "batches": [
+      {
+        "domain": "home_kitchen",
+        "label": "Home kitchen (primary)",
+        "runs": 10,
+        "full_runs": 3,
+        "state_runs": 7,
+        "prepare_s": 1675.5782507650001,
+        "capture_s": 2672.473127163,
+        "cycles_s_included_in_prepare": 262.1335405599996,
+        "simulated_s": 600.0000000002736,
+        "full_mean_s": 670.0979523406664,
+        "state_mean_s": 94.59703859157149,
+        "hdf5_bytes": 2000166388
+      },
+      {
+        "domain": "kitchen",
+        "label": "Commercial kitchen (extra)",
+        "runs": 5,
+        "full_runs": 3,
+        "state_runs": 2,
+        "prepare_s": 428.6490065679827,
+        "capture_s": 2676.1768608909997,
+        "cycles_s_included_in_prepare": 113.1571070169739,
+        "simulated_s": 300.0000000001368,
+        "full_mean_s": 739.4110238806667,
+        "state_mean_s": 228.9718946245,
+        "hdf5_bytes": 1856498507
+      },
+      {
+        "domain": "warehouse",
+        "label": "Warehouse (extra)",
+        "runs": 5,
+        "full_runs": 3,
+        "state_runs": 2,
+        "prepare_s": 424.8385282550054,
+        "capture_s": 2629.168763741,
+        "cycles_s_included_in_prepare": 104.87506364100176,
+        "simulated_s": 300.0000000001368,
+        "full_mean_s": 645.4281377460001,
+        "state_mean_s": 346.4421752515,
+        "hdf5_bytes": 1755369525
+      }
+    ],
+    "new_api_costs": [
+      {
+        "kind": "material",
+        "new_requests": 50,
+        "cached_requests": 0,
+        "usd": 3.5000000000000004,
+        "summed_request_s": 4657.953703445935,
+        "mean_new_request_s": 93.15907406891871
+      },
+      {
+        "kind": "decor",
+        "new_requests": 5,
+        "cached_requests": 7,
+        "usd": 1.875,
+        "summed_request_s": 748.1793450439727,
+        "mean_new_request_s": 149.63586900879454
+      }
+    ],
+    "primary_all_full_estimated_capture_s": 6700.979523406664,
+    "primary_estimated_tiering_saving_fraction": 0.6011817201010696,
+    "primary_full_to_state_mean_ratio": 7.083709620486698,
+    "benchmark": {
+      "simulated_seconds": 2,
+      "egl_total_s": 20.04061809000001,
+      "osmesa_total_s": 30.030629732999984,
+      "speedup": 1.4984882002209727
+    },
+    "base_scenes": [
+      {
+        "domain": "home_kitchen",
+        "label": "Home kitchen",
+        "generation_s": 141.59730717499042,
+        "cycles_s": 30.71558542799903,
+        "model_calls": 2,
+        "model_usd": null,
+        "new_fal_usd": 0.0
+      },
+      {
+        "domain": "kitchen",
+        "label": "Commercial kitchen",
+        "generation_s": 6.364848315002746,
+        "cycles_s": 7.3932267149939435,
+        "model_calls": 0,
+        "model_usd": 0,
+        "new_fal_usd": 0
+      },
+      {
+        "domain": "warehouse",
+        "label": "Warehouse",
+        "generation_s": 3.7142564399982803,
+        "cycles_s": 8.367773703008424,
+        "model_calls": 0,
+        "model_usd": 0,
+        "new_fal_usd": 0
+      }
+    ],
+    "other_flows": [
+      {
+        "flow": "Panda interaction",
+        "simulated_s": 60.00000000002736,
+        "capture_s": 126.7538783760101,
+        "passed": true
+      },
+      {
+        "flow": "Navigation example",
+        "simulated_s": 22.49999999999841,
+        "capture_s": 116.40756422300001,
+        "passed": false
+      }
+    ],
+    "exclusions": [
+      "Replay/video encoding and whole-session elapsed time are not included in batch sums.",
+      "Historical model billing, earlier asset acquisition, electricity and hardware costs are not priced.",
+      "Timing varies with concurrent workload; all-full estimate is illustrative, not a controlled benchmark."
+    ],
+    "hosted_summed_request_s": 5406.133048489908
+  },
+  "per_run": [
     {
-      "artifact": "kitchen",
-      "stage": "generate/layout",
-      "wall_s": 0.29367330300738104
+      "domain": "home_kitchen",
+      "variants": [
+        {
+          "variant": 0,
+          "tier": "full",
+          "prepare_s": 186.617303494,
+          "capture_s": 893.5273614499997,
+          "cycles_s": 29.229549464,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 600610315
+        },
+        {
+          "variant": 1,
+          "tier": "full",
+          "prepare_s": 223.70816508200005,
+          "capture_s": 731.1829843199998,
+          "cycles_s": 41.782957375000024,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 591714687
+        },
+        {
+          "variant": 2,
+          "tier": "full",
+          "prepare_s": 213.47247908500003,
+          "capture_s": 385.5835112519999,
+          "cycles_s": 35.03083843599961,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 577575923
+        },
+        {
+          "variant": 3,
+          "tier": "state",
+          "prepare_s": 210.54778594799973,
+          "capture_s": 99.95402043700005,
+          "cycles_s": 32.25109961899989,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32895919
+        },
+        {
+          "variant": 4,
+          "tier": "state",
+          "prepare_s": 72.25082412499978,
+          "capture_s": 101.09666442600019,
+          "cycles_s": 10.51348850300019,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32973602
+        },
+        {
+          "variant": 5,
+          "tier": "state",
+          "prepare_s": 217.81114307700022,
+          "capture_s": 92.03262996300009,
+          "cycles_s": 46.77360416700003,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32878600
+        },
+        {
+          "variant": 6,
+          "tier": "state",
+          "prepare_s": 235.51969026300003,
+          "capture_s": 92.68970470700015,
+          "cycles_s": 33.84718895700007,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32852791
+        },
+        {
+          "variant": 7,
+          "tier": "state",
+          "prepare_s": 192.20731190300012,
+          "capture_s": 94.4120521169998,
+          "cycles_s": 12.192680078999729,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32961706
+        },
+        {
+          "variant": 8,
+          "tier": "state",
+          "prepare_s": 65.72672868100017,
+          "capture_s": 92.20649111600005,
+          "cycles_s": 10.291696276000039,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32842365
+        },
+        {
+          "variant": 9,
+          "tier": "state",
+          "prepare_s": 57.71681910699999,
+          "capture_s": 89.78770737500008,
+          "cycles_s": 10.22043768399999,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 32860480
+        }
+      ]
     },
     {
-      "artifact": "kitchen",
-      "stage": "generate/compile",
-      "wall_s": 0.1313673129916424
+      "domain": "kitchen",
+      "variants": [
+        {
+          "variant": 0,
+          "tier": "full",
+          "prepare_s": 59.40272042399738,
+          "capture_s": 564.10506678,
+          "cycles_s": 16.488005826991866,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 587851269
+        },
+        {
+          "variant": 1,
+          "tier": "full",
+          "prepare_s": 82.09324030899734,
+          "capture_s": 521.9730935559999,
+          "cycles_s": 19.298255066998536,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 580740098
+        },
+        {
+          "variant": 2,
+          "tier": "full",
+          "prepare_s": 88.57635982400097,
+          "capture_s": 1132.154911306,
+          "cycles_s": 21.94204919898766,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 580414426
+        },
+        {
+          "variant": 3,
+          "tier": "state",
+          "prepare_s": 104.0072389299894,
+          "capture_s": 181.41817545899994,
+          "cycles_s": 35.76485191099346,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 52391808
+        },
+        {
+          "variant": 4,
+          "tier": "state",
+          "prepare_s": 94.56944708099763,
+          "capture_s": 276.5256137900001,
+          "cycles_s": 19.663945013002376,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 55100906
+        }
+      ]
     },
     {
-      "artifact": "kitchen",
-      "stage": "generate/validation",
-      "wall_s": 3.0951441989891464
-    },
-    {
-      "artifact": "kitchen",
-      "stage": "generate/agent+io",
-      "wall_s": 2.844663500014576,
-      "attempts": 1,
-      "status": "validated",
-      "tokens": null,
-      "api_spend_usd": 0
-    },
-    {
-      "artifact": "kitchen",
-      "stage": "render/cycles",
-      "wall_s": 7.3932267149939435
-    },
-    {
-      "artifact": "kitchen",
-      "stage": "export/urdf+pybullet",
-      "wall_s": 39.15858268100419
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "generate/layout",
-      "wall_s": 0.09708526299800724
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "generate/compile",
-      "wall_s": 0.15939308700035326
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "generate/validation",
-      "wall_s": 1.1174114470049972
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "generate/agent+io",
-      "wall_s": 2.3403666429949226,
-      "attempts": 1,
-      "status": "validated",
-      "tokens": null,
-      "api_spend_usd": 0
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "render/cycles",
-      "wall_s": 8.367773703008424
-    },
-    {
-      "artifact": "warehouse_final",
-      "stage": "export/urdf+pybullet",
-      "wall_s": 2.5809624300018186
-    },
-    {
-      "artifact": "kitchen_interaction",
-      "stage": "flow/interaction",
-      "wall_s": 126.7538783760101,
-      "sim_s": 60.00000000002736,
-      "passed": true
-    },
-    {
-      "artifact": "mapping",
-      "stage": "flow/mapping",
-      "wall_s": 636.4480826590006,
-      "sim_s": 60.00000000002736,
-      "passed": true
-    },
-    {
-      "artifact": "warehouse_mapping_smoke",
-      "stage": "flow/mapping",
-      "wall_s": 4.281518137999228,
-      "sim_s": 2.0000000000000013,
-      "passed": true
+      "domain": "warehouse",
+      "variants": [
+        {
+          "variant": 0,
+          "tier": "full",
+          "prepare_s": 93.87111456600542,
+          "capture_s": 538.799124206,
+          "cycles_s": 34.803044364001835,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 567863929
+        },
+        {
+          "variant": 1,
+          "tier": "full",
+          "prepare_s": 111.51387195799907,
+          "capture_s": 471.7816098590001,
+          "cycles_s": 18.63595418499608,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 545427663
+        },
+        {
+          "variant": 2,
+          "tier": "full",
+          "prepare_s": 87.75407400100084,
+          "capture_s": 925.703679173,
+          "cycles_s": 17.425349932003883,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 570322504
+        },
+        {
+          "variant": 3,
+          "tier": "state",
+          "prepare_s": 67.40527183400002,
+          "capture_s": 404.47729126600007,
+          "cycles_s": 17.34605993699995,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 38266369
+        },
+        {
+          "variant": 4,
+          "tier": "state",
+          "prepare_s": 64.29419589600002,
+          "capture_s": 288.4070592369999,
+          "cycles_s": 16.66465522300001,
+          "simulated_s": 60.00000000002736,
+          "hdf5_bytes": 33489060
+        }
+      ]
     }
   ],
-  "total_wall_s": 835.0631294570194,
-  "table": "docs/cost-table.md",
-  "usd_per_mtok": {
-    "input": null,
-    "output": null
+  "recorded_new_fal_usd": 5.375,
+  "illustrative_api_budget": {
+    "basis": "Illustrative scene budget, not recorded provider billing or a specific generation run",
+    "llm": {
+      "input_tokens": 40000,
+      "output_tokens": 4000,
+      "assumed_usd_per_million_input": 3,
+      "assumed_usd_per_million_output": 15,
+      "estimated_usd": 0.18
+    },
+    "fal": {
+      "material_sets": 5,
+      "usd_per_material_set": 0.07,
+      "textured_meshes": 6,
+      "usd_per_textured_mesh": 0.375,
+      "estimated_usd": 2.6
+    },
+    "total_estimated_usd": 2.78,
+    "fal_share": 0.9352517985611511
   }
 }

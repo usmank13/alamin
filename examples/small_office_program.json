@@ -1,0 +1,308 @@
+{
+  "schema_version": 1,
+  "prompt": "Create a scene for a small office. Use fal clutter and texturing.",
+  "space": {
+    "kind": "office",
+    "area_m2": 30,
+    "shape": "rectangle",
+    "annexes": 0
+  },
+  "objects": [
+    {
+      "id": "desk_1",
+      "category": "office_desk",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "family": "table",
+      "dimensions_m": [
+        1.2,
+        0.6,
+        0.73
+      ],
+      "dimension_evidence": {
+        "url": "https://www.ikea.com/gb/en/p/lagkapten-adils-desk-white-stained-oak-effect-black-s69416884/",
+        "identity": "LAGKAPTEN",
+        "fields": {
+          "width": [
+            "Width",
+            "120",
+            "cm"
+          ],
+          "depth": [
+            "Depth",
+            "60",
+            "cm"
+          ],
+          "height": [
+            "Height",
+            "73",
+            "cm"
+          ]
+        }
+      }
+    },
+    {
+      "id": "chair_1",
+      "category": "office_chair",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "asset_ref": "b17f0b8523497196b3ba03d3e2056c6f3614ae8280a0fc5a3c2fc71eba284a24"
+    },
+    {
+      "id": "laptop_1",
+      "category": "office_laptop",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "An open slim silver office laptop, screen open at a right angle, dark screen, black keyboard and trackpad, no logo, realistic",
+        "size_m": 0.34,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "lamp_1",
+      "category": "desk_lamp",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "A compact matte black desktop task lamp with a small circular base, short upright arm and a downward facing shade, realistic office desk lamp",
+        "size_m": 0.28,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "notebook_1",
+      "category": "office_notebook",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "A closed navy blue hardcover notebook lying flat with a silver pen resting on its cover, realistic office stationery",
+        "size_m": 0.18,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "mug_1",
+      "category": "mug",
+      "count": 1,
+      "zone": "main",
+      "required": true
+    },
+    {
+      "id": "desk_2",
+      "category": "office_desk",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "family": "table",
+      "dimensions_m": [
+        1.2,
+        0.6,
+        0.73
+      ],
+      "dimension_evidence": {
+        "url": "https://www.ikea.com/gb/en/p/lagkapten-adils-desk-white-stained-oak-effect-black-s69416884/",
+        "identity": "LAGKAPTEN",
+        "fields": {
+          "width": [
+            "Width",
+            "120",
+            "cm"
+          ],
+          "depth": [
+            "Depth",
+            "60",
+            "cm"
+          ],
+          "height": [
+            "Height",
+            "73",
+            "cm"
+          ]
+        }
+      }
+    },
+    {
+      "id": "chair_2",
+      "category": "office_chair",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "asset_ref": "b17f0b8523497196b3ba03d3e2056c6f3614ae8280a0fc5a3c2fc71eba284a24"
+    },
+    {
+      "id": "laptop_2",
+      "category": "office_laptop",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "An open slim silver office laptop, screen open at a right angle, dark screen, black keyboard and trackpad, no logo, realistic",
+        "size_m": 0.34,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "lamp_2",
+      "category": "desk_lamp",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "A compact matte black desktop task lamp with a small circular base, short upright arm and a downward facing shade, realistic office desk lamp",
+        "size_m": 0.28,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "notebook_2",
+      "category": "office_notebook",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "generated_request": {
+        "prompt": "A closed navy blue hardcover notebook lying flat with a silver pen resting on its cover, realistic office stationery",
+        "size_m": 0.18,
+        "placement": "support",
+        "physical_use": "visual_only"
+      }
+    },
+    {
+      "id": "mug_2",
+      "category": "mug",
+      "count": 1,
+      "zone": "main",
+      "required": true
+    },
+    {
+      "id": "bookcase",
+      "category": "bookshelf",
+      "count": 1,
+      "zone": "main",
+      "required": true,
+      "asset_ref": "9171be1cb4c57804cb9e2f1555f890ef0c806a0371435b54e472702d15ac9899"
+    },
+    {
+      "id": "drawers",
+      "category": "drawer_unit",
+      "count": 2,
+      "zone": "main",
+      "required": true
+    },
+    {
+      "id": "cupboards",
+      "category": "base_cabinet",
+      "count": 3,
+      "zone": "main",
+      "required": true
+    },
+    {
+      "id": "plant",
+      "category": "potted_plant",
+      "count": 1,
+      "zone": "main",
+      "required": true
+    }
+  ],
+  "relations": [
+    {
+      "kind": "in_row",
+      "objects": [
+        "desk_1",
+        "desk_2"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "bookcase",
+        "drawers",
+        "cupboards"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "plant",
+        "bookcase"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "laptop_1",
+        "desk_1"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "lamp_1",
+        "desk_1"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "notebook_1",
+        "desk_1"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "mug_1",
+        "desk_1"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "laptop_2",
+        "desk_2"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "lamp_2",
+        "desk_2"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "notebook_2",
+        "desk_2"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "mug_2",
+        "desk_2"
+      ],
+      "required": false
+    }
+  ]
+}

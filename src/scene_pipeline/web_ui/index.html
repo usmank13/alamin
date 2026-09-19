@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scene Studio · Pipeline demo</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Scene Studio home"><span class="brand-icon">▧</span><span>Scene Studio<small>TEXT → WORLD → ACTION</small></span></a>
+    <button id="new-scene" class="primary new-button"><span>＋</span> Create a scene</button>
+    <div class="section-label library-label">SCENE LIBRARY <span id="scene-count">0</span></div>
+    <label class="search"><span>⌕</span><input id="search" type="search" placeholder="Find a scene…" aria-label="Find a scene"></label>
+    <nav id="scene-list" aria-label="Scene library"></nav>
+    <div class="sidebar-footer"><span class="connection-dot"></span><span id="connection">Connecting to local pipeline</span><small id="provider-status">Checking providers…</small></div>
+  </aside>
+
+  <main>
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong>Scene playground</strong></div><span class="local-label"><i></i> LOCAL SESSION</span></header>
+    <section class="page-heading"><div><div class="eyebrow">BUILD A WORLD. PUT IT TO WORK.</div><h1 id="scene-title">Your simulation workspace</h1><p id="scene-description">Generate a scene, choose a behavior, and see what happens.</p></div><button id="refresh" class="quiet" aria-label="Refresh scenes">↻ <span>Refresh</span></button></section>
+    <div id="banner" class="banner" role="status" hidden></div>
+
+    <div class="workspace">
+      <section class="viewer-panel panel">
+        <div class="viewer-toolbar"><div class="tabs" role="tablist" aria-label="Scene views"><button class="tab active" data-view="overview" role="tab" aria-selected="true">Scene</button><button class="tab" data-view="topdown" role="tab" aria-selected="false">Floor plan</button><button class="tab" data-view="map" role="tab" aria-selected="false">Mapping</button><button class="tab" data-view="video" role="tab" aria-selected="false">Replay</button></div><span id="scene-badge" class="badge neutral">NO SCENE</span></div>
+        <div id="viewer" class="viewer"><div class="empty-state"><span class="empty-icon">◇</span><h2>A world starts with an idea</h2><p>Create your first scene, or select one from the library.</p><button id="empty-create" class="primary">Create a scene</button></div></div>
+        <div class="viewer-bottom"><span id="view-caption">Compiled scene preview</span><a id="open-artifact" target="_blank" rel="noopener" hidden>Open original ↗</a></div>
+        <div class="scene-stats"><div><small>OBJECTS</small><strong id="stat-objects">—</strong></div><div><small>FLOOR AREA</small><strong id="stat-area">—</strong></div><div><small>LAYOUT SEED</small><strong id="stat-seed">—</strong></div><div><small>RECORDED RUNS</small><strong id="stat-runs">—</strong></div></div>
+      </section>
+
+      <aside class="controls panel">
+        <div class="panel-heading"><span class="eyebrow">SIMULATION</span><h2>Give your robot a task</h2><p>Choose a behavior to record in this scene.</p></div>
+        <div class="behavior-options" role="group" aria-label="Robot behavior">
+          <button class="behavior selected" data-flow="mapping" aria-pressed="true"><span class="behavior-icon">⌗</span><span><strong>Explore & map</strong><small>Omnidirectional base · range mapping</small></span><span class="radio-dot"></span></button>
+          <button class="behavior" data-flow="interaction" aria-pressed="false"><span class="behavior-icon">⌁</span><span><strong>Open & close a drawer</strong><small>Franka Panda · contact interaction</small></span><span class="radio-dot"></span></button>
+          <button class="behavior" data-flow="navigate" aria-pressed="false"><span class="behavior-icon">↗</span><span><strong>Navigate to an object</strong><small>Omnidirectional base · goal planner</small></span><span class="radio-dot"></span></button>
+        </div>
+        <form id="flow-form">
+          <label id="drawer-field" hidden>Drawer target<select id="drawer-target"></select></label>
+          <label id="goal-field" hidden>Navigation goal<input id="goal" placeholder="e.g. go to the office desk" maxlength="500"><small>Use an object category or instance in this scene.</small></label>
+          <div class="field-row"><label>Duration <span class="unit">simulated</span><select id="duration"><option value="10">10 seconds</option><option value="30">30 seconds</option><option value="60" selected>60 seconds</option><option value="120">120 seconds</option></select></label><label>Capture<select id="capture"><option value="full">Full RGB-D</option><option value="state">State & sensors</option></select></label></div>
+          <div class="field-row"><label>Run seed<input id="run-seed" type="number" value="0" min="0" max="2147483647"></label><div class="capture-note">Includes recorded replay.<br>Runs may take several minutes.</div></div>
+          <p id="flow-help" class="help">Build an occupancy map from noisy range observations.</p>
+          <button id="run-flow" class="primary run-button" type="submit" disabled><span>▶</span> Run mapping</button>
+          <p class="queue-note">Jobs run one at a time on this machine.</p>
+        </form>
+      </aside>
+    </div>
+
+    <section class="lower-grid">
+      <div class="panel recordings"><div class="panel-title"><div><span class="eyebrow">RESULTS</span><h2>Recorded runs</h2></div><span id="run-count" class="count">0</span></div><div id="run-list" class="run-list"><p class="muted empty-line">Run a behavior to see its replay and measurements here.</p></div></div>
+      <div class="panel checks"><div class="panel-title"><div><span class="eyebrow">SCENE HEALTH</span><h2>Checks & artifacts</h2></div><button id="render-scene" class="quiet" disabled>Render still ↗</button></div><div id="check-list"></div><div id="artifact-links" class="artifact-links"></div></div>
+    </section>
+    <section class="panel jobs-panel"><div class="panel-title"><div><span class="eyebrow">PIPELINE ACTIVITY</span><h2>Job queue <span id="job-count" class="count">0</span></h2></div><span class="muted">Progress and output are retained between sessions</span></div><div id="job-list"></div><details id="log-details"><summary>Worker output <span id="log-title"></span></summary><pre id="job-log">Choose a job to inspect its output.</pre></details></section>
+    <footer class="page-footer">SCENE STUDIO <span>Generated environments. Recorded behavior. Measured results.</span></footer>
+  </main>
+
+  <dialog id="generate-dialog" aria-label="Create a scene">
+    <form id="generate-form">
+      <div class="dialog-heading"><div><div class="eyebrow">FROM IDEA TO ENVIRONMENT</div><h2>Create a scene</h2></div><button id="close-dialog" class="icon-button" type="button" aria-label="Close dialog">×</button></div>
+      <p class="muted">Describe the room, its furniture, and how it should be arranged.</p>
+      <div class="prompt-presets"><button type="button" data-preset="office">Small office</button><button type="button" data-preset="dorm">Dorm room</button><button type="button" data-preset="shop">Machine shop</button></div>
+      <label>Scene description<textarea id="prompt" rows="4" required maxlength="16000" placeholder="A small office with two desks, chairs, storage cabinets, and a clear central aisle…"></textarea></label>
+      <div class="field-row"><label>Authoring<select id="backend"><option value="openrouter">OpenRouter API</option><option value="codex">Codex CLI</option><option value="json">Supply scene JSON</option></select></label><label id="model-field">Model<input id="model" value="anthropic/claude-sonnet-4.6" maxlength="200"></label></div>
+      <div id="json-field" hidden><label for="program-json">SceneProgram JSON</label><textarea id="program-json" rows="6" spellcheck="false" placeholder='{"schema_version": 1, "prompt": "…", "space": {…}, "objects": […], "relations": […]}'></textarea><small>Paste JSON or <label class="file-label" for="json-file">choose a .json file</label><input id="json-file" type="file" accept=".json,application/json" hidden>. Its prompt is copied into the description.</small></div>
+      <div class="field-row"><label>Appearance<select id="appearance"><option value="flat">Standard materials</option><option value="fal">fal textures & clutter</option></select></label><label>Layout seed<input id="generation-seed" type="number" min="0" max="2147483647" value="42"></label></div>
+      <div class="field-row"><label id="api-budget-field">Model budget · USD<input id="api-budget" type="number" min="0.01" max="25" step="0.01" value="2"></label><label id="fal-budget-field" hidden>fal budget · USD<input id="fal-budget" type="number" min="0" max="25" step="0.01" value="3"></label><label>Max attempts<input id="iterations" type="number" min="1" max="10" value="5"></label></div>
+      <p id="attempts-help" class="help">Total attempts, including the first. Failed checks are sent back to the agent for repair.</p>
+      <p id="credential-hint" class="help"></p><p id="budget-note" class="budget-note">Model and fal budgets are shared across all attempts.</p>
+      <div id="generation-error" class="form-error" role="alert" hidden></div>
+      <div class="dialog-actions"><button id="cancel-dialog" type="button" class="quiet">Cancel</button><button id="submit-generation" class="primary" type="submit">Generate scene ↗</button></div>
+    </form>
+  </dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>

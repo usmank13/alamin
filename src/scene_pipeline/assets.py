@@ -207,6 +207,7 @@ def instantiate(category, destination, *, vendor=None, scale=1., family=None, di
             raise PipelineError('TEMPLATE_DOMAIN', 'Generated decor is sized from its registry band; explicit scale or dimensions are not accepted')
         from .generated import package as generated_package
         spec, provenance = generated_package(category, config)
+        config = {**config, 'physical_policy': provenance['physical_policy']}
         affordances, supports = [], []
         source_hashes = provenance['hashes']
         model = spec.compile(); data = mujoco.MjData(model); mujoco.mj_forward(model, data)
@@ -270,6 +271,9 @@ def instantiate(category, destination, *, vendor=None, scale=1., family=None, di
                                                         semantic_state=True,preserve_handle_size=False),
                  state='candidate',validation=None,adapter_version=ADAPTER_VERSION)
     from .provenance import classify
+    if config['route']=='G6':
+        package['capabilities'].update(static_geometry=True,static_collision=True,dynamic=False,
+                                       articulated=False,visual_only=False,contact_rich_certified=False)
     package['source_classification']=classify(package)
     if not folder.exists():
         folder.mkdir(parents=True)

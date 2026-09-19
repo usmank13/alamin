@@ -59,7 +59,8 @@ ASSET_REQUEST=obj({'query':{'type':'string','minLength':1,'maxLength':300},
 GENERATED_REQUEST=obj({'prompt':{'type':'string','minLength':1,'maxLength':900},
     'size_m':{'type':'number','minimum':.02,'maximum':2.},
     'placement':{'type':'string','enum':['support','freestanding']},
-    'physical_use':{'type':'string','const':'visual_only'}})
+    # Legacy authored requests remain loadable; new imports always add the proxy.
+    'physical_use':{'type':'string','enum':['static_collision','visual_only']}})
 PROGRAM_SCHEMA = obj({
     'schema_version': {'type':'integer','const': VERSION},
     'prompt': {'type': 'string', 'minLength': 1},

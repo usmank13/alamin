@@ -1,4 +1,4 @@
-"""PBR materials and generated decor: cache, compiler layers, rebinding, recipe roles, visual-only placement. Network-free."""
+"""PBR materials and generated decor: cache, compiler layers, rebinding, recipe roles, static collision placement. Network-free."""
 import io
 import json
 import zipfile
@@ -107,7 +107,7 @@ def test_flat_mode_keeps_placeholders_and_checker(tmp_path):
     assert model.ntex==1 and model.material('finish_floor_tile').id>=0
 
 
-def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
+def test_generated_decor_has_static_collision_and_is_placed_on_supports(cache,tmp_path):
     import trimesh
     box=trimesh.creation.box(extents=[.5,1.,.3])  # genuine glTF Y-up: height is the 1.0 m Y axis
     box.visual=trimesh.visual.TextureVisuals(uv=np.zeros((len(box.vertices),2)),image=Image.fromarray(np.full((4,4,3),90,np.uint8)))
@@ -120,7 +120,7 @@ def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
     ir=solve(program,3,tmp_path/'warm')
     mugs=[o for o in ir['objects'] if o['category']=='mug']
     assert len(mugs)==2 and all(o['support_parent']=='table_0' for o in mugs) and not any(o['dynamic'] for o in mugs)
-    assert mugs[0]['dimensions'][2]==pytest.approx(.105,abs=1e-6) and mugs[0]['source_classification']['allowed_use']=='visual_only'
+    assert mugs[0]['dimensions'][2]==pytest.approx(.105,abs=1e-6) and mugs[0]['source_classification']['allowed_use']=='static_collision'
     assert mugs[0]['dimensions'][:2]==pytest.approx([.0525,.0315],abs=1e-6)
     write_json(tmp_path/'warm'/'ir.json',ir);compile_scene(ir,tmp_path/'warm')
     inventory=json.loads((tmp_path/'warm'/'provenance.json').read_text());assert inventory['counts']['generated']==3
@@ -128,8 +128,44 @@ def test_generated_decor_is_visual_only_and_placed_on_supports(cache,tmp_path):
     assert manifest['instances']['mugs_0']['provenance']['request_id'] and manifest['instances']['mugs_0']['provenance']['hashes']
     model=mujoco.MjSpec.from_zip(str(tmp_path/'warm'/'scene.mjz')).compile()
     decor=[i for i in range(model.ngeom) if model.geom(i).name.startswith('mugs_0/')]
-    assert decor and all(model.geom_type[i]==mujoco.mjtGeom.mjGEOM_MESH and not (model.geom_contype[i] or model.geom_conaffinity[i]) for i in decor)
-    assert model.mesh_texcoordnum[model.geom_dataid[decor[0]]]>0
+    assert len(decor)==2 and all(model.geom_type[i]==mujoco.mjtGeom.mjGEOM_MESH for i in decor)
+    visual=model.geom('mugs_0/surface_visual').id;collider=model.geom('mugs_0/surface_collision').id
+    assert not model.geom_contype[visual] and not model.geom_conaffinity[visual]
+    assert model.geom_contype[collider]==model.geom_conaffinity[collider]==1
+    assert model.geom_group[collider]==3 and model.geom_rgba[collider,3]==0
+    assert model.mesh_texcoordnum[model.geom_dataid[visual]]>0
+    assert model.body_mass[model.geom_bodyid[collider]]>0
+    provenance=manifest['instances']['mugs_0']['provenance']
+    assert provenance['physical_use']=='static_collision' and not provenance['calibrated']
+    assert not manifest['instances']['mugs_0']['source_classification']['contact_rich_certified']
+
+    # A moving probe representing an arm link must contact and stop at the prop,
+    # after the full asset -> scene -> MJZ round trip, not just expose a mask bit.
+    spec=mujoco.MjSpec.from_zip(str(tmp_path/'warm'/'scene.mjz'))
+    center=np.array(mugs[0]['position'])+np.array([0,0,mugs[0]['dimensions'][2]/2])
+    # Approach along the mug's local X axis (layout may rotate it).
+    yaw=mugs[0]['yaw'];axis=np.array([np.cos(yaw),np.sin(yaw),0.])
+    distance=mugs[0]['dimensions'][0]/2+.04
+    probe=spec.worldbody.add_body(name='arm_probe',pos=center-axis*distance)
+    probe.add_joint(name='probe_slide',type=mujoco.mjtJoint.mjJNT_SLIDE,axis=axis)
+    probe.add_geom(name='probe_tip',type=mujoco.mjtGeom.mjGEOM_SPHERE,size=[.01,0,0],mass=.1)
+    model=spec.compile();data=mujoco.MjData(model)
+    data.joint('probe_slide').qvel[0]=.5
+    tip=model.geom('probe_tip').id;collider=model.geom('mugs_0/surface_collision').id
+    contacted=False;furthest=0.
+    for _ in range(300):
+        mujoco.mj_step(model,data)
+        contacted |= any({c.geom1,c.geom2}=={tip,collider} for c in data.contact)
+        furthest=max(furthest,float(data.joint('probe_slide').qpos[0]))
+    assert contacted
+    assert furthest<.035  # .03 m to contact plus soft-contact tolerance; cannot pass through
+
+    from scene_pipeline.portability import export_urdf
+    import xml.etree.ElementTree as ET
+    export_urdf(tmp_path/'warm')
+    assert any(node.find('geometry/mesh') is not None
+               for path in (tmp_path/'warm'/'urdf').glob('*.urdf')
+               for node in ET.parse(path).iter('collision'))
 
 
 @pytest.mark.parametrize('category',['tea_towel','jar'])
@@ -139,7 +175,7 @@ def test_novel_generated_category_registers_and_replays_without_fal(cache,tmp_pa
     from scene_pipeline.asset_library import verify,registered_assets
     from scene_pipeline.contracts import read_json,validate_program
     program=load('examples/cafe_program.py')
-    request=dict(prompt='a '+category.replace('_',' '),size_m=.2,placement='support',physical_use='visual_only')
+    request=dict(prompt='a '+category.replace('_',' '),size_m=.2,placement='support',physical_use='static_collision')
     program['objects'].append(dict(id='decor',category=category,count=2,zone='main',required=True,generated_request=request))
     fake=FakeFal(glb=trimesh.creation.box(extents=[.2,.03,.15]).export(file_type='glb'))
     jobs=fal.decor_jobs(program)
@@ -150,12 +186,13 @@ def test_novel_generated_category_registers_and_replays_without_fal(cache,tmp_pa
     resolved=read_json(scene/'program.json');item=resolved['objects'][-1]
     assert 'generated_request' not in item and item['asset_ref']
     asset=verify(store/'packages'/item['asset_ref'])
-    assert asset['capabilities']['visual_only'] and not asset['capabilities']['articulated']
-    assert asset['provenance']['size_basis']=='agent_estimate_visual_only_not_measured'
+    assert asset['capabilities']['static_collision'] and not asset['capabilities']['visual_only']
+    assert not asset['capabilities']['articulated'] and not asset['capabilities']['dynamic']
+    assert asset['provenance']['size_basis']=='agent_estimate_not_measured'
     assert registered_assets(category.replace('_',' '),store)[0]['asset_ref']==item['asset_ref']
-    assert all(o['source_classification']['allowed_use']=='visual_only' for o in read_json(scene/'ir.json')['objects'] if o['category']==category)
+    assert all(o['source_classification']['allowed_use']=='static_collision' for o in read_json(scene/'ir.json')['objects'] if o['category']==category)
     metrics=[m for m in read_json(scene/'validation.json')['metrics'] if m['category']==category]
-    assert metrics and all(m['mass_ok'] is None and m['mass_check_scope']=='not_applicable_visual_only_no_contact_geometry' for m in metrics)
+    assert metrics and all(m['mass_ok'] is None and m['mass_check_scope']=='unverified_generated_static_collision_proxy' for m in metrics)
     monkeypatch.setattr(fal,'_http',lambda *a,**k:pytest.fail('A registered asset must replay offline'))
     assert generate(program['prompt'],1,tmp_path/'replay',program=resolved,asset_store=store,preview=False)['passed']
     bad={**item,'generated_request':request}

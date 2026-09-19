@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "prompt": "Generate a machine shop.",
+  "space": {
+    "kind": "machine_shop",
+    "area_m2": 60,
+    "shape": "rectangle",
+    "annexes": 0
+  },
+  "objects": [
+    {
+      "id": "lathe",
+      "category": "metal_lathe",
+      "count": 1,
+      "zone": "machining",
+      "required": true,
+      "generated_request": {
+        "prompt": "A complete industrial manual metalworking engine lathe on its own two-pedestal floor stand, horizontal steel bed, left headstock with three jaw chuck, central carriage with handwheels, right tailstock, muted industrial teal enamel and machined steel, realistic recognizable machine tool, no operator, no surrounding room",
+        "size_m": 1.9,
+        "placement": "freestanding",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "mill",
+      "category": "vertical_mill",
+      "count": 1,
+      "zone": "machining",
+      "required": true,
+      "generated_request": {
+        "prompt": "A complete industrial vertical knee milling machine standing on its own heavy floor base, tall grey cast iron column, vertical spindle head, horizontal rectangular T-slot worktable, handwheels and a red emergency stop button, muted industrial blue grey enamel and steel, realistic recognizable machine tool, no operator, no surrounding room",
+        "size_m": 1.9,
+        "placement": "freestanding",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "drill_press",
+      "category": "floor_drill_press",
+      "count": 1,
+      "zone": "machining",
+      "required": true,
+      "generated_request": {
+        "prompt": "A complete floor standing workshop drill press, tall vertical steel column, compact dark blue motor head with chuck pointing down, round adjustable work table, three spoke feed handle and heavy rectangular floor base, realistic machine tool, no operator, no surrounding room",
+        "size_m": 1.65,
+        "placement": "freestanding",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "workbenches",
+      "category": "prep_table",
+      "count": 2,
+      "zone": "assembly",
+      "required": true
+    },
+    {
+      "id": "tool_drawers",
+      "category": "drawer_unit",
+      "count": 2,
+      "zone": "storage",
+      "required": true
+    },
+    {
+      "id": "tool_cupboards",
+      "category": "base_cabinet",
+      "count": 3,
+      "zone": "storage",
+      "required": true
+    },
+    {
+      "id": "stock_shelf",
+      "category": "shelf",
+      "count": 1,
+      "zone": "storage",
+      "required": true
+    },
+    {
+      "id": "bench_vise",
+      "category": "bench_vise",
+      "count": 1,
+      "zone": "assembly",
+      "required": true,
+      "generated_request": {
+        "prompt": "A compact heavy cast iron machinist bench vise with parallel steel jaws, horizontal screw handle and a flat mounting base, dark blue painted body with machined silver jaws, realistic workshop tool",
+        "size_m": 0.28,
+        "placement": "support",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "caliper",
+      "category": "digital_caliper",
+      "count": 1,
+      "zone": "assembly",
+      "required": true,
+      "generated_request": {
+        "prompt": "A stainless steel digital vernier caliper lying flat, slightly open measuring jaws, slim graduated steel beam and small black digital readout, realistic precision machinist measuring tool",
+        "size_m": 0.23,
+        "placement": "support",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "toolbox",
+      "category": "open_toolbox",
+      "count": 1,
+      "zone": "assembly",
+      "required": true,
+      "generated_request": {
+        "prompt": "A compact open red steel toolbox containing neatly arranged silver spanners and screwdrivers, black carrying handle, realistic workshop tool carrier",
+        "size_m": 0.34,
+        "placement": "support",
+        "physical_use": "static_collision"
+      }
+    },
+    {
+      "id": "parts_trays",
+      "category": "tray",
+      "count": 3,
+      "zone": "assembly",
+      "required": true
+    }
+  ],
+  "relations": [
+    {
+      "kind": "against_wall",
+      "objects": [
+        "lathe",
+        "mill",
+        "drill_press"
+      ],
+      "required": false
+    },
+    {
+      "kind": "against_wall",
+      "objects": [
+        "tool_drawers",
+        "tool_cupboards",
+        "stock_shelf"
+      ],
+      "required": false
+    },
+    {
+      "kind": "in_row",
+      "objects": [
+        "workbenches"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "bench_vise",
+        "workbenches"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "caliper",
+        "workbenches"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "toolbox",
+        "workbenches"
+      ],
+      "required": false
+    },
+    {
+      "kind": "near",
+      "objects": [
+        "parts_trays",
+        "workbenches"
+      ],
+      "required": false
+    }
+  ]
+}
