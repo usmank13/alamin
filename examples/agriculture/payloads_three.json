@@ -1,0 +1,7 @@
+{
+  "payloads": [
+    {"id": "arm_left", "lateral_m": 0.5},
+    {"id": "arm_center", "lateral_m": 0.0},
+    {"id": "arm_right", "lateral_m": -0.5}
+  ]
+}

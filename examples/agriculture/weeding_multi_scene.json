@@ -1,0 +1,136 @@
+{
+  "seconds": 10,
+  "spawn": {
+    "position_m": [
+      -0.5,
+      0
+    ],
+    "yaw_rad": 0
+  },
+  "waypoints": [
+    {
+      "xy": [
+        -0.5,
+        0
+      ]
+    },
+    {
+      "xy": [
+        0.3,
+        0
+      ]
+    }
+  ],
+  "plants": [
+    {
+      "id": "arm_1_weed",
+      "arm": "arm_1",
+      "category": "weed",
+      "source_id": "plant_00128",
+      "position_m": [
+        -0.45,
+        0.4826,
+        0
+      ],
+      "radius_m": 0.015,
+      "height_m": 0.04
+    },
+    {
+      "id": "arm_1_crop",
+      "arm": "arm_1",
+      "category": "crop",
+      "source_id": "plant_00002",
+      "position_m": [
+        0.05,
+        0.6226,
+        0
+      ],
+      "radius_m": 0.06,
+      "height_m": 0.15
+    },
+    {
+      "id": "arm_2_weed",
+      "arm": "arm_2",
+      "category": "weed",
+      "source_id": "plant_00128",
+      "position_m": [
+        -0.45,
+        0.1524,
+        0
+      ],
+      "radius_m": 0.015,
+      "height_m": 0.04
+    },
+    {
+      "id": "arm_2_crop",
+      "arm": "arm_2",
+      "category": "crop",
+      "source_id": "plant_00002",
+      "position_m": [
+        0.05,
+        0.2924,
+        0
+      ],
+      "radius_m": 0.06,
+      "height_m": 0.15
+    },
+    {
+      "id": "arm_3_weed",
+      "arm": "arm_3",
+      "category": "weed",
+      "source_id": "plant_00128",
+      "position_m": [
+        -0.45,
+        -0.1524,
+        0
+      ],
+      "radius_m": 0.015,
+      "height_m": 0.04
+    },
+    {
+      "id": "arm_3_crop",
+      "arm": "arm_3",
+      "category": "crop",
+      "source_id": "plant_00002",
+      "position_m": [
+        0.05,
+        -0.0124,
+        0
+      ],
+      "radius_m": 0.06,
+      "height_m": 0.15
+    },
+    {
+      "id": "arm_4_weed",
+      "arm": "arm_4",
+      "category": "weed",
+      "source_id": "plant_00128",
+      "position_m": [
+        -0.45,
+        -0.4826,
+        0
+      ],
+      "radius_m": 0.015,
+      "height_m": 0.04
+    },
+    {
+      "id": "arm_4_crop",
+      "arm": "arm_4",
+      "category": "crop",
+      "source_id": "plant_00002",
+      "position_m": [
+        0.05,
+        -0.3426,
+        0
+      ],
+      "radius_m": 0.06,
+      "height_m": 0.15
+    }
+  ],
+  "arms": [
+    "arm_1",
+    "arm_2",
+    "arm_3",
+    "arm_4"
+  ]
+}

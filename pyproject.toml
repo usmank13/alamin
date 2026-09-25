@@ -11,11 +11,13 @@ dependencies = ["mujoco==3.13.0", "numpy==2.5.3", "pillow==12.3.0"]
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1"]
+rhizome = ["PyYAML>=6,<7"]
 agent = ["pydantic-ai-slim[openrouter]==2.44.0"]
 retrieval = ["pycollada>=0.9,<1", "networkx>=3,<4", "coacd==1.0.14"]
 prototypes = ["trimesh==5.1.0", "coacd==1.0.14", "scipy==1.18.1"]
 pipeline = [
     "trimesh==5.1.0",
+    "fast-simplification>=0.1,<0.2",
     "scipy==1.18.1",
     "jsonschema>=4.23,<5",
     "h5py>=3.12,<4",

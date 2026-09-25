@@ -10,6 +10,28 @@ Start with [running and reproducing the pipeline](docs/running.md). The
 that can read files and execute commands. Supplying `--program` requires neither
 Codex nor an API-backed agent. Prompt-only generation has optional model adapters.
 
+For the Element RAPTOR_30 robot, Inicio-generated crop rows and terrain, and
+four-camera MuJoCo driving captures, see [agricultural simulation](docs/agriculture.md).
+For native waypoint control, neural RGB/depth perception, plant tracking and provisional weeding/arm commands,
+see [running Rhizome software](docs/rhizome.md).
+The [Gen 3 robot importer](docs/gen3.md) adds four articulated weeding arms,
+passive rocker suspension, Inicio payload-layout options and MuJoCo arm feedback
+for the native Rhizome planner. [Payload layout files](docs/gen3.md#custom-payload-counts-and-lateral-positions)
+configure the installed arm count and lateral spacing.
+The [weeding acceptance benchmark](docs/weeding.md) adds paired oracle/neural
+scenarios, native targeting diagnostics and independent weed/crop contact scoring.
+[The soybean field experiment](docs/soybean30.md) compares oracle and neural
+perception in Inicio's dense 30-inch soybean rows with scattered weeds.
+[Early-stage soybeans and interactive playback](docs/soybean30.md#early-stage-field-and-interactive-playback)
+provide a smaller canopy and a MuJoCo viewer with pause, seek and free camera controls:
+`pipeline replay outputs/soybean30_early_neural --viewer --paused`.
+
+The [corrected oracle rollout](docs/soybean30.md#corrected-oracle-rollout) uses
+matching Rhizome binaries and separate crop-row geometry. Watch it with
+`pipeline replay outputs/soybean30_early_oracle_rows --viewer --paused`.
+[Multi-arm control](docs/weeding.md#four-arm-native-planning) runs all four native
+planners with separate camera pipelines and per-arm acceptance timelines.
+
 ## Quick start
 
 Requires Linux, Git, uv and system rendering libraries (`libosmesa6` on Ubuntu).

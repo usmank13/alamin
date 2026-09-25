@@ -1,0 +1,10 @@
+{
+  "seconds": 12,
+  "spawn": {"position_m": [-2, 0], "yaw_rad": 0},
+  "camera": {"width": 640, "height": 360},
+  "commands": [
+    {"time": 0, "forward_mps": 0, "yaw_rate_rps": 0},
+    {"time": 1, "forward_mps": 0.25, "yaw_rate_rps": 0},
+    {"time": 11, "forward_mps": 0, "yaw_rate_rps": 0}
+  ]
+}

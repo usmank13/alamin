@@ -73,6 +73,8 @@ def preview(root, *, cutaway=True):
 def render_recipe(root, *, view='auto'):
     if view not in ('auto','interior','overview'):raise PipelineError('CAMERA_VIEW','Unknown render view')
     root=Path(root);model=load(root);data=mujoco.MjData(model);mujoco.mj_forward(model,data)
+    agricultural=(root/'generation.json').exists() and read_json(root/'generation.json').get('domain')=='agriculture'
+    if agricultural and view=='interior':raise PipelineError('CAMERA_VIEW','Agricultural scenes use the overview view')
     output=root/'render'; output.mkdir(exist_ok=True)
     textures={}
     for t in range(model.ntex):
@@ -89,7 +91,10 @@ def render_recipe(root, *, view='auto'):
                                                 texuniform=bool(model.mat_texuniform[mid]))
     geoms=[]
     for i in range(model.ngeom):
-        if model.geom_contype[i] or model.geom_conaffinity[i] or model.geom_rgba[i,3]==0: continue
+        if model.geom_rgba[i,3]==0:continue
+        if agricultural:
+            if model.geom_group[i]>=3:continue
+        elif model.geom_contype[i] or model.geom_conaffinity[i]:continue
         kind=int(model.geom_type[i]);mid=int(model.geom_matid[i])
         g=dict(name=model.geom(i).name,kind=kind,size=model.geom_size[i].tolist(),position=data.geom_xpos[i].tolist(),
                rotation=data.geom_xmat[i].reshape(3,3).tolist(),rgba=model.geom_rgba[i].tolist(),material=model.material(mid).name if mid>=0 else None)
@@ -98,10 +103,30 @@ def render_recipe(root, *, view='auto'):
             g['vertices']=model.mesh_vert[v:v+n].tolist();g['faces']=model.mesh_face[f:f+nf].tolist()
             ta=int(model.mesh_texcoordadr[mesh]);tn=int(model.mesh_texcoordnum[mesh])
             if ta>=0 and tn>0:
-                g['uv']=model.mesh_texcoord[ta:ta+tn].tolist();g['face_uv']=model.mesh_facetexcoord[f:f+nf].tolist()
+                # MuJoCo's compiled V coordinate is flipped relative to the
+                # OBJ/Blender convention. Keep the exported image unchanged and
+                # restore that convention, otherwise texture atlases scramble.
+                uv=model.mesh_texcoord[ta:ta+tn].copy();uv[:,1]=1.-uv[:,1]
+                g['uv']=uv.tolist();g['face_uv']=model.mesh_facetexcoord[f:f+nf].tolist()
+        elif kind==int(mujoco.mjtGeom.mjGEOM_HFIELD):
+            h=int(model.geom_dataid[i]);ny=int(model.hfield_nrow[h]);nx=int(model.hfield_ncol[h])
+            sx,sy,sz,_=model.hfield_size[h];start=int(model.hfield_adr[h])
+            xx,yy=np.meshgrid(np.linspace(-sx,sx,nx),np.linspace(-sy,sy,ny))
+            zz=model.hfield_data[start:start+ny*nx].reshape(ny,nx)*sz
+            g['kind']=int(mujoco.mjtGeom.mjGEOM_MESH)
+            g['vertices']=np.column_stack([xx.ravel(),yy.ravel(),zz.ravel()]).tolist()
+            indices=np.arange(ny*nx).reshape(ny,nx);a=indices[:-1,:-1].ravel()
+            g['faces']=np.concatenate([np.column_stack([a,a+1,a+nx+1]),np.column_stack([a,a+nx+1,a+nx])]).tolist()
         geoms.append(g)
-    ir=read_json(root/'ir.json')
-    recipe=dict(schema_version=1,source='SceneIR compiled geometry at initial state',scene_ir_sha256=__import__('hashlib').sha256((root/'ir.json').read_bytes()).hexdigest(),
+    if agricultural:
+        manifest=read_json(root/'manifest.json');bundle=read_json(root/'bundle/bundle.json')
+        recipe=dict(schema_version=1,source='Compiled agricultural scene at initial state',
+                    scene_bundle_sha256=__import__('hashlib').sha256((root/'bundle/bundle.json').read_bytes()).hexdigest(),
+                    geoms=geoms,materials=materials,bounds_m=manifest['terrain']['bounds_m'],
+                    seed=bundle['resolved_config'].get('seed',0),appearance={},camera_view='overview')
+    else:
+        ir=read_json(root/'ir.json')
+        recipe=dict(schema_version=1,source='SceneIR compiled geometry at initial state',scene_ir_sha256=__import__('hashlib').sha256((root/'ir.json').read_bytes()).hexdigest(),
                 geoms=geoms,materials=materials,rooms=ir['rooms'],seed=ir['meta']['seed'],appearance=ir['meta'].get('appearance',{}),
                 camera_view=('overview' if len(ir['rooms'])>1 or 'architecture' in ir else 'interior') if view=='auto' else view)
     write_json(output/'recipe.json',recipe)
@@ -124,5 +149,5 @@ def cycles(root, *, blender=None, samples=32, resolution=1024,view='auto'):
     if result.returncode or not (recipe.parent/'cycles.png').exists():
         raise PipelineError('CYCLES_FAILED','See render/blender.log')
     write_json(recipe.parent/'report.json',dict(engine='Cycles',device='CPU',samples=samples,resolution=resolution,seconds=time.perf_counter()-start,
-                                               geometry_source='same compiled SceneIR',materials='MuJoCo material texture layers (rgb/normal/roughness/metallic) mapped one-to-one onto Principled BSDF from the same compiled model; flat finishes use the MuJoCo shininess/reflectance scalars',diffusion=False))
+                                               geometry_source=read_json(recipe)['source'],materials='MuJoCo material texture layers (rgb/normal/roughness/metallic) mapped one-to-one onto Principled BSDF from the same compiled model; flat finishes use the MuJoCo shininess/reflectance scalars',diffusion=False))
     return recipe.parent/'cycles.png'

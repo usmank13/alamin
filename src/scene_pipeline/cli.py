@@ -17,6 +17,20 @@ def main(argv=None):
     parser.add_argument('--cache-dir',type=Path,help='Writable evidence cache (also SCENE_PIPELINE_CACHE)')
     parser.add_argument('--asset-store',type=Path,help='Retrieved asset library (also SCENE_PIPELINE_ASSET_STORE)')
     sub=parser.add_subparsers(dest='command',required=True)
+    agriculture=sub.add_parser('agriculture').add_subparsers(dest='agriculture_command',required=True)
+    p=agriculture.add_parser('generate');p.add_argument('--config',type=Path,required=True)
+    p.add_argument('--inicio-root',type=Path,required=True);p.add_argument('--blender',required=True)
+    p.add_argument('--output',type=Path,required=True);p.add_argument('--timeout',type=float,default=900)
+    p=agriculture.add_parser('import');p.add_argument('bundle',type=Path);p.add_argument('--output',type=Path,required=True)
+    p=agriculture.add_parser('robot',help='Compose the articulated Gen 3 export with an existing field')
+    p.add_argument('scene',type=Path);p.add_argument('--urdf',type=Path,required=True)
+    p.add_argument('--layout',choices=['URDF','RAPTOR_22','RAPTOR_30'],default='URDF')
+    p.add_argument('--inicio-root',type=Path);p.add_argument('--mesh-faces',type=int,default=30000)
+    p.add_argument('--payloads',type=Path,help='JSON installed payload IDs and lateral chassis positions in metres')
+    p.add_argument('--output',type=Path,required=True)
+    p=agriculture.add_parser('weeding-scene',help='Build a controlled weed/crop acceptance scene')
+    p.add_argument('scene',type=Path);p.add_argument('--config',type=Path,required=True)
+    p.add_argument('--output',type=Path,required=True)
     p=sub.add_parser('generate');p.add_argument('--prompt',required=True);p.add_argument('--seed',type=int,default=0);p.add_argument('--output',type=Path,required=True)
     p.add_argument('--program',type=Path);p.add_argument('--model');p.add_argument('--max-iterations',type=int,default=20);p.add_argument('--timeout',type=float,default=900);p.add_argument('--no-preview',action='store_true')
     p.add_argument('--use-skill',action='store_true',help='Let one Codex agent follow the repository pipeline skill and run the scene tools')
@@ -52,9 +66,14 @@ def main(argv=None):
     p.add_argument('--view',choices=['auto','interior','overview'],default='auto')
     p=sub.add_parser('preview');p.add_argument('scene',type=Path)
     p=sub.add_parser('replay');p.add_argument('rollout',type=Path);p.add_argument('--fps',type=int,default=5)
+    p.add_argument('--viewer',action='store_true',help='Interactively play recorded states in MuJoCo (requires a desktop)')
+    p.add_argument('--paused',action='store_true',help='Start interactive playback paused')
+    p.add_argument('--speed',type=float,default=1.,help='Interactive playback speed multiplier')
+    p.add_argument('--viewer-seconds',type=float,help='Close interactive viewer after this many wall seconds')
     p=sub.add_parser('export');p.add_argument('scene',type=Path);p.add_argument('--format',choices=['urdf'],default='urdf');p.add_argument('--verify',action='store_true')
     p=sub.add_parser('assets');p.add_argument('action',choices=['build','inspect','validate','promote']);p.add_argument('target');p.add_argument('--output',type=Path,default=Path('outputs/library'));p.add_argument('--scale',type=float,default=1)
-    p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction','navigate'],required=True);p.add_argument('--goal');p.add_argument('--policy',choices=['planner','vlm'],default='planner');p.add_argument('--no-video',action='store_true');p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
+    p=sub.add_parser('run');p.add_argument('scene',type=Path);p.add_argument('--flow',choices=['mapping','interaction','navigate','agriculture-drive'],required=True);p.add_argument('--goal');p.add_argument('--policy',choices=['planner','vlm'],default='planner');p.add_argument('--no-video',action='store_true');p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float);p.add_argument('--tier',choices=['full','state'],default='full');p.add_argument('--seed',type=int,default=0)
+    p.add_argument('--config',type=Path,help='Agricultural drive configuration (JSON)')
     p=sub.add_parser('dataset');p.add_argument('scene',type=Path);p.add_argument('--variants',type=int,default=10);p.add_argument('--output',type=Path,required=True);p.add_argument('--seconds',type=float,default=60)
     p.add_argument('--start-seed',type=int,default=100,help='First layout/randomization seed; each following variant increments it')
     p=sub.add_parser('costs');p.add_argument('artifacts',type=Path,nargs='+');p.add_argument('--output',type=Path,required=True);p.add_argument('--usd-per-mtok-in',type=float);p.add_argument('--usd-per-mtok-out',type=float)
@@ -89,7 +108,19 @@ def main(argv=None):
             runtime=Runtime(backend=args.agent_backend,model=args.model,max_cost_usd=args.max_cost_usd,
                             responses=read_json(args.responses) if args.responses else [])
             agent_options=dict(runtime=runtime)
-        if args.command=='asset-index':
+        if args.command=='agriculture':
+            from .agriculture import generate,compile_bundle
+            if args.agriculture_command=='generate':
+                result=generate(args.config,args.inicio_root,args.blender,args.output,timeout=args.timeout)
+            elif args.agriculture_command=='weeding-scene':
+                from .weeding import controlled_scene
+                result=controlled_scene(args.scene,args.config,args.output)
+            elif args.agriculture_command=='robot':
+                from .gen3 import replace_robot
+                result=replace_robot(args.scene,args.urdf,args.output,layout=args.layout,
+                                     inicio_root=args.inicio_root,mesh_faces=args.mesh_faces,payloads=args.payloads)
+            else:result=compile_bundle(args.bundle,args.output)
+        elif args.command=='asset-index':
             from .asset_catalog import index_sources
             result=index_sources(sources=read_json(args.sources) if args.sources else None)
         elif args.command=='asset-search':
@@ -184,18 +215,32 @@ def main(argv=None):
             result=reconstruct(read_json(args.reference),args.output,area_m2=args.area_m2,
                                metres_per_unit=args.metres_per_unit,render=not args.no_preview)
         elif args.command=='validate':
-            from .validation import validate_scene
             config=read_json(args.scene/'generation.json') if (args.scene/'generation.json').exists() else {}
-            result=validate_scene(args.scene,require_articulated=config.get('layout_backend')!='architecture',robot_radius=config.get('robot_radius'))
+            if config.get('domain')=='agriculture':
+                from .agriculture import validate
+                result=validate(args.scene)
+            else:
+                from .validation import validate_scene
+                result=validate_scene(args.scene,require_articulated=config.get('layout_backend')!='architecture',robot_radius=config.get('robot_radius'))
         elif args.command=='render':
             from .render import cycles
             result={'image':str(cycles(args.scene,blender=args.blender,samples=args.samples,resolution=args.resolution,view=args.view))}
         elif args.command=='preview':
-            from .render import preview
+            if (args.scene/'generation.json').exists() and read_json(args.scene/'generation.json').get('domain')=='agriculture':
+                from .agriculture import preview
+            else:
+                from .render import preview
             preview(args.scene);result={'gallery':str(args.scene/'index.html')}
         elif args.command=='replay':
-            from .replay import video
-            result=video(args.rollout,args.fps)
+            if args.viewer:
+                # Select the desktop backend before importing MuJoCo; the CLI
+                # otherwise defaults to headless software rendering.
+                os.environ['MUJOCO_GL']='glfw'
+                from .replay_viewer import interactive
+                result=interactive(args.rollout,paused=args.paused,speed=args.speed,seconds=args.viewer_seconds)
+            else:
+                from .replay import video
+                result=video(args.rollout,args.fps)
         elif args.command=='export':
             from .portability import export_urdf,verify_urdf
             path=export_urdf(args.scene);result=verify_urdf(path) if args.verify else {'package':str(path)}
@@ -207,8 +252,13 @@ def main(argv=None):
             elif args.action=='inspect': result=read_json(Path(args.target)/'asset.json')
             else: result=validate_asset(args.target,promote=args.action=='promote')
         elif args.command=='run':
-            from .flows import run
-            result=run(args.scene,args.flow,args.output,seconds=args.seconds,tier=args.tier,seed=args.seed,goal=args.goal,policy=args.policy,video=not args.no_video,timeout=args.timeout,**agent_options)
+            if args.flow=='agriculture-drive':
+                from .agriculture_drive import run
+                result=run(args.scene,args.output,config=args.config,seconds=args.seconds,tier=args.tier,seed=args.seed,video=not args.no_video,timeout=args.timeout)
+            else:
+                if args.config:raise PipelineError('RUN_CONFIG','--config is for agriculture-drive')
+                from .flows import run
+                result=run(args.scene,args.flow,args.output,seconds=args.seconds if args.seconds is not None else 60,tier=args.tier,seed=args.seed,goal=args.goal,policy=args.policy,video=not args.no_video,timeout=args.timeout,**agent_options)
         elif args.command=='dataset':
             from .dataset import collect_variants
             result=collect_variants(args.scene,args.output,args.variants,args.seconds,start_seed=args.start_seed)

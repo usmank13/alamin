@@ -1,0 +1,68 @@
+{
+  "seconds": 12,
+  "camera": {
+    "width": 320,
+    "height": 180
+  },
+  "controller": {
+    "root": "~/Desktop/code/rhizome",
+    "waypoints": [
+      {
+        "xy": [
+          -2,
+          0
+        ]
+      },
+      {
+        "xy": [
+          0,
+          0
+        ]
+      }
+    ],
+    "parameters": {
+      "auto_speed_max_ms": 0.25,
+      "arrival_distance": 0.2
+    },
+    "perception": "neural",
+    "shadow_arm": {
+      "camera": "raptor_30_1",
+      "position_chassis_m": [
+        -0.18,
+        0.622,
+        -0.3
+      ]
+    },
+    "python": "~/Desktop/code/ml-aigen-tools/venv312/bin/python",
+    "neural": {
+      "package": "/data/models/edge_packages/multicrop_td_wzmle4cf_grid",
+      "crop_species": "soybean",
+      "device": "cpu",
+      "input_width": 848,
+      "input_height": 480,
+      "tube_length_m": 0.569629,
+      "target_positions_chassis_m": {
+        "raptor_30_1": [
+          -0.18,
+          0.622,
+          -0.3
+        ],
+        "raptor_30_2": [
+          -0.18,
+          0.1397,
+          -0.3
+        ],
+        "raptor_30_3": [
+          -0.18,
+          -0.1397,
+          -0.3
+        ],
+        "raptor_30_4": [
+          -0.18,
+          -0.622,
+          -0.3
+        ]
+      }
+    }
+  }
+}

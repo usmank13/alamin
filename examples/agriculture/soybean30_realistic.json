@@ -1,0 +1,81 @@
+{
+  "use_viewport": false,
+  "robot": {
+    "type": "RAPTOR_30",
+    "cameras": [
+      "raptor_30_1",
+      "raptor_30_2",
+      "raptor_30_3",
+      "raptor_30_4"
+    ]
+  },
+  "lsystem": {
+    "seed": 42,
+    "crop_skip_rate": 0.05,
+    "field_center": [
+      0.0,
+      0.0
+    ],
+    "field_bounds": {
+      "x": [
+        -15.0,
+        15.0
+      ],
+      "y": [
+        -12.0,
+        12.0
+      ]
+    },
+    "species": [
+      {
+        "key": "soybean",
+        "rows": 6,
+        "cols": 60,
+        "stage_range": [
+          0.4,
+          0.8
+        ],
+        "row_spacing": 7.62,
+        "col_spacing_min": 0.508,
+        "col_spacing_max": 0.762
+      },
+      {
+        "key": "palmer",
+        "count": 20,
+        "stage_range": [
+          0.2,
+          0.3
+        ]
+      },
+      {
+        "key": "parthenium",
+        "count": 20,
+        "stage_range": [
+          0.15,
+          0.35
+        ]
+      }
+    ],
+    "terrain": {
+      "subdivisions": 100,
+      "subdiv_level": 1
+    }
+  },
+  "outputs": {
+    "rgb": true,
+    "debug": false
+  },
+  "simulation_export": {
+    "workers": 1
+  },
+  "simulation": {
+    "spawn": {
+      "position_m": [
+        -1.4,
+        0
+      ],
+      "yaw_rad": 0
+    },
+    "props": []
+  }
+}

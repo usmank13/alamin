@@ -1,0 +1,10 @@
+{
+  "arm": "arm_1",
+  "seconds": 10,
+  "spawn": {"position_m": [-0.5, 0], "yaw_rad": 0},
+  "waypoints": [{"xy": [-0.5, 0]}, {"xy": [0.3, 0]}],
+  "plants": [
+    {"id": "target_weed", "category": "weed", "source_id": "plant_00128", "position_m": [-0.45, 0.4826, 0], "radius_m": 0.015, "height_m": 0.04},
+    {"id": "protected_crop", "category": "crop", "source_id": "plant_00002", "position_m": [-0.4, 0.2626, 0], "radius_m": 0.06, "height_m": 0.15}
+  ]
+}

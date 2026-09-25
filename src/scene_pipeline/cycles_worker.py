@@ -67,7 +67,7 @@ def main():
         key=(g.get('material') or g['name'],coords)
         if key not in materials:materials[key]=build_material(key[0],m,path.parent,coords)
         obj.data.materials.append(materials[key])
-    points=[p for r in recipe['rooms'] for p in r['polygon']]
+    points=recipe.get('bounds_m') or [p for r in recipe['rooms'] for p in r['polygon']]
     low=[min(p[i] for p in points) for i in range(2)];high=[max(p[i] for p in points) for i in range(2)]
     center=Vector(((low[0]+high[0])/2,(low[1]+high[1])/2,0.8));span=max(high[i]-low[i] for i in range(2))
     # Multi-room/reference inspection uses a whole-scene view, not a camera inside a wall.

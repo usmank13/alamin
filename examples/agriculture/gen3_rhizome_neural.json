@@ -1,0 +1,20 @@
+{
+  "seconds": 6,
+  "camera": {"width": 320, "height": 180},
+  "controller": {
+    "root": "~/Desktop/code/rhizome",
+    "python": "~/Desktop/code/ml-aigen-tools/venv312/bin/python",
+    "waypoints": [{"xy": [-2, 0]}, {"xy": [-1, 0]}],
+    "parameters": {"auto_speed_max_ms": 0.25, "arrival_distance": 0.2},
+    "perception": "neural",
+    "physical_arm": "arm_1",
+    "neural": {
+      "package": "/data/models/edge_packages/multicrop_td_wzmle4cf_grid",
+      "crop_species": "soybean",
+      "device": "cpu",
+      "input_width": 848,
+      "input_height": 480,
+      "tube_length_m": 0.569629
+    }
+  }
+}

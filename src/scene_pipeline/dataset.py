@@ -22,8 +22,11 @@ class Recorder:
         for key,value in {'time':np.float64(time),**fields}.items():
             value=np.asarray(value)
             if key not in group:
+                # Image frames must not share compressed time chunks: appending
+                # one frame would otherwise decompress/recompress earlier ones.
+                chunks=(1,*value.shape) if value.ndim>=2 and value.nbytes>=65536 else True
                 group.create_dataset(key,shape=(0,*value.shape),maxshape=(None,*value.shape),dtype=value.dtype,
-                                     chunks=True,compression='lzf' if value.ndim else None)
+                                     chunks=chunks,compression='lzf' if value.ndim else None)
             ds=group[key]
             ds.resize(len(ds)+1,axis=0);ds[-1]=value
 

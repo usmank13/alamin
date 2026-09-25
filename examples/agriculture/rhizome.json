@@ -1,0 +1,14 @@
+{
+  "seconds": 12,
+  "camera": {"width": 320, "height": 180},
+  "controller": {
+    "root": "~/Desktop/code/rhizome",
+    "waypoints": [{"xy": [-2, 0]}, {"xy": [0, 0]}],
+    "parameters": {"auto_speed_max_ms": 0.25, "arrival_distance": 0.2},
+    "perception": "oracle_visible",
+    "shadow_arm": {
+      "camera": "raptor_30_1",
+      "position_chassis_m": [-0.18, 0.622, -0.3]
+    }
+  }
+}

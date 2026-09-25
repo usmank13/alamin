@@ -107,6 +107,28 @@ def test_flat_mode_keeps_placeholders_and_checker(tmp_path):
     assert model.ntex==1 and model.material('finish_floor_tile').id>=0
 
 
+def test_cycles_mesh_uvs_preserve_source_atlas_orientation(tmp_path):
+    # Asymmetric UVs catch the vertical flip introduced when MuJoCo compiles an
+    # OBJ. Blender must recover the source mapping alongside the original image.
+    source_uv=np.array([[.1,.2],[.8,.3],[.7,.9],[.2,.6]])
+    obj='v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n'
+    obj+=''.join(f'vt {u} {v}\n' for u,v in source_uv)
+    obj+='f 1/1 3/3 2/2\nf 1/1 2/2 4/4\nf 1/1 4/4 3/3\nf 2/2 3/3 4/4\n'
+    pixels=np.array([[[255,0,0],[0,255,0]],[[0,0,255],[255,255,0]]],dtype=np.uint8)
+    image=io.BytesIO();Image.fromarray(pixels).save(image,'PNG')
+    spec=mujoco.MjSpec.from_string('''<mujoco><asset>
+      <mesh name="mesh" file="mesh.obj"/><texture name="atlas" type="2d" file="atlas.png"/>
+      <material name="surface" texture="atlas"/></asset><worldbody>
+      <geom name="prop" type="mesh" mesh="mesh" material="surface" contype="0" conaffinity="0"/>
+      </worldbody></mujoco>''',assets={'mesh.obj':obj.encode(),'atlas.png':image.getvalue()})
+    spec.to_zip(str(tmp_path/'scene.mjz'))
+    write_json(tmp_path/'ir.json',dict(rooms=[],meta=dict(seed=0)))
+    recipe=json.loads(render_recipe(tmp_path).read_text())
+    np.testing.assert_allclose(recipe['geoms'][0]['uv'],source_uv,atol=1e-7)
+    texture=tmp_path/'render'/recipe['materials']['surface']['textures']['rgb']
+    np.testing.assert_array_equal(np.array(Image.open(texture)),pixels)
+
+
 def test_generated_decor_has_static_collision_and_is_placed_on_supports(cache,tmp_path):
     import trimesh
     box=trimesh.creation.box(extents=[.5,1.,.3])  # genuine glTF Y-up: height is the 1.0 m Y axis

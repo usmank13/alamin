@@ -1,0 +1,15 @@
+{
+  "seconds": 6,
+  "camera": {"width": 320, "height": 180},
+  "commands": [
+    {"time": 0, "forward_mps": 0, "yaw_rate_rps": 0},
+    {"time": 1, "forward_mps": 0.25, "yaw_rate_rps": 0},
+    {"time": 5, "forward_mps": 0, "yaw_rate_rps": 0}
+  ],
+  "arm_commands": {
+    "arm_1": [{"time": 1, "yaw_rad": 0.25, "pitch_rad": 0.25}, {"time": 3, "yaw_rad": -0.25, "pitch_rad": 0.6}],
+    "arm_2": [{"time": 1.5, "yaw_rad": 0.15, "pitch_rad": 0.3}, {"time": 3.5, "yaw_rad": 0, "pitch_rad": 0.65}],
+    "arm_3": [{"time": 2, "yaw_rad": -0.15, "pitch_rad": 0.3}, {"time": 4, "yaw_rad": 0, "pitch_rad": 0.65}],
+    "arm_4": [{"time": 2.5, "yaw_rad": -0.25, "pitch_rad": 0.25}, {"time": 4.5, "yaw_rad": 0.25, "pitch_rad": 0.6}]
+  }
+}

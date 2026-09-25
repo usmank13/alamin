@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><title>Weeding acceptance</title>
+<style>
+body{font:15px system-ui;background:#f3f5f5;color:#203035;max-width:1200px;margin:24px auto;padding:0 20px}h1{font-size:26px}section{background:white;border:1px solid #d9dfdf;border-radius:8px;padding:16px;margin:16px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}canvas{width:100%;background:#fafbf9}input{width:70%}td,th{padding:7px;text-align:left;border-bottom:1px solid #ddd}table{width:100%;font-size:13px}.pass{color:#087a3f}.fail{color:#a32d24}pre{white-space:pre-wrap;font-size:12px}video,img{max-width:100%}button{padding:7px 14px}a{color:#1762a1}.muted{color:#637276}@media(max-width:750px){.grid{grid-template-columns:1fr}}
+</style>
+<h1>Weeding acceptance</h1><p id="summary"></p>
+<p><a href="index.html">Run inspection</a> · <a href="weeding_report.json">Acceptance report</a> · <a href="weeding_events.jsonl">Events</a> · <a href="weeding_trace.json">Trace</a></p>
+<section><button id="play">Play</button> <input id="time" type="range" min="0" value="0" step="1"> <strong id="clock"></strong>
+<p id="state"></p><div class="grid"><div><h3>Top view — world X/Y</h3><canvas id="top" width="560" height="400"></canvas></div><div><h3>Side view — world X/Z</h3><canvas id="side" width="560" height="400"></canvas></div></div>
+<p class="muted">Green: crop protection truth · orange: weed target truth · blue: actual tool and its trajectory · purple: native tracks/protection radii · dashed cyan: native reach circle (CAD estimate if unavailable) · gray: camera footprint on z=0 (ignores occlusion). Ground truth is used for scoring, not neural inference. Tool contact does not establish biological removal.</p>
+<table><thead><tr><th>Native track</th><th>Class</th><th>Circle reach</th><th>Triangle reach</th><th>Candidate</th><th>Strike ready</th><th>Locked</th></tr></thead><tbody id="tracks"></tbody></table>
+<p class="muted">Flags are reported directly by Rhizome. An unset flag describes a gate's state; it is not a complete causal rejection reason.</p></section>
+<section><h3>Acceptance stages</h3><div id="stages"></div><pre id="details"></pre></section>
+<section class="grid"><div><h3>Recorded physics</h3><video controls src="replay.mp4"></video></div><div><h3>Last captured camera frame</h3><img id="camera"><img id="neural" onerror="this.style.display='none'"></div></section>
+<script>
+const data=__WEEDING_DATA__,frames=data.frames,slider=document.querySelector('#time');
+slider.max=Math.max(0,frames.length-1);
+const requested=Number(new URLSearchParams(location.search).get('t')||0);slider.value=Math.max(0,frames.findIndex(f=>f.time>=requested));
+document.querySelector('#summary').textContent=(data.report.passed?'PASS':'FAIL')+' — '+(data.report.passed?'Ordered detection, tracking, selection and geometric weed contact; crop protection volume avoided.':'Unmet stages: '+data.report.failure_reasons.join(', '));
+document.querySelector('#summary').className=data.report.passed?'pass':'fail';
+document.querySelector('#camera').src=data.arm.camera+'.png';document.querySelector('#neural').src=data.arm.camera+'_neural.png';
+document.querySelector('#stages').textContent=Object.entries(data.report.stages).map(([key,value])=>key+': '+(value?'PASS':'FAIL')).join(' · ');
+document.querySelector('#details').textContent=JSON.stringify(data.report.plants,null,2);
+document.querySelector('h1').textContent='Weeding acceptance — '+data.arm.id+' / '+data.arm.camera;
+const center=(data.benchmark.plants.find(p=>p.category==='weed'&&(!p.arm||p.arm===data.arm.id))||data.benchmark.plants[0]).position_m;
+function world(f,p){return f.origin.map((v,i)=>v+f.rotation[i].reduce((s,r,j)=>s+r*p[j],0));}
+function hull(points){const p=points.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);let lo=[],hi=[];const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);for(const q of p){while(lo.length>1&&cross(lo.at(-2),lo.at(-1),q)<=0)lo.pop();lo.push(q);}for(const q of p.slice().reverse()){while(hi.length>1&&cross(hi.at(-2),hi.at(-1),q)<=0)hi.pop();hi.push(q);}return lo.slice(0,-1).concat(hi.slice(0,-1));}
+function draw(id,f,index){const canvas=document.getElementById(id),ctx=canvas.getContext('2d'),side=id==='side',scale=320;ctx.clearRect(0,0,560,400);
+ const point=p=>[280+(p[0]-center[0])*scale,side?355-p[2]*scale:200-(p[1]-center[1])*scale];
+ const path=(points,color,width=1,closed=false)=>{if(!points.length)return;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();points.map(point).forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));if(closed)ctx.closePath();ctx.stroke();};
+ const circle=(p,r,color,fill=false)=>{ctx.beginPath();ctx.arc(...point(p),r*scale,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=1.5;if(fill){ctx.fillStyle=color+'33';ctx.fill();}ctx.stroke();};
+ if(side)path([[center[0]-1,0,0],[center[0]+1,0,0]],'#b8ab8b');
+ if(!side){path(f.camera_footprint||[],'#a9b3ba',1,true);const reach=f.workspace?.reach_radius_m??Math.sqrt(Math.max(0,.592**2-f.origin[2]**2));ctx.setLineDash([5,4]);let curve=[];for(let angle=0;angle<=2*Math.PI+.04;angle+=.04)curve.push(world(f,[reach*Math.cos(angle),reach*Math.sin(angle),0]));path(curve,'#299ca4');ctx.setLineDash([]);}
+ for(const plant of data.benchmark.plants){const color=plant.category==='crop'?'#158350':'#cf780c';if(side){const p=plant.position_m,r=plant.radius_m;path([[p[0]-r,p[1],p[2]],[p[0]-r,p[1],p[2]+plant.height_m],[p[0]+r,p[1],p[2]+plant.height_m],[p[0]+r,p[1],p[2]]],color,2,true);}else circle(plant.position_m,plant.radius_m,color,true);ctx.fillStyle=color;ctx.fillText(plant.id,...point(plant.position_m).map((v,i)=>v+(i?-9:8)));}
+ path(frames.slice(0,index+1).filter(x=>x.tool_position).map(x=>x.tool_position),'#3483c799',2);
+ circle(f.origin,.015,'#236ba8',true);
+ if(f.tool_position){path([f.origin,f.tool_position],'#236ba8',3);let corners=[];for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])corners.push(f.tool_position.map((v,i)=>v+f.tool_rotation[i].reduce((s,r,j)=>s+r*[x,y,z][j]*f.tool_half_size[j],0)));const projected=hull(corners.map(point));ctx.beginPath();projected.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.fillStyle='#236ba844';ctx.fill();ctx.strokeStyle='#236ba8';ctx.stroke();}
+ for(const t of f.targets){const p=t.position_world;circle(p,.009,t.is_locked_target?'#d82259':'#9457b5');if(!side&&t.tool_protection_radius>0)circle(p,t.tool_protection_radius,'#9457b5');ctx.fillStyle='#794699';ctx.fillText(String(t.track_id),...point(p).map(v=>v+9));}
+ ctx.fillStyle='#677';ctx.fillText('Grid scale: 0.25 m',12,20);ctx.fillRect(12,28,.25*scale,2);
+}
+function update(){if(!frames.length){document.querySelector('#state').textContent='No planner frames recorded.';return;}const i=Number(slider.value),f=frames[i];document.querySelector('#clock').textContent=f.time.toFixed(2)+' s';document.querySelector('#state').textContent=f.state+' · target '+f.target_id+' · commanded yaw/pitch '+f.commanded.map(x=>x.toFixed(3)).join(', ')+' · measured '+f.measured.map(x=>x.toFixed(3)).join(', ');const body=document.querySelector('#tracks');body.replaceChildren();for(const t of f.targets){const tr=document.createElement('tr');for(const v of [t.track_id,t.class_label,t.in_reach_circle,t.in_reach_triangle,t.is_valid_candidate,t.strike_ready,t.is_locked_target]){const td=document.createElement('td');td.textContent=typeof v==='boolean'?(v?'yes':'—'):v;tr.append(td);}body.append(tr);}draw('top',f,i);draw('side',f,i);}
+slider.oninput=update;let timer;document.querySelector('#play').onclick=()=>{if(timer){clearInterval(timer);timer=null;document.querySelector('#play').textContent='Play';}else{document.querySelector('#play').textContent='Pause';timer=setInterval(()=>{slider.value=(Number(slider.value)+5)%Math.max(frames.length,1);update();},50);}};update();
+</script>

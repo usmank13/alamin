@@ -1,0 +1,20 @@
+{
+  "robot": {"type": "RAPTOR_30"},
+  "lsystem": {
+    "seed": 42,
+    "crop_skip_rate": 0.05,
+    "field_center": [0, 0],
+    "field_bounds": {"x": [-35, 35], "y": [-16, 16]},
+    "terrain": {"subdivisions": 100, "subdiv_level": 1},
+    "species": [
+      {"key": "soybean", "rows": 4, "cols": 32, "col_spacing_min": 1.5, "col_spacing_max": 1.8, "stage_range": [0.2, 0.4]},
+      {"key": "palmer", "count": 8, "stage_range": [0.15, 0.25]},
+      {"key": "parthenium", "count": 8, "stage_range": [0.15, 0.25]}
+    ]
+  },
+  "simulation_export": {"workers": 1},
+  "simulation": {
+    "spawn": {"position_m": [-2, 0], "yaw_rad": 0},
+    "props": []
+  }
+}

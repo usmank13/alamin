@@ -23,7 +23,7 @@ def scene_page(root,summary=None):
     reports=details(root)
     if summary is not None:reports={'evaluation':summary,**reports}
     media=[]
-    for name,label in [('preview.png','MuJoCo perspective'),('topdown.png','Plan: object footprint bounds'),
+    for name,label in [('preview.png','MuJoCo perspective'),('robot.png','Assembled robot'),('topdown.png','Plan: object footprint bounds'),
                        ('provenance.png','Object provenance; origin is not functional verification'),
                        ('articulation.gif','Kinematic sweep — not robot interaction'),('render/cycles.png','Cycles — same compiled scene'),
                        ('render_overview/cycles.png','Cycles overview — same compiled scene'),
@@ -31,8 +31,13 @@ def scene_page(root,summary=None):
         if (root/name).exists():
             tag=f'<video controls preload="metadata" src="{name}"></video>' if name.endswith('.mp4') else f'<img loading="lazy" src="{name}">'
             media.append(f'<figure><figcaption>{e(label)}</figcaption>{tag}</figure>')
+    camera_images=sorted({p for pattern in ('raptor_30_*.png','raptor_22_*.png','gen3_*.png') for p in root.glob(pattern)})
+    for path in camera_images + ([root/'trajectory.png'] if (root/'trajectory.png').exists() else []):
+        media.append(f'<figure><figcaption>{e(path.stem)}</figcaption><img loading="lazy" src="{e(path.name)}"></figure>')
     links=[]
-    for name in ('ir.json','program.json','manifest.json','provenance.json','dimension_sources.json','asset_resolutions.json','cost.json','validation.json','unmet.json','agent_calls.json','fal_calls.json','restyle_request.json','restyle_report.json','floor_material/basecolor.png','render/report.json','urdf/verification.json','mapping/index.html','interaction/index.html'):
+    for name in ('weeding.html','weeding_report.json','weeding_events.jsonl','field_weeding.html','field_weeding_report.json','field_weeding_events.jsonl','rhizome/provenance.json','rhizome/messages.jsonl','rhizome/worker.log'):
+        if (root/name).exists():links.append(f'<a href="{name}">{name}</a>')
+    for name in ('ir.json','program.json','manifest.json','provenance.json','dimension_sources.json','asset_resolutions.json','cost.json','validation.json','unmet.json','agent_calls.json','fal_calls.json','restyle_request.json','restyle_report.json','floor_material/basecolor.png','render/report.json','urdf/verification.json','mapping/index.html','interaction/index.html','data.h5','rig.json','robot_profile.json','drive_config.json','bundle/bundle.json'):
         if (root/name).exists():links.append(f'<a href="{name}">{name}</a>')
     command=f'pipeline inspect {__import__("shlex").quote(str(root.resolve()))} --viewer'
     manifest=read_json(root/'manifest.json') if (root/'manifest.json').exists() else {}
@@ -86,7 +91,10 @@ def inspect_path(path,*,viewer=False,open_browser=True):
         page=asset_page(root) if (root/'preview.png').exists() else asset_preview(root)
     else:
         if (root/'scene.mjz').exists() and not (root/'preview.png').exists():
-            from .render import preview
+            if (root/'generation.json').exists() and read_json(root/'generation.json').get('domain')=='agriculture':
+                from .agriculture import preview
+            else:
+                from .render import preview
             preview(root)
         page=scene_page(root)
     opened=webbrowser.open(page.as_uri()) if open_browser else False
