@@ -32,6 +32,9 @@ matching Rhizome binaries and separate crop-row geometry. Watch it with
 [Multi-arm control](docs/weeding.md#four-arm-native-planning) runs all four native
 planners with separate camera pipelines and per-arm acceptance timelines.
 
+For the cloud-edge world-model orchestration prototype (remote planner plus on-robot
+corrector in virtual time), see [Cosmos-Edge](docs/cosmos-edge.md).
+
 ## Quick start
 
 Requires Linux, Git, uv and system rendering libraries (`libosmesa6` on Ubuntu).

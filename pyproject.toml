@@ -29,9 +29,10 @@ pipeline = [
 sim = "sim_harness.cli:main"
 pipeline = "scene_pipeline.cli:main"
 pipeline-ui = "scene_pipeline.web:main"
+cosmos-edge = "cosmos_edge.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sim_harness", "src/scene_pipeline"]
+packages = ["src/sim_harness", "src/scene_pipeline", "src/cosmos_edge"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
