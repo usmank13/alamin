@@ -37,7 +37,9 @@ def parse():
     p.add_argument('--mission', default='Drive forward along the row you are in for about 4 metres, then stop and report where you ended up.')
     p.add_argument('--seconds', type=float, default=180, help='Simulated duration')
     p.add_argument('--realtime', type=float, default=1.0, help='Sim speed vs wall clock; 1.0 keeps LLM latency faithful')
-    p.add_argument('--claude-model', help='Default: models.claude in ai_agent.node.yml')
+    p.add_argument('--llm', choices=['sdk', 'api'], default='sdk',
+                   help='sdk: Claude Agent SDK on the Claude Code login; api: Anthropic API key (as on the rover)')
+    p.add_argument('--claude-model', help='Default: claude-sonnet-5 (sdk) or models.claude in ai_agent.node.yml (api)')
     p.add_argument('--nav-package', type=Path, default=REPO / 'outputs/nav_obstacle_package/nav_grid_4_nav',
                    help='nav_model obstacle-grid package, run in shadow mode as on the rover')
     p.add_argument('--max-speed', type=float, default=0.3, help='LocalControl auto_speed_max_ms')
@@ -295,9 +297,10 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         queue = asyncio.Queue()
         loop_box['queue'] = queue
         ctx = tools.ToolContext(memory=memory, telegram=Operator(), event_queue=queue, primary_chat_id=1, agent=host)
-        conv = Conversation(client=AsyncAnthropic(), model=cfg['models']['claude'],
+        conv = Conversation(client=AsyncAnthropic() if args.llm == 'api' else None, model=cfg['models']['claude'],
                             system_prompt=L1_SYSTEM_PROMPT, memory=memory, tool_ctx=ctx)
-        conv.client.messages.create = latency(conv.client.messages.create)
+        if args.llm == 'api':
+            conv.client.messages.create = latency(conv.client.messages.create)
         # Log each tool call as Claude makes it.
         dispatch = tools.dispatch
 
@@ -307,6 +310,10 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
             log('result', text=f'{name} -> {str(res)[:300]}')
             return res
         tools.dispatch = logged
+        if args.llm == 'sdk':
+            ready.set()
+            await sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, args)
+            return
         ready.set()
         while not stop.is_set():
             ev = await queue.get()
@@ -321,6 +328,54 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         (out / 'conversation.json').write_text(json.dumps(conv.messages, indent=1, default=str))
 
     asyncio.run(main())
+
+
+async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, args):
+    """The agent loop on the Claude Agent SDK instead of the Messages API.
+
+    Same prompt, tools and dispatch as the rover; the SDK runs the tool loop.
+    Model calls are not visible here, so their latency is charged at tool
+    boundaries: wall time since the previous tool returned (or the event was
+    sent) is the model's, and the next tool waits until sim time catches up.
+    """
+    from claude_agent_sdk import (AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, ResultMessage,
+                                  TextBlock, create_sdk_mcp_server, tool)
+    mark = {'t': 0.0, 'wall': time.perf_counter()}
+
+    def make(name, desc, schema):
+        @tool(name, desc, schema)
+        async def handler(inp):
+            await wait_until(mark['t'] + time.perf_counter() - mark['wall'])
+            result = await tools.dispatch(ctx, name, inp)
+            mark['t'], mark['wall'] = state.t, time.perf_counter()
+            return {'content': [{'type': 'text', 'text': str(result)}]}
+        return handler
+
+    server = create_sdk_mcp_server('rover', tools=[make(d['name'], d['description'], d['input_schema'])
+                                                   for d in tools.TOOL_DEFS])
+    names = [f"mcp__rover__{d['name']}" for d in tools.TOOL_DEFS]
+    options = ClaudeAgentOptions(
+        system_prompt=conv.system_prompt + '\n\n# Persistent memory index\n\n' + conv.memory.read_index(),
+        mcp_servers={'rover': server}, tools=[], allowed_tools=names, setting_sources=[],
+        permission_mode='bypassPermissions', model=args.claude_model or 'claude-sonnet-5',
+        max_turns=200, cwd=str(out))
+    transcript = []
+    async with ClaudeSDKClient(options) as client:
+        while not stop.is_set():
+            ev = await queue.get()
+            await conv.add_user_event(ev)  # rover's event -> user text formatting
+            mark['t'], mark['wall'] = state.t, time.perf_counter()
+            started = time.perf_counter()
+            await client.query(conv.messages[-1]['content'])
+            final = ''
+            async for msg in client.receive_response():
+                transcript.append(repr(msg))
+                if isinstance(msg, AssistantMessage):
+                    final = ' '.join(b.text for b in msg.content if isinstance(b, TextBlock)) or final
+                elif isinstance(msg, ResultMessage) and msg.is_error:
+                    state.agent_error = f'[sdk error: {msg.result}]'
+            log('agent_final', text=final, wall_s=round(time.perf_counter() - started, 2))
+            (out / 'conversation.json').write_text(json.dumps(transcript, indent=1))
 
 
 def agent_event(name, details, loop_box):
@@ -339,7 +394,7 @@ def operator_say(text, host_cancel, loop_box, log, stop_keywords):
 
 def main():
     args = parse()
-    for key in ('ANTHROPIC_API_KEY', 'GEMINI_API_KEY'):
+    for key in ('GEMINI_API_KEY',) + (('ANTHROPIC_API_KEY',) if args.llm == 'api' else ()):
         if not os.environ.get(key):
             sys.exit(f'{key} is not set')
     os.chdir(REPO)
