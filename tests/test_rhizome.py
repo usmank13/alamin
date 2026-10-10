@@ -17,7 +17,8 @@ from test_agriculture import bundle
 @pytest.fixture
 def rhizome_root():
     root=Path(os.environ.get('RHIZOME_ROOT',Path(__file__).resolve().parents[2]/'rhizome'))
-    if not (root/'build/host/py/pyzome').exists():
+    host=Path(os.environ.get('RHIZOME_HOST_BUILD',root/'build/host'))
+    if not (host/'py/pyzome').exists():
         pytest.skip('Needs RHIZOME_ROOT with a Python 3.12 host build')
     pytest.importorskip('yaml')
     return str(root)

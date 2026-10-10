@@ -14,6 +14,9 @@ For the Element RAPTOR_30 robot, Inicio-generated crop rows and terrain, and
 four-camera MuJoCo driving captures, see [agricultural simulation](docs/agriculture.md).
 For native waypoint control, neural RGB/depth perception, plant tracking and provisional weeding/arm commands,
 see [running Rhizome software](docs/rhizome.md).
+[Vision-based driving](docs/navigation.md) connects Rhizome's `nav-model-drive`
+node and the learned nav-row model to front/rear cameras and wheel control,
+independently of the weeding perception mode.
 The [Gen 3 robot importer](docs/gen3.md) adds four articulated weeding arms,
 passive rocker suspension, Inicio payload-layout options and MuJoCo arm feedback
 for the native Rhizome planner. [Payload layout files](docs/gen3.md#custom-payload-counts-and-lateral-positions)

@@ -27,11 +27,12 @@ def scene_page(root,summary=None):
                        ('provenance.png','Object provenance; origin is not functional verification'),
                        ('articulation.gif','Kinematic sweep — not robot interaction'),('render/cycles.png','Cycles — same compiled scene'),
                        ('render_overview/cycles.png','Cycles overview — same compiled scene'),
-                       ('map.png','Range reconstruction'),('replay.mp4','Recorded physics replay')]:
+                       ('map.png','Range reconstruction'),('replay.mp4','Recorded physics replay'),
+                       ('navigation.mp4','Vision driving: recorded model predictions')]:
         if (root/name).exists():
             tag=f'<video controls preload="metadata" src="{name}"></video>' if name.endswith('.mp4') else f'<img loading="lazy" src="{name}">'
             media.append(f'<figure><figcaption>{e(label)}</figcaption>{tag}</figure>')
-    camera_images=sorted({p for pattern in ('raptor_30_*.png','raptor_22_*.png','gen3_*.png') for p in root.glob(pattern)})
+    camera_images=sorted({p for pattern in ('raptor_30_*.png','raptor_22_*.png','gen3_*.png','nav_*.png') for p in root.glob(pattern)})
     for path in camera_images + ([root/'trajectory.png'] if (root/'trajectory.png').exists() else []):
         media.append(f'<figure><figcaption>{e(path.stem)}</figcaption><img loading="lazy" src="{e(path.name)}"></figure>')
     links=[]

@@ -37,8 +37,40 @@ def validate_config(config):
             raise PipelineError('RHIZOME_CONFIG','physical_arms requires unique arm IDs and excludes physical_arm/shadow_arm')
     if (cfg.get('physical_arm') or cfg.get('physical_arms')) and cfg.get('perception') not in ('oracle_visible','neural'):
         raise PipelineError('RHIZOME_CONFIG','physical_arm requires perception')
+    if 'nav_model' in cfg:
+        nav=cfg['nav_model']
+        if not isinstance(nav,dict) or not nav.get('package'):
+            raise PipelineError('RHIZOME_CONFIG','nav_model requires a package directory')
+        nav={**dict(device='cpu',model_file='model.ts',cameras=['front','rear'],arrangement=2,steer_source='rows'),**nav}
+        for key in ('depth','obstacle_detection'):
+            if key in nav and not isinstance(nav[key],bool):
+                raise PipelineError('RHIZOME_CONFIG',f'nav_model.{key} must be boolean')
+        if nav.get('obstacle_detection') and not nav.get('depth'):
+            raise PipelineError('RHIZOME_CONFIG','Obstacle detection requires nav_model.depth')
+        nav['package']=str(Path(nav['package']).expanduser().resolve())
+        if (nav['device'] not in ('cpu','cuda') or nav['model_file'] not in ('model.ts','model_bf16.ts')
+                or nav['arrangement'] not in (0,1,2,3) or nav['steer_source'] not in ('rows','vp','fused')
+                or not isinstance(nav['cameras'],list) or not nav['cameras'] or not all(isinstance(n,str) for n in nav['cameras'])
+                or len(set(nav['cameras']))!=len(nav['cameras']) or set(nav['cameras'])-{'front','rear'}
+                or nav.get('use_map',False)):
+            raise PipelineError('RHIZOME_CONFIG','Invalid nav_model options; this adapter uses mapless driving')
+        mounts=nav.get('mounts',{})
+        if not isinstance(mounts,dict) or set(mounts)-set(nav['cameras']):
+            raise PipelineError('RHIZOME_CONFIG','Nav mounts must name configured front/rear cameras')
+        for mount in mounts.values():
+            if not isinstance(mount,dict) or set(mount)-{'position_m','euler_xyz_rad','fx_px','fy_px','height_m'}:
+                raise PipelineError('RHIZOME_CONFIG','Invalid navigation camera mount')
+            for key,value in mount.items():
+                if key in ('position_m','euler_xyz_rad'):
+                    valid=isinstance(value,list) and len(value)==3 and all(isinstance(v,(float,int)) and math.isfinite(v) for v in value)
+                else:valid=isinstance(value,(float,int)) and math.isfinite(value) and value>0
+                if not valid:raise PipelineError('RHIZOME_CONFIG',f'Invalid nav mount {key}')
+        cfg['nav_model']=nav
+        cfg.setdefault('waypoints',[])
     waypoints = cfg.get('waypoints', [])
-    if not isinstance(waypoints, list) or not waypoints:
+    if cfg.get('nav_model') and waypoints:
+        raise PipelineError('RHIZOME_CONFIG','Mapless nav_model replaces route waypoints; remove controller.waypoints')
+    if not isinstance(waypoints, list) or (not waypoints and not cfg.get('nav_model')):
         raise PipelineError('RHIZOME_CONFIG', 'Provide nonempty controller.waypoints in world/odom metres')
     for waypoint in waypoints:
         if (not isinstance(waypoint, dict) or set(waypoint)-{'xy','direction','type'}
@@ -185,9 +217,10 @@ class RhizomeController:
                                              input=message,output=result),allow_nan=False)+'\n')
         return result
 
-    def step(self, t, position, quaternion, forward_mps, arm_measured=None):
+    def step(self, t, position, quaternion, forward_mps, arm_measured=None, arm_enabled=None):
         message=dict(op='step',time=t,position=list(position),quaternion=list(quaternion),forward_mps=float(forward_mps))
         if arm_measured is not None:message['arm_measured']=list(arm_measured)
+        if arm_enabled is not None:message['arm_enabled']=bool(arm_enabled)
         return self.request(message)
 
     def observe(self, t, camera, detections, row_profile, foliage=None):
@@ -203,6 +236,13 @@ class RhizomeController:
             return self.request(dict(op='infer',time=t,camera=camera,frame_file=str(path.resolve())))
         finally:
             path.unlink(missing_ok=True)
+
+    def nav_infer(self,t,**arrays):
+        path=self.output/'nav_input.npz'
+        try:
+            np.savez(path,**arrays)
+            return self.request(dict(op='nav_infer',time=t,frame_file=str(path.resolve())))
+        finally:path.unlink(missing_ok=True)
 
     def close(self):
         if self.process is not None:
@@ -236,27 +276,35 @@ class RhizomeMultiController:
     """One isolated native runtime per payload; only the first drives navigation."""
     def __init__(self, config, output, arms, *, timeout=30):
         import copy
-        self.workers={};self.camera_owners={a['camera']:name for name,a in arms.items()}
+        self.workers={};self.nav_worker=None;self.camera_owners={a['camera']:name for name,a in arms.items()}
         self.navigation_arm=next(iter(arms));deadline=time.monotonic()+timeout
         try:
             for name,arm in arms.items():
                 child=copy.deepcopy(config);child.pop('physical_arms')
-                child.update(physical_arm=name,navigation_enabled=name==self.navigation_arm,
+                child.update(physical_arm=name,navigation_enabled=name==self.navigation_arm and not config.get('nav_model'),
                     shadow_arm={key:arm[key] for key in ('camera','position_chassis_m','quaternion_chassis_wxyz','motor_limits_rad')})
                 worker=RhizomeController(child,output,timeout=max(.001,deadline-time.monotonic()),worker_name=name)
                 worker.deadline=deadline;self.workers[name]=worker
             primary=self.workers[self.navigation_arm].info
+            if config.get('nav_model'):
+                child=copy.deepcopy(config);child.pop('physical_arms');child.pop('neural',None)
+                child.update(perception='none',navigation_enabled=True)
+                self.nav_worker=RhizomeController(child,output,timeout=max(.001,deadline-time.monotonic()),worker_name='navigation')
+                self.nav_worker.deadline=deadline;primary=self.nav_worker.info
             self.info=dict(adapter='Isolated native runtime per arm; one LocalControl',
                 navigation_arm=self.navigation_arm,camera_owners=self.camera_owners,
                 workers={name:w.info for name,w in self.workers.items()},
                 local_control_parameters=primary['local_control_parameters'],limitations=primary['limitations']+
                     ['Independent payload planners; native peer-arm semaphore/barrier exchange is not connected'])
+            if self.nav_worker:self.info['navigation']=primary['navigation']
             write_json(Path(output)/'rhizome/provenance.json',self.info)
         except Exception:
             self.close();raise
 
     def _call(self, name, method, *args, **kwargs):
-        try:return getattr(self.workers[name],method)(*args,**kwargs)
+        try:
+            worker=self.nav_worker if name=='navigation' else self.workers[name]
+            return getattr(worker,method)(*args,**kwargs)
         except Exception as exc:
             self.close()
             if isinstance(exc,PipelineError):
@@ -266,8 +314,11 @@ class RhizomeMultiController:
     def step(self,t,position,quaternion,forward_mps,arm_measured):
         if set(arm_measured)!=set(self.workers):
             raise PipelineError('RHIZOME_CONFIG','Measured feedback must cover every active arm exactly')
-        results={name:self._call(name,'step',t,position,quaternion,forward_mps,arm_measured[name]) for name in self.workers}
-        return dict(twist=results[self.navigation_arm]['twist'],arms={name:r['arm'] for name,r in results.items()})
+        navigation=self._call('navigation','step',t,position,quaternion,forward_mps) if self.nav_worker else None
+        options=dict(arm_enabled=navigation['navigation']['arm_enabled']) if navigation else {}
+        results={name:self._call(name,'step',t,position,quaternion,forward_mps,arm_measured[name],**options) for name in self.workers}
+        navigation=navigation or results[self.navigation_arm]
+        return dict(twist=navigation['twist'],arms={name:r['arm'] for name,r in results.items()})
 
     def _owner(self,camera):
         if camera not in self.camera_owners:
@@ -280,8 +331,13 @@ class RhizomeMultiController:
     def infer(self,t,camera,**arrays):
         return self._call(self._owner(camera),'infer',t,camera,**arrays)
 
+    def nav_infer(self,t,**arrays):
+        if self.nav_worker is None:raise PipelineError('RHIZOME_CONFIG','No vision navigation worker')
+        return self._call('navigation','nav_infer',t,**arrays)
+
     def close(self):
         for worker in self.workers.values():worker.close()
+        if self.nav_worker:self.nav_worker.close()
 
 
 def visible_row_geometry(instance_image, instance_ids, manifest):

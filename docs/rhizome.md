@@ -7,6 +7,8 @@ produce provisional arm commands. These are imports from the Rhizome checkout,
 not reimplementations of its algorithms.
 
 This stage connects local waypoint following and the downstream weeding path.
+The optional [vision-navigation adapter](navigation.md) replaces configured
+driving waypoints with Rhizome NavModel's predicted lane centerline.
 Route scheduling, `drive_mux`, the hardware `drive_control`
 and `arm_control` nodes are not running. The original Inicio robot has no physical
 arms. The [Gen 3 importer](gen3.md) adds four articulated arms and lets one native
