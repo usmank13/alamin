@@ -352,7 +352,7 @@ def main():
     from scene_pipeline.agriculture import compose_robot, robot_footprint
     from scene_pipeline.agriculture_drive import camera_rig, trajectory_image, wheel_targets
     from scene_pipeline.contracts import read_json
-    from scene_pipeline.navigation import add_cameras, raw_depth
+    from scene_pipeline.navigation import add_cameras, raw_depth, robot_dimensions
     from scene_pipeline.rhizome import RhizomeController
 
     scene = args.scene.expanduser().resolve()
@@ -391,7 +391,8 @@ def main():
                                         perception='none',  # goals arrive via set_goals
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
                                         nav_model=dict(package=str(args.nav_package), device='cpu', cameras=['front', 'rear'],
-                                                       depth=True, obstacle_detection=True, drive=False, threads=8)),
+                                                       depth=True, obstacle_detection=True, drive=False, threads=8,
+                                                       robot_dimensions=robot_dimensions(profile))),
                                    out, timeout=1e9)
 
     def cancel():
@@ -468,6 +469,7 @@ def main():
     operator_say(args.mission, cancel, loop_box, log, stop_keywords)
     steps = round(args.seconds / 0.002)
     sent = None
+    yaw_i = 0.0
     positions = []
     lag_max = 0.0
     wall0 = time.perf_counter()
@@ -487,9 +489,15 @@ def main():
                     controller.request(dict(op='set_goals', time=t, goals=goals))
                     sent = goals
                 vel = np.zeros(6)
-                mujoco.mj_objectVelocity(model, data, mujoco.mjtObj.mjOBJ_BODY, chassis, vel, 1)
-                twist = controller.step(t, data.xpos[chassis], quat, vel[3])['twist']
-                data.ctrl[controls], _ = wheel_targets(profile, *twist)
+                mujoco.mj_objectVelocity(model, data, mujoco.mjtObj.mjOBJ_BODY, chassis, vel, 0)  # world frame
+                forward = vel[3] * math.cos(yaw) + vel[4] * math.sin(yaw)
+                twist = controller.step(t, data.xpos[chassis], quat, forward)['twist']
+                # ponytail: yaw-rate PI stands in for a base that tracks its turn
+                # commands; open-loop skid steer here gets 4-35% of small rates.
+                # Replace with tuned wheel/soil contact if turning dynamics matter.
+                yaw_err = twist[1] - vel[2]
+                yaw_i = float(np.clip(yaw_i + 2.0 * yaw_err * 0.01, -1.0, 1.0)) if twist[1] else 0.0
+                data.ctrl[controls], _ = wheel_targets(profile, twist[0], twist[1] + 1.5 * yaw_err * bool(twist[1]) + yaw_i)
                 positions.append(data.xpos[chassis].copy())
                 # Pace to wall clock so the agent's real latency is simulated time.
                 ahead = t / args.realtime - (time.perf_counter() - wall0)
