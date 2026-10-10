@@ -60,6 +60,7 @@ class SimState:
         self.enabled = True
         self.goals = None  # WaypointsMsg JSON from the agent's /nav/goals
         self.reengage_at = None  # sim time the operator re-engages AUTONOMY
+        self.agent_error = None
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -315,6 +316,7 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
                 final = await conv.run_until_quiescent()
             except Exception as e:
                 final = f'[internal error: {e}]'
+                state.agent_error = final  # the run is meaningless without the agent
             log('agent_final', text=final or '', wall_s=round(time.perf_counter() - started, 2))
         (out / 'conversation.json').write_text(json.dumps(conv.messages, indent=1, default=str))
 
@@ -540,6 +542,8 @@ def main():
                 names = [model.geom(int(g)).name for g in c.geom]
                 if any(n.startswith('element/') for n in names) and not all(n == 'terrain' or n.startswith('element/') for n in names):
                     failure = f'Robot contacted {names}'
+            if state.agent_error:
+                failure = 'Agent error: ' + state.agent_error[:300]
             if failure:
                 break
             mujoco.mj_step(model, data)
