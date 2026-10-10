@@ -8,6 +8,7 @@ time: each Claude/Gemini call lands at its start time plus its real wall
 latency, and the sim never runs ahead of wall clock, so the rover keeps rolling
 on its last goals while the agent thinks, at any sim speed.
 Type operator messages on stdin while it runs; stop keywords cancel_nav first.
+A simulated operator re-engages AUTONOMY 15 s after the agent's own cancel_nav.
 """
 import argparse
 import asyncio
@@ -58,6 +59,7 @@ class SimState:
         self.source = 'NONE'
         self.enabled = True
         self.goals = None  # WaypointsMsg JSON from the agent's /nav/goals
+        self.reengage_at = None  # sim time the operator re-engages AUTONOMY
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -129,6 +131,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
             state.goals = None
             state.progress.set_goal(None)
             state.mux = 'NONE'
+            state.reengage_at = state.t + 15.0  # the sim operator's response time
         log('cancel_nav', text='goals cleared, drive_mux NONE')
         return 'ok'
 
@@ -201,11 +204,14 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose)
 
 
-def sim_aigen_cli(state, log):
+def sim_aigen_cli(state, log, tools):
     """Stand-in for the rover's `aigen` CLI: echo of the topics the prompt uses, plus mode switches."""
 
     async def aigen_cli(ctx, args, timeout_s=10.0):
         a = [str(x) for x in args]
+        if refusal := tools.cli_refusal(a):
+            log('aigen', text=f'{" ".join(a)} -> {refusal}')
+            return refusal
         with state.lock:
             pose, mux, source, enabled, goals = state.pose, state.mux, state.source, state.enabled, state.goals
         out = None
@@ -264,7 +270,7 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
                  'Simulation run: no people are in the scene. Gemini ER calls are consented for this mission.')
     wait_until, latency = sim_clock(state)
     host = make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency)
-    tools._IMPLS['aigen_cli'] = sim_aigen_cli(state, log)
+    tools._IMPLS['aigen_cli'] = sim_aigen_cli(state, log, tools)
 
     async def wait_for_event(ctx, topics=None, timeout_s=300.0):
         # tools._wait_for_event with a simulation-time deadline.
@@ -380,7 +386,7 @@ def main():
     stop_keywords = node_cfg['stop_keywords']
     from ai_agent.progress import ProgressMonitor
     state.progress = ProgressMonitor(node_cfg['agent_arrival_radius_m'], node_cfg['agent_stuck_radius_m'],
-                                     node_cfg['agent_stuck_time_s'])
+                                     node_cfg['agent_stuck_time_s'], node_cfg['agent_approach_m'])
     controller = RhizomeController(dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
                                         perception='none',  # goals arrive via set_goals
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
@@ -496,6 +502,11 @@ def main():
                 if ev:
                     log(ev['event'], **ev['details'])
                     agent_event(ev['event'], ev['details'], loop_box)
+                if state.reengage_at is not None and t >= state.reengage_at:
+                    with state.lock:
+                        state.mux, state.reengage_at = 'AUTONOMY', None
+                    operator_say('I re-engaged drive_mux AUTONOMY after your cancel_nav; carry on.',
+                                 cancel, loop_box, log, stop_keywords)
             if tick % 50 == 0:  # 10 Hz nav camera
                 cam, nav_arrays = capture()
                 if state.pose:

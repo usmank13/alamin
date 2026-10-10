@@ -106,6 +106,15 @@ def build(out, kind):
     bounds = [[-15, -15], [15, 15]]
     bundle = dict(terrain=dict(file='terrain.npz', bounds_m=bounds), instances=[], class_names=['terrain'], rows=[])
     env, manifest = compile_environment(bundle, out, props)
+    # Perimeter wall inside the field bounds: visible to the cameras and the
+    # obstacle grid, so exploring ends at the edge instead of falling off it.
+    rgba = [.95, .55, .15, 1] if kind == 'construction' else [.6, .6, .62, 1]
+    if kind == 'urban':  # asphalt instead of compile_environment's soil
+        terrain = next(g for g in env.geoms if g.name == 'terrain')
+        terrain.material, terrain.rgba = '', [.32, .32, .34, 1]
+    for name, pos, size in [('wall_n', [0, 14.5, 1], [14.6, .1, 1]), ('wall_s', [0, -14.5, 1], [14.6, .1, 1]),
+                            ('wall_e', [14.5, 0, 1], [.1, 14.6, 1]), ('wall_w', [-14.5, 0, 1], [.1, 14.6, 1])]:
+        env.worldbody.add_geom(name=name, type=mujoco.mjtGeom.mjGEOM_BOX, pos=pos, size=size, rgba=rgba)
     env.add_texture(name='sky', type=mujoco.mjtTexture.mjTEXTURE_SKYBOX, builtin=mujoco.mjtBuiltin.mjBUILTIN_GRADIENT,
                     rgb1=[.55, .7, .9], rgb2=[.95, .95, .95], width=512, height=3072)
     src = A / 'outputs/soybean30_obstacle_gen3'
