@@ -45,6 +45,9 @@ def parse():
     p.add_argument('--max-speed', type=float, default=0.3, help='LocalControl auto_speed_max_ms')
     p.add_argument('--spawn', type=float, nargs=3, metavar=('X', 'Y', 'YAW_DEG'))
     p.add_argument('--viewer', action='store_true', help='Live MuJoCo viewer (uses GLFW instead of EGL)')
+    p.add_argument('--target', help='Goal-directed eval: manifest instance id the mission asks the agent to find')
+    p.add_argument('--target-radius', type=float, default=3.0,
+                   help='Reached = chassis centre within this many metres of the target centre')
     p.add_argument('--output', type=Path)
     return p.parse_args()
 
@@ -235,6 +238,8 @@ def sim_aigen_cli(state, log, tools):
         elif a[:1] == ['set-nav-source'] and len(a) > 1 and a[1].upper() in ('NONE', 'GPS_ROUTE', 'AGENT'):
             with state.lock:
                 state.source = a[1].upper()
+                if state.source != 'AGENT':
+                    state.progress.set_goal(None)
             out = f'nav source -> {state.source}'
         elif a[:1] == ['set-drive-mux'] and len(a) > 1:
             with state.lock:
@@ -441,7 +446,7 @@ def main():
     log = Log(out / 'events.jsonl', state)
     node_cfg = list(yaml.safe_load_all((args.rhizome / 'src/ai_agent/ai_agent.node.yml').read_text()))[1]
     stop_keywords = node_cfg['stop_keywords']
-    from ai_agent.progress import ProgressMonitor
+    from ai_agent.progress import ProgressMonitor, obstacle_event
     state.progress = ProgressMonitor(node_cfg['agent_arrival_radius_m'], node_cfg['agent_stuck_radius_m'],
                                      node_cfg['agent_stuck_time_s'], node_cfg['agent_approach_m'])
     controller = RhizomeController(dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
@@ -517,6 +522,9 @@ def main():
     objects = {k: np.asarray(v['position_m'][:2]) for k, v in manifest.get('instances', {}).items()
                if v.get('category') != 'crop'}
     seen_objects = set()
+    if args.target and args.target not in objects:
+        sys.exit(f'--target {args.target!r} is not a manifest instance: {sorted(objects)}')
+    target_min, target_reached_at = math.inf, None
 
     def in_view(x, y, pose, max_range):
         dx, dy = x - pose[0], y - pose[1]
@@ -556,6 +564,12 @@ def main():
                 yaw_i = float(np.clip(yaw_i + 2.0 * yaw_err * 0.01, -1.0, 1.0)) if twist[1] else 0.0
                 data.ctrl[controls], _ = wheel_targets(profile, twist[0], twist[1] + 1.5 * yaw_err * bool(twist[1]) + yaw_i)
                 positions.append(data.xpos[chassis].copy())
+                if args.target:
+                    d = float(np.linalg.norm(data.xpos[chassis, :2] - objects[args.target]))
+                    target_min = min(target_min, d)
+                    if target_reached_at is None and d <= args.target_radius:
+                        target_reached_at = t
+                        log('target_reached', text=f'{args.target} within {d:.2f} m')
                 # Pace to wall clock so the agent's real latency is simulated time.
                 ahead = t / args.realtime - (time.perf_counter() - wall0)
                 if ahead > 0:
@@ -585,7 +599,9 @@ def main():
                     blocked = now_blocked
                     log('obstacle', front=blocked[0], rear=blocked[1],
                         clearance_fwd_m=round(prediction.get('clearance_fwd_m', 0), 2))
-                    agent_event('obstacle', {'front_blocked': blocked[0], 'rear_blocked': blocked[1]}, loop_box)
+                    xyz = lambda p: (p['x'], p['y'], p['z']) if p else None
+                    ev = obstacle_event(blocked, xyz(prediction.get('nearest_fwd')), xyz(prediction.get('nearest_rev')))
+                    agent_event(ev['event'], ev['details'], loop_box)
                 if viewer:
                     viewer.sync()
             corners = robot_footprint(profile) @ data.xmat[chassis].reshape(3, 3)[:2, :2].T + data.xpos[chassis, :2]
@@ -622,6 +638,11 @@ def main():
                   coverage_pct=round(100 * float(seen_cells.mean()), 1),
                   objects_seen=f'{len(seen_objects)}/{len(objects)}', objects_missed=sorted(set(objects) - seen_objects),
                   mission=args.mission)
+    if args.target:
+        final = float(np.linalg.norm(positions[-1, :2] - objects[args.target]))
+        report.update(target=args.target, target_reached_at_s=target_reached_at,
+                      target_min_distance_m=round(target_min, 2), target_final_distance_m=round(final, 2),
+                      target_success=final <= args.target_radius)
     (out / 'report.json').write_text(json.dumps(report, indent=1))
     log('done', **report)
     print(f'output: {out}')
