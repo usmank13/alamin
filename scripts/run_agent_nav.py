@@ -145,17 +145,17 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
     def set_enabled(on):
         state.enabled = bool(on)
 
-    def grab_frame():
+    def grab_frame(position='front'):
         with state.lock:
-            cam = state.camera
+            cam = (state.camera or {}).get(position)
         if cam is None:
-            raise RuntimeError('no nav_front frame rendered yet')
+            raise RuntimeError(f'no nav_{position} frame rendered yet')
         buf = io.BytesIO()
         Image.fromarray(cam['rgb']).save(buf, 'JPEG', quality=85)
         jpeg = buf.getvalue()
         counter['n'] += 1
         fid = counter['n']
-        (frames / f'{fid:04d}.jpg').write_bytes(jpeg)
+        (frames / f'{fid:04d}_{position}.jpg').write_bytes(jpeg)
         latest['v'] = dict(frame_id=fid, depth=cam['depth'], intrinsics=cam['intrinsics'],
                            extrinsics=cam['extrinsics'], jpeg_bytes=jpeg, n_bytes=len(jpeg))
         return dict(frame_id=fid, jpeg_bytes=jpeg, snapshot=dict(
@@ -313,7 +313,7 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         async def logged(ctx_, name, inp):
             log('tool', text=f'{name}({json.dumps(inp)[:300]})')
             res = await dispatch(ctx_, name, inp)
-            log('result', text=f'{name} -> {str(res)[:300]}')
+            log('result', text=f'{name} -> {str(res)[:4000]}')
             return res
         tools.dispatch = logged
         if args.llm == 'sdk':
@@ -494,14 +494,15 @@ def main():
     def capture():
         mujoco.mj_forward(model, data)
         views = {pos: render(pos) for pos in ('front', 'rear')}
-        f = views['front']
-        pos = f['position_robot'].copy()
-        pos[2] = float(f['height_m'])  # rhizome body frame sits on the ground plane
-        qx, qy, qz, qw = Rotation.from_matrix(f['rotation_robot']).as_quat()
-        ext = dict(tx=pos[0], ty=pos[1], tz=pos[2], qw=qw, qx=qx, qy=qy, qz=qz)
-        agent_view = dict(rgb=f['rgb'], depth=f['depth'], intrinsics=intrinsics,
-                          extrinsics={k: float(v) for k, v in ext.items()})
-        return agent_view, {f'{p}_{k}': v for p, view in views.items() for k, v in view.items()}
+        agent_views = {}
+        for name, f in views.items():
+            pos = f['position_robot'].copy()
+            pos[2] = float(f['height_m'])  # rhizome body frame sits on the ground plane
+            qx, qy, qz, qw = Rotation.from_matrix(f['rotation_robot']).as_quat()
+            ext = dict(tx=pos[0], ty=pos[1], tz=pos[2], qw=qw, qx=qx, qy=qy, qz=qz)
+            agent_views[name] = dict(rgb=f['rgb'], depth=f['depth'], intrinsics=intrinsics,
+                                     extrinsics={k: float(v) for k, v in ext.items()})
+        return agent_views, {f'{p}_{k}': v for p, view in views.items() for k, v in view.items()}
 
     loop_box, ready, stop = {}, threading.Event(), threading.Event()
     threading.Thread(target=run_agent, args=(state, log, out, args, loop_box, ready, stop), daemon=True).start()
