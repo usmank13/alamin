@@ -548,6 +548,7 @@ def main():
     steps = round(args.seconds / 0.002)
     sent = None
     yaw_i = 0.0
+    replay_t, replay_qpos = [], []  # 10 Hz full state for scripts/replay_agent_nav.py
     positions = []
     lag_max = 0.0
     wall0 = time.perf_counter()
@@ -601,6 +602,8 @@ def main():
                                  cancel, loop_box, log, stop_keywords)
             if tick % 50 == 0:  # 10 Hz nav camera
                 cam, nav_arrays = capture()
+                replay_t.append(t)
+                replay_qpos.append(data.qpos.copy())
                 if state.pose:
                     seen_cells |= in_view(gx, gy, state.pose, 6.0)
                     seen_objects.update(k for k, xy in objects.items() if in_view(xy[0], xy[1], state.pose, 8.0))
@@ -643,6 +646,8 @@ def main():
     positions = np.asarray(positions)
     trajectory_image(out / 'trajectory.png', positions, bounds, manifest['rows'])
     np.save(out / 'positions.npy', positions)  # chassis xyz at 100 Hz
+    np.savez_compressed(out / 'replay.npz', t=np.asarray(replay_t), qpos=np.asarray(replay_qpos))
+    (out / 'run.json').write_text(json.dumps(dict(scene=str(scene), spawn=spawn, target=args.target)))
     report = dict(failure=failure, sim_seconds=float(data.time), wall_seconds=round(wall, 1),
                   realtime_factor=round(float(data.time) / wall, 3), max_lag_s=round(lag_max, 3),
                   start_xy=positions[0, :2].round(3).tolist(), end_xy=positions[-1, :2].round(3).tolist(),
