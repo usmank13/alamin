@@ -443,6 +443,12 @@ def main():
     profile = add_cameras(robot, profile, dict(cameras=['front', 'rear']))
     spec, model, data = compose_robot(_read_spec(scene / 'environment.mjz'), robot, profile, spawn, bounds)
     model.vis.quality.shadowsize = 1024
+    # alamin's recording format, so `pipeline replay <out> --viewer` works on agent runs.
+    from sim_harness.export import export_mujoco
+    from scene_pipeline.dataset import Recorder
+    export_mujoco(spec, data, out / 'rollout_scene.mjz')
+    recorder = Recorder(out / 'data.h5', dict(flow='agent-nav', scene=str(scene), mission=args.mission,
+                                              clock='simulation_seconds'))
     rig = camera_rig(profile, 640, 480)
     K = np.asarray(rig['nav_front']['K'])
     intrinsics = dict(fx=float(K[0, 0]), fy=float(K[1, 1]), cx=float(K[0, 2]), cy=float(K[1, 2]), width=640, height=480)
@@ -548,7 +554,6 @@ def main():
     steps = round(args.seconds / 0.002)
     sent = None
     yaw_i = 0.0
-    replay_t, replay_qpos = [], []  # 10 Hz full state for scripts/replay_agent_nav.py
     positions = []
     lag_max = 0.0
     wall0 = time.perf_counter()
@@ -602,8 +607,7 @@ def main():
                                  cancel, loop_box, log, stop_keywords)
             if tick % 50 == 0:  # 10 Hz nav camera
                 cam, nav_arrays = capture()
-                replay_t.append(t)
-                replay_qpos.append(data.qpos.copy())
+                recorder.append('state', t, qpos=data.qpos.copy(), qvel=data.qvel.copy())
                 if state.pose:
                     seen_cells |= in_view(gx, gy, state.pose, 6.0)
                     seen_objects.update(k for k, xy in objects.items() if in_view(xy[0], xy[1], state.pose, 8.0))
@@ -639,6 +643,7 @@ def main():
     finally:
         stop.set()
         controller.close()
+        recorder.close()
         renderer.close()
         if viewer:
             viewer.close()
@@ -646,7 +651,6 @@ def main():
     positions = np.asarray(positions)
     trajectory_image(out / 'trajectory.png', positions, bounds, manifest['rows'])
     np.save(out / 'positions.npy', positions)  # chassis xyz at 100 Hz
-    np.savez_compressed(out / 'replay.npz', t=np.asarray(replay_t), qpos=np.asarray(replay_qpos))
     (out / 'run.json').write_text(json.dumps(dict(scene=str(scene), spawn=spawn, target=args.target)))
     report = dict(failure=failure, sim_seconds=float(data.time), wall_seconds=round(wall, 1),
                   realtime_factor=round(float(data.time) / wall, 3), max_lag_s=round(lag_max, 3),

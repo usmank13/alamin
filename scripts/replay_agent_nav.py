@@ -69,20 +69,15 @@ def main():
     import mujoco
     from PIL import Image, ImageDraw, ImageFont
     from scipy.spatial.transform import Rotation
-    from sim_harness.scene import _read_spec
-    from scene_pipeline.agriculture import compose_robot
     from scene_pipeline.contracts import read_json
-    from scene_pipeline.navigation import add_cameras
 
+    import h5py
     meta = json.loads((run / 'run.json').read_text())
-    scene = Path(meta['scene'])
-    profile = read_json(scene / 'robot_profile.json')
-    manifest = read_json(scene / 'manifest.json')
-    robot = _read_spec(scene / 'robot.mjz')
-    profile = add_cameras(robot, profile, dict(cameras=['front', 'rear']))  # same model as the run
-    _, model, data = compose_robot(_read_spec(scene / 'environment.mjz'), robot, profile, meta['spawn'],
-                                   np.asarray(manifest['terrain']['bounds_m']))
-    rec = np.load(run / 'replay.npz')
+    manifest = read_json(Path(meta['scene']) / 'manifest.json')
+    model = mujoco.MjSpec.from_zip(str(run / 'rollout_scene.mjz')).compile()
+    data = mujoco.MjData(model)
+    with h5py.File(run / 'data.h5', 'r') as f:
+        rec = {'t': f['state']['time'][:], 'qpos': f['state']['qpos'][:]}
     chassis = model.body('element/chassis').id
     renderer = mujoco.Renderer(model, height=H, width=W)
     option = mujoco.MjvOption()
