@@ -46,8 +46,9 @@ def parse():
     p.add_argument('--spawn', type=float, nargs=3, metavar=('X', 'Y', 'YAW_DEG'))
     p.add_argument('--viewer', action='store_true', help='Live MuJoCo viewer (uses GLFW instead of EGL)')
     p.add_argument('--target', help='Goal-directed eval: manifest instance id the mission asks the agent to find')
-    p.add_argument('--target-radius', type=float, default=3.0,
-                   help='Reached = chassis centre within this many metres of the target centre')
+    p.add_argument('--target-radius', type=float, default=2.5,
+                   help='Reached = robot within this many metres of the target, surface to surface '
+                        '(missions ask for a ~2 m standoff)')
     p.add_argument('--output', type=Path)
     return p.parse_args()
 
@@ -383,6 +384,16 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
             (out / 'conversation.json').write_text(json.dumps(transcript, indent=1))
 
 
+def surface_distance(model, target, max_m=50.0):
+    """fn(data) -> closest distance between the robot's and the target's collision geoms."""
+    import mujoco
+    names = [model.geom(i).name for i in range(model.ngeom)]
+    robot = [i for i, n in enumerate(names) if n.startswith('element/') and n.endswith('_collision')]
+    goal = [i for i, n in enumerate(names) if n.startswith(target + '/') and model.geom_contype[i]]
+    fromto = np.zeros(6)
+    return lambda data: min(mujoco.mj_geomDistance(model, data, a, b, max_m, fromto) for a in robot for b in goal)
+
+
 def agent_event(name, details, loop_box):
     """System event into the agent's queue (what wait_for_event wakes on)."""
     asyncio.run_coroutine_threadsafe(loop_box['queue'].put({'event': name, 'details': details}), loop_box['loop'])
@@ -525,6 +536,7 @@ def main():
     if args.target and args.target not in objects:
         sys.exit(f'--target {args.target!r} is not a manifest instance: {sorted(objects)}')
     target_min, target_reached_at = math.inf, None
+    target_distance = surface_distance(model, args.target) if args.target else None
 
     def in_view(x, y, pose, max_range):
         dx, dy = x - pose[0], y - pose[1]
@@ -565,7 +577,7 @@ def main():
                 data.ctrl[controls], _ = wheel_targets(profile, twist[0], twist[1] + 1.5 * yaw_err * bool(twist[1]) + yaw_i)
                 positions.append(data.xpos[chassis].copy())
                 if args.target:
-                    d = float(np.linalg.norm(data.xpos[chassis, :2] - objects[args.target]))
+                    d = target_distance(data)
                     target_min = min(target_min, d)
                     if target_reached_at is None and d <= args.target_radius:
                         target_reached_at = t
@@ -639,7 +651,7 @@ def main():
                   objects_seen=f'{len(seen_objects)}/{len(objects)}', objects_missed=sorted(set(objects) - seen_objects),
                   mission=args.mission)
     if args.target:
-        final = float(np.linalg.norm(positions[-1, :2] - objects[args.target]))
+        final = target_distance(data)
         report.update(target=args.target, target_reached_at_s=target_reached_at,
                       target_min_distance_m=round(target_min, 2), target_final_distance_m=round(final, 2),
                       target_success=final <= args.target_radius)
