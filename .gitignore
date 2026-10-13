@@ -11,3 +11,4 @@ MUJOCO_LOG.TXT
 !.env.example
 
 docs/agent
+.venv-splat/

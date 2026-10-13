@@ -67,6 +67,7 @@ class SimState:
         self.goals = None  # WaypointsMsg JSON from the agent's /nav/goals
         self.reengage_at = None  # sim time the operator re-engages AUTONOMY
         self.agent_error = None
+        self.capture = None  # splat capture in progress: {dir, keyframer, frames}
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -103,7 +104,7 @@ def sim_clock(state):
     return wait_until, latency
 
 
-def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
+def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, cam_K):
     """Simulated AgentInterface with the same contract as AiAgent's."""
     frames = out / 'frames'
     frames.mkdir()
@@ -181,6 +182,27 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
         with state.lock:
             return state.pose
 
+    def start_capture(name):
+        from ai_agent.capture import Keyframer
+        root = out / 'captures' / ''.join(c if c.isalnum() or c in '-_' else '_' for c in name)
+        (root / 'images').mkdir(parents=True, exist_ok=True)
+        (root / 'depth').mkdir(exist_ok=True)
+        with state.lock:
+            state.capture = dict(dir=root, keyframer=Keyframer(), frames=[])
+        log('capture', text=f'start {name} -> {root}')
+
+    def stop_capture():
+        with state.lock:
+            cap, state.capture = state.capture, None
+        if cap is None:
+            return {'frames': 0, 'path': None}
+        K = cam_K
+        meta = dict(camera_model='OPENCV', fl_x=K[0][0], fl_y=K[1][1], cx=K[0][2], cy=K[1][2], w=640, h=480,
+                    k1=0, k2=0, p1=0, p2=0, depth_unit_scale_factor=1e-3, frames=cap['frames'])
+        (cap['dir'] / 'transforms.json').write_text(json.dumps(meta, indent=1))
+        log('capture', text=f"stop: {len(cap['frames'])} frames in {cap['dir']}")
+        return {'frames': len(cap['frames']), 'path': str(cap['dir'])}
+
     # AiAgent's Gemini methods only touch these two attributes on self.
     class GeminiSelf:
         cfg_models = cfg['models']
@@ -208,7 +230,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency):
         publish_locked=publish_locked, call_service_locked=call_service_locked, cancel_nav=cancel_nav,
         set_enabled=set_enabled, is_enabled=lambda: state.enabled, grab_frame=grab_frame,
         latest_frame=lambda: latest['v'], gemini_trajectory=gemini_trajectory,
-        gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose)
+        gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
+        start_capture=start_capture, stop_capture=stop_capture)
 
 
 def sim_aigen_cli(state, log, tools):
@@ -278,7 +301,7 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
     memory.write('sim-consent', 'reference', 'Gemini consent for this simulated mission',
                  'Simulation run: no people are in the scene. Gemini ER calls are consented for this mission.')
     wait_until, latency = sim_clock(state)
-    host = make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency)
+    host = make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, args.cam_K)
     tools._IMPLS['aigen_cli'] = sim_aigen_cli(state, log, tools)
 
     async def wait_for_event(ctx, topics=None, timeout_s=300.0):
@@ -451,6 +474,7 @@ def main():
                                               clock='simulation_seconds'))
     rig = camera_rig(profile, 640, 480)
     K = np.asarray(rig['nav_front']['K'])
+    args.cam_K = K.tolist()  # both nav cameras share it
     intrinsics = dict(fx=float(K[0, 0]), fy=float(K[1, 1]), cx=float(K[0, 2]), cy=float(K[1, 2]), width=640, height=480)
     chassis = model.body('element/chassis').id
     wheel_names = ['element/' + w['id'] for w in profile['wheels']]
@@ -509,6 +533,26 @@ def main():
             agent_views[name] = dict(rgb=f['rgb'], depth=f['depth'], intrinsics=intrinsics,
                                      extrinsics={k: float(v) for k, v in ext.items()})
         return agent_views, {f'{p}_{k}': v for p, view in views.items() for k, v in view.items()}
+
+    def record_keyframe(t, arrays):
+        """Splat capture: posed RGB-D keyframes from both nav cameras."""
+        from PIL import Image
+        with state.lock:
+            cap, pose = state.capture, state.pose
+        if cap is None or pose is None or not cap['keyframer'].accept(pose):
+            return
+        for pos in ('front', 'rear'):
+            cid = model.camera('element/nav_' + pos).id
+            c2w = np.eye(4)  # MuJoCo camera axes (x right, y up, looking -z) = nerfstudio/OpenGL
+            c2w[:3, :3], c2w[:3, 3] = data.cam_xmat[cid].reshape(3, 3), data.cam_xpos[cid]
+            i = len(cap['frames'])
+            rgb_path, depth_path = f'images/{pos}_{i:05d}.png', f'depth/{pos}_{i:05d}.png'
+            Image.fromarray(arrays[pos + '_rgb']).save(cap['dir'] / rgb_path, compress_level=1)
+            mm = arrays[pos + '_depth'].astype(np.uint32) // 10  # 0.1 mm -> mm
+            mm[mm > 1500] = 0  # the D405 is only useful to ~1.5 m outdoors
+            Image.fromarray(mm.astype(np.uint16)).save(cap['dir'] / depth_path, compress_level=1)
+            cap['frames'].append(dict(file_path=rgb_path, depth_file_path=depth_path, time=round(t, 3),
+                                      transform_matrix=c2w.round(6).tolist()))
 
     loop_box, ready, stop = {}, threading.Event(), threading.Event()
     threading.Thread(target=run_agent, args=(state, log, out, args, loop_box, ready, stop), daemon=True).start()
@@ -607,6 +651,7 @@ def main():
                                  cancel, loop_box, log, stop_keywords)
             if tick % 50 == 0:  # 10 Hz nav camera
                 cam, nav_arrays = capture()
+                record_keyframe(t, nav_arrays)
                 recorder.append('state', t, qpos=data.qpos.copy(), qvel=data.qvel.copy())
                 if state.pose:
                     seen_cells |= in_view(gx, gy, state.pose, 6.0)
