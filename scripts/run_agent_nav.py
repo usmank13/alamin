@@ -226,6 +226,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
     async def gemini_describe(jpeg, prompt):
         return await ai_main.AiAgent.gemini_describe(g, jpeg, prompt)
 
+    state.stop_capture = stop_capture
     return tools.AgentInterface(
         publish_locked=publish_locked, call_service_locked=call_service_locked, cancel_nav=cancel_nav,
         set_enabled=set_enabled, is_enabled=lambda: state.enabled, grab_frame=grab_frame,
@@ -477,6 +478,22 @@ def main():
     args.cam_K = K.tolist()  # both nav cameras share it
     intrinsics = dict(fx=float(K[0, 0]), fy=float(K[1, 1]), cx=float(K[0, 2]), cy=float(K[1, 2]), width=640, height=480)
     chassis = model.body('element/chassis').id
+    # Stow the weeding arms (the rover lifts them when not weeding). Hanging at
+    # zero, their tools plough into the ground when reversing.
+    for arm in profile.get('arms', []):
+        sign = np.asarray(arm['motor_to_joint_sign'])
+        jid = model.joint('element/' + arm['pitch_joint']).qposadr[0]
+        site = model.site('element/' + arm['tool_site']).id
+        best = None
+        for pitch in [arm['home_motor_rad'][1], *arm['motor_limits_rad'][1]]:
+            data.qpos[jid] = sign[1] * pitch
+            mujoco.mj_forward(model, data)
+            if best is None or data.site_xpos[site][2] > best[1]:
+                best = (pitch, data.site_xpos[site][2])
+        data.qpos[jid] = sign[1] * best[0]
+        for key, motor in (('yaw_joint', 0.0), ('pitch_joint', best[0])):
+            data.ctrl[model.actuator('element/' + arm[key]).id] = sign[0 if key == 'yaw_joint' else 1] * motor
+    mujoco.mj_forward(model, data)
     wheel_names = ['element/' + w['id'] for w in profile['wheels']]
     controls = np.array([model.actuator(n).id for n in wheel_names])
     renderer = mujoco.Renderer(model, height=480, width=640)
@@ -598,6 +615,20 @@ def main():
     steps = round(args.seconds / 0.002)
     sent = None
     yaw_i = 0.0
+    # Obstacles lower than the obstacle grid's max step height count as bumps, not crashes.
+    LOW_M = 0.25
+    mujoco.mj_forward(model, data)
+    tops = {}  # object prefix -> highest point of its geoms
+    for i in range(model.ngeom):
+        name = model.geom(i).name
+        if name.startswith('element/') or name == 'terrain' or '/' not in name:
+            continue
+        R = data.geom_xmat[i].reshape(3, 3)
+        top = data.geom_xpos[i][2] + R[2] @ model.geom_aabb[i][:3] + np.abs(R[2]) @ model.geom_aabb[i][3:]
+        tops[name.split('/')[0]] = max(tops.get(name.split('/')[0], -np.inf), top)
+    low_geoms = {i for i in range(model.ngeom)
+                 if '/' in model.geom(i).name and tops.get(model.geom(i).name.split('/')[0], np.inf) < LOW_M}
+    bumped = set()
     positions = []
     lag_max = 0.0
     wall0 = time.perf_counter()
@@ -677,7 +708,13 @@ def main():
             for c in data.contact:
                 names = [model.geom(int(g)).name for g in c.geom]
                 if any(n.startswith('element/') for n in names) and not all(n == 'terrain' or n.startswith('element/') for n in names):
-                    failure = f'Robot contacted {names}'
+                    other = next(int(g) for g, n in zip(c.geom, names) if not n.startswith('element/'))
+                    if other in low_geoms and not any('chassis' in n for n in names):
+                        if other not in bumped:  # wheels may drive over what the grid calls passable
+                            bumped.add(other)
+                            log('bump', text=f'{names} (object under {LOW_M} m)')
+                    else:
+                        failure = f'Robot contacted {names}'
             if state.agent_error:
                 failure = 'Agent error: ' + state.agent_error[:300]
             if failure:
@@ -686,6 +723,8 @@ def main():
     except KeyboardInterrupt:
         failure = 'interrupted'
     finally:
+        if state.capture:
+            state.stop_capture()  # keep what was recorded if the run ended mid-capture
         stop.set()
         controller.close()
         recorder.close()
