@@ -26,6 +26,9 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
 NO_GOALS = {'waypoints': []}
+# Obstacle grid step height. Its 0.25 m default let the robot (0.21 m wheels)
+# drive onto a 0.2 m cinder block and tip over; about half a wheel radius holds.
+STEP_M = 0.12
 
 
 def parse():
@@ -512,6 +515,7 @@ def main():
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
                                         nav_model=dict(package=str(args.nav_package), device='cpu', cameras=['front', 'rear'],
                                                        depth=True, obstacle_detection=True, drive=False, threads=8,
+                                                       params=dict(obstacle_max_height_m=STEP_M),
                                                        robot_dimensions=robot_dimensions(profile))),
                                    out, timeout=1e9)
 
@@ -616,7 +620,7 @@ def main():
     sent = None
     yaw_i = 0.0
     # Obstacles lower than the obstacle grid's max step height count as bumps, not crashes.
-    LOW_M = 0.25
+    LOW_M = STEP_M
     mujoco.mj_forward(model, data)
     tops = {}  # object prefix -> highest point of its geoms
     for i in range(model.ngeom):

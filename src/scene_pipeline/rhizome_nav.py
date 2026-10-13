@@ -34,6 +34,7 @@ class Navigation:
         meta,params=runtime.documents('src/nav_model/nav_model.node.yml')
         meta.pop('includes',None)
         params.update(task['nodes']['nav_model'])
+        params.update(config.get('params',{}))  # node.yml overrides, e.g. obstacle_max_height_m
         params.update(drive=not self.shadow,use_map=False,model_dir=config['package'],model_file=config['model_file'],
                       cameras=config['cameras'],arrangement=config['arrangement'],steer_source=config['steer_source'],
                       camera=dict(nav=dict(color=dict(format=dict(shm='RGBA')))))
