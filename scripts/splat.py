@@ -109,7 +109,11 @@ def eval_(cap: Path, scene: Path, center, radius: float, n=12):
         model.cam_quat[cid] = q
         mujoco.mj_forward(model, data)
         renderer.update_scene(data, 'eval', scene_option=option)
-        return renderer.render()
+        rgb = renderer.render()
+        renderer.enable_depth_rendering()
+        depth = renderer.render()
+        renderer.disable_depth_rendering()
+        return rgb, depth < 100.0  # sky is excluded: a site twin draws a background there
 
     config = sorted((cap / 'train').rglob('config.yml'))[-1]
     _, pipeline, _, _ = eval_setup(config, test_mode='inference')
@@ -122,18 +126,23 @@ def eval_(cap: Path, scene: Path, center, radius: float, n=12):
         for k in range(n):
             a = 2 * math.pi * k / n
             c2w = look_at(np.array([center[0] + radius * math.cos(a), center[1] + radius * math.sin(a), height]), target)
-            truth = torch.tensor(gt(c2w) / 255.0, dtype=torch.float32, device='cuda')
+            rgb, solid = gt(c2w)
+            truth = torch.tensor(rgb / 255.0, dtype=torch.float32, device='cuda')
             camera = Cameras(camera_to_worlds=torch.tensor(c2w[None, :3], dtype=torch.float32), fx=fx, fy=fy,
                              cx=W / 2, cy=H / 2, width=W, height=H, camera_type=CameraType.PERSPECTIVE).to('cuda')
             with torch.no_grad():
                 pred = pipeline.model.get_outputs_for_camera(camera)['rgb'].clamp(0, 1)
             a_, b_ = pred.permute(2, 0, 1)[None], truth.permute(2, 0, 1)[None]
-            scores.append((float(psnr(a_, b_)), float(ssim(a_, b_))))
+            m = torch.tensor(solid, device='cuda')
+            masked_psnr = float(-10 * torch.log10(((pred - truth)[m] ** 2).mean()))
+            scores.append((float(psnr(a_, b_)), float(ssim(a_, b_)), masked_psnr, math.degrees(a)))
             if k % 3 == 0:
                 row.append(np.concatenate([(truth.cpu().numpy() * 255).astype(np.uint8),
                                            (pred.cpu().numpy() * 255).astype(np.uint8)], 0))
         report[label] = dict(height_m=round(height, 2), psnr=round(float(np.mean([s[0] for s in scores])), 2),
-                             ssim=round(float(np.mean([s[1] for s in scores])), 3), views=n)
+                             ssim=round(float(np.mean([s[1] for s in scores])), 3),
+                             psnr_no_sky=round(float(np.mean([s[2] for s in scores])), 2),
+                             psnr_no_sky_by_bearing={int(round(s[3])): round(s[2], 1) for s in scores}, views=n)
         rows.append(np.concatenate(row, 1))
     sheet = Image.fromarray(np.concatenate(rows, 0)).resize((len(row) * W // 2, 2 * 2 * H // 2))
     sheet.save(cap / 'eval_sheet.jpg', quality=90)
