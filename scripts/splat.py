@@ -4,9 +4,10 @@
 Runs in .venv-splat (nerfstudio 1.1.5 + gsplat + mujoco):
   splat.py prep  CAPTURE                     # seed points.ply from the depth frames
   splat.py train CAPTURE [--iters 15000]     # ns-train splatfacto, poses kept in the sim world frame
-  splat.py eval  CAPTURE --scene SCENE --center X Y [--radius R]
+  splat.py eval  CAPTURE --scene SCENE --center X Y [--radius R] [--target-radius T]
       # held-out ground-truth views from MuJoCo on rings around (X, Y) at the
-      # capture camera height and higher; PSNR/SSIM + a contact sheet
+      # capture camera height and higher; PSNR/SSIM (whole frame, no sky, and
+      # only pixels within T of the centre), a contact sheet and orbit.mp4
 
 Poses are not recentred or rescaled (`--orientation-method none` etc.), so a
 pose in the scene is the same pose in the splat and eval needs no transform.
@@ -80,7 +81,7 @@ def look_at(eye, target):
     return c2w
 
 
-def eval_(cap: Path, scene: Path, center, radius: float, n=12):
+def eval_(cap: Path, scene: Path, center, radius: float, target_r: float, n=12, video_frames=120):
     os.environ.setdefault('MUJOCO_GL', 'egl')
     import mujoco
     import torch
@@ -113,7 +114,12 @@ def eval_(cap: Path, scene: Path, center, radius: float, n=12):
         renderer.enable_depth_rendering()
         depth = renderer.render()
         renderer.disable_depth_rendering()
-        return rgb, depth < 100.0  # sky is excluded: a site twin draws a background there
+        # Pixel -> world along the OpenGL camera ray; depth is distance along -z.
+        v, u = np.mgrid[0:H, 0:W]
+        ray = np.stack([(u + 0.5 - W / 2) / fx, -(v + 0.5 - H / 2) / fy, -np.ones_like(u, float)], -1)
+        xy = (ray * depth[..., None]) @ c2w[:3, :3].T[:, :2] + c2w[:2, 3]
+        solid = depth < 100.0  # sky is excluded: a site twin draws a background there
+        return rgb, solid, solid & (np.hypot(xy[..., 0] - center[0], xy[..., 1] - center[1]) < target_r)
 
     config = sorted((cap / 'train').rglob('config.yml'))[-1]
     _, pipeline, _, _ = eval_setup(config, test_mode='inference')
@@ -126,27 +132,42 @@ def eval_(cap: Path, scene: Path, center, radius: float, n=12):
         for k in range(n):
             a = 2 * math.pi * k / n
             c2w = look_at(np.array([center[0] + radius * math.cos(a), center[1] + radius * math.sin(a), height]), target)
-            rgb, solid = gt(c2w)
+            rgb, solid, near = gt(c2w)
             truth = torch.tensor(rgb / 255.0, dtype=torch.float32, device='cuda')
             camera = Cameras(camera_to_worlds=torch.tensor(c2w[None, :3], dtype=torch.float32), fx=fx, fy=fy,
                              cx=W / 2, cy=H / 2, width=W, height=H, camera_type=CameraType.PERSPECTIVE).to('cuda')
             with torch.no_grad():
                 pred = pipeline.model.get_outputs_for_camera(camera)['rgb'].clamp(0, 1)
             a_, b_ = pred.permute(2, 0, 1)[None], truth.permute(2, 0, 1)[None]
-            m = torch.tensor(solid, device='cuda')
-            masked_psnr = float(-10 * torch.log10(((pred - truth)[m] ** 2).mean()))
-            scores.append((float(psnr(a_, b_)), float(ssim(a_, b_)), masked_psnr, math.degrees(a)))
+            masked = lambda mask: float(-10 * torch.log10(((pred - truth)[torch.tensor(mask, device='cuda')] ** 2).mean()))
+            scores.append((float(psnr(a_, b_)), float(ssim(a_, b_)), masked(solid), math.degrees(a),
+                           masked(near) if near.any() else float('nan')))
             if k % 3 == 0:
                 row.append(np.concatenate([(truth.cpu().numpy() * 255).astype(np.uint8),
                                            (pred.cpu().numpy() * 255).astype(np.uint8)], 0))
         report[label] = dict(height_m=round(height, 2), psnr=round(float(np.mean([s[0] for s in scores])), 2),
                              ssim=round(float(np.mean([s[1] for s in scores])), 3),
                              psnr_no_sky=round(float(np.mean([s[2] for s in scores])), 2),
-                             psnr_no_sky_by_bearing={int(round(s[3])): round(s[2], 1) for s in scores}, views=n)
+                             psnr_target=round(float(np.nanmean([s[4] for s in scores])), 2),
+                             psnr_target_by_bearing={int(round(s[3])): round(s[4], 1) for s in scores}, views=n)
         rows.append(np.concatenate(row, 1))
     sheet = Image.fromarray(np.concatenate(rows, 0)).resize((len(row) * W // 2, 2 * 2 * H // 2))
     sheet.save(cap / 'eval_sheet.jpg', quality=90)
-    report.update(radius_m=radius, center=list(center), frames=len(meta['frames']),
+    # Orbit video at capture height: ground truth left, splat right.
+    ff = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
+                           '-s', f'{2 * W}x{H}', '-r', '30', '-i', '-', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+                           '-crf', '20', str(cap / 'orbit.mp4')], stdin=subprocess.PIPE)
+    for k in range(video_frames):
+        a = 2 * math.pi * k / video_frames
+        c2w = look_at(np.array([center[0] + radius * math.cos(a), center[1] + radius * math.sin(a), cam_h]), target)
+        camera = Cameras(camera_to_worlds=torch.tensor(c2w[None, :3], dtype=torch.float32), fx=fx, fy=fy,
+                         cx=W / 2, cy=H / 2, width=W, height=H, camera_type=CameraType.PERSPECTIVE).to('cuda')
+        with torch.no_grad():
+            pred = pipeline.model.get_outputs_for_camera(camera)['rgb'].clamp(0, 1)
+        ff.stdin.write(np.concatenate([gt(c2w)[0], (pred.cpu().numpy() * 255).astype(np.uint8)], 1).tobytes())
+    ff.stdin.close()
+    ff.wait()
+    report.update(radius_m=radius, target_radius_m=target_r, center=list(center), frames=len(meta['frames']),
                   sheet='eval_sheet.jpg (per height: top row ground truth, bottom row splat)')
     (cap / 'eval.json').write_text(json.dumps(report, indent=1))
     print(json.dumps(report, indent=1))
@@ -164,6 +185,7 @@ def main():
     e.add_argument('--scene', type=Path, required=True)
     e.add_argument('--center', type=float, nargs=2, required=True)
     e.add_argument('--radius', type=float, default=5.0, help='eval ring radius around the centre')
+    e.add_argument('--target-radius', type=float, default=2.5, help='psnr_target scores pixels within this of the centre')
     a = ap.parse_args()
     cap = a.capture.resolve()
     if a.cmd == 'prep':
@@ -171,7 +193,7 @@ def main():
     elif a.cmd == 'train':
         train(cap, a.iters)
     else:
-        eval_(cap, a.scene.resolve(), a.center, a.radius)
+        eval_(cap, a.scene.resolve(), a.center, a.radius, a.target_radius)
 
 
 if __name__ == '__main__':
