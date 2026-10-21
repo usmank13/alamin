@@ -17,6 +17,8 @@ see [running Rhizome software](docs/rhizome.md).
 [Vision-based driving](docs/navigation.md) connects Rhizome's `nav-model-drive`
 node and the learned nav-row model to front/rear cameras and wheel control,
 independently of the weeding perception mode.
+[Agentic navigation](docs/agent_navigation.md) runs Rhizome's on-rover AI agent
+(Claude + Gemini Robotics-ER) against outdoor scenes, with splat capture and evaluation.
 The [Gen 3 robot importer](docs/gen3.md) adds four articulated weeding arms,
 passive rocker suspension, Inicio payload-layout options and MuJoCo arm feedback
 for the native Rhizome planner. [Payload layout files](docs/gen3.md#custom-payload-counts-and-lateral-positions)
