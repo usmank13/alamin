@@ -40,7 +40,13 @@ class Navigation:
                       camera=dict(nav=dict(color=dict(format=dict(shm='RGBA')))))
         if self.grid_capable:
             dimensions=config.get('robot_dimensions') or runtime.documents('tools/provisioning/robot/config/dimensions.yml')[0]
-            params.update(dimensions=dimensions,obstacle_incident_dir=str((runtime.output/'obstacle_incidents').resolve()))
+            if hasattr(core,'RobotDescription'):
+                # Rhizome reads the footprint from /robot/description: robot_cad.yml's
+                # default robot with the simulated chassis' dimensions.
+                core.RobotDescription.set_test_description(sim_description(core,runtime,dimensions))
+            else:
+                params.update(dimensions=dimensions)
+            params.update(obstacle_incident_dir=str((runtime.output/'obstacle_incidents').resolve()))
             params['camera']['nav']['combo']=dict(format=dict(shm='RGBA'))
         (runtime.conf/'nodes/nav_model.json').write_text(json.dumps(dict(meta=meta,config=params)))
         adapter=self
@@ -145,3 +151,20 @@ class Navigation:
         if self.shadow:return self.r.goals
         fresh=self.last_capture is not None and 0<=t-self.last_capture<=self.goal_timeout
         return self.goals if fresh and self.result.get('driving') else self.r.p.WaypointsMsg()
+
+
+def sim_description(core,runtime,dimensions):
+    """RobotDescriptionMsg of robot_cad.yml's default robot, its chassis
+    resized to `dimensions` (dimensions.yml layout: robot, drive, wheel)."""
+    from robot_description.resolve import resolve
+    resolved=resolve(runtime.documents('src/robot_description/robot_cad.yml')[0],
+                     runtime.documents('src/base_control/tools.yml')[0],'','')
+    message=resolved.message()
+    description=json.loads(message['description'])
+    chassis=description['chassis']
+    chassis['body'].update(length=dimensions['robot']['length'],width=dimensions['robot']['width'])
+    chassis['drive']['trackwidth']=dimensions['drive']['trackwidth']
+    chassis['wheel']['radius']=dimensions['wheel']['radius']
+    description['wheelbase']=dimensions['drive']['wheelbase']
+    message['description']=json.dumps(description)
+    return core.RobotDescriptionMsg(json.dumps(message))

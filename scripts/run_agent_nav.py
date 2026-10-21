@@ -34,7 +34,7 @@ STEP_M = 0.12
 def parse():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--scene', type=Path, default=REPO / 'outputs/soybean30_obstacle_gen3')
-    p.add_argument('--rhizome', type=Path, default=REPO.parent / 'rhizome-orin-agent')
+    p.add_argument('--rhizome', type=Path, default=REPO.parent / 'rhizome', help='rhizome checkout with ai_agent (usman/ai-agent until merged)')
     p.add_argument('--host-build', type=Path, default=REPO / 'outputs/rhizome_host_agent/host')
     p.add_argument('--worker-python', type=Path, default=REPO.parent / 'ml-aigen-tools/venv312/bin/python')
     p.add_argument('--mission', default='Drive forward along the row you are in for about 4 metres, then stop and report where you ended up.')
@@ -240,7 +240,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         latest_frame=lambda: latest['v'], gemini_trajectory=gemini_trajectory,
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
         start_capture=start_capture, stop_capture=stop_capture,
-        check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t))
+        check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t),
+        owns_goals=lambda: state.source == 'AGENT')
 
 
 def sim_aigen_cli(state, log, tools):
@@ -273,6 +274,8 @@ def sim_aigen_cli(state, log, tools):
                 state.source = a[1].upper()
                 if state.source != 'AGENT':
                     state.progress.set_goal(None)
+                if state.source == 'NONE':  # navigation clears /nav/goals
+                    state.goals = None
             out = f'nav source -> {state.source}'
         elif a[:1] == ['set-drive-mux'] and len(a) > 1:
             with state.lock:
@@ -530,7 +533,7 @@ def main():
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
                                         nav_model=dict(package=str(args.nav_package), device='cpu', cameras=['front', 'rear'],
                                                        depth=True, obstacle_detection=True, drive=False, threads=8,
-                                                       params=dict(obstacle_max_height_m=STEP_M),
+                                                       params=dict(obstacle_max_height_m=STEP_M, seen_publish_hz=5.0),  # as weeding-with-agent
                                                        robot_dimensions=robot_dimensions(profile))),
                                    out, timeout=1e9)
 
@@ -715,7 +718,7 @@ def main():
                 prediction = nav['prediction']
                 if nav.get('seen'):
                     s = nav['seen']
-                    blind = state.coverage.on_map(SeenMap.decode(s['t_s'], s['origin_x'], s['origin_y'], s['cell_m'],
+                    blind = state.coverage.on_map(SeenMap.decode(s['header']['timestamp']['secs'] + 1e-9 * s['header']['timestamp']['nsecs'], s['origin_x'], s['origin_y'], s['cell_m'],
                                                                  s['size'], bytes(s['age'])), state.pose, t)
                     if blind:  # AiAgent._on_seen: renew the /drive/limits lease
                         if t > limit_until:
