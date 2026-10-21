@@ -131,7 +131,9 @@ class Runtime:
                              'Rebuild current host bindings and select controller.host_build or RHIZOME_HOST_BUILD.')
         self.ph=physics
         hardware=self.documents('test/data/physics/arm_1.yml')[0]
-        tools=self.documents('src/base_control/arms.yml')[0]
+        # Tool shapes: base_control/tools.yml since rhizome's robot description, arms.yml before.
+        catalog='src/base_control/tools.yml' if (self.root/'src/base_control/tools.yml').exists() else 'src/base_control/arms.yml'
+        tools=self.documents(catalog)[0]
         params=self.documents('src/physics/physics_0.node.yml')[1]
         self.arm_snapshot=dict(hardware=hardware,tools=tools,physics=params,mount=config,
                                note='Provisional stock test arm, chassis-aligned; geometry, joint limits and mount are not calibrated to RAPTOR_30')
