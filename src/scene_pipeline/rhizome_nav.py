@@ -143,7 +143,7 @@ class Navigation:
             inference_wall_seconds=time.perf_counter()-start)
         if self.grid_capable:
             self.obstacle=self.messages.get('/vision/obstacle',self.obstacle)
-            self.result.update(obstacle=self.obstacle,obstacle_health=self.messages.get('nav_obstacle/health'),
+            self.result.update(obstacle=self.obstacle,obstacle_health=self.messages.get('nav_model/obstacle_health',self.messages.get('nav_obstacle/health')),
                                service_requests=self.services.copy(),seen=self.messages.pop('/nav_model/seen',None))
         return self.result
 
@@ -170,3 +170,13 @@ def sim_description(core,runtime,dimensions):
     description['wheelbase']=dimensions['drive']['wheelbase']
     message['description']=json.dumps(description)
     return core.RobotDescriptionMsg(json.dumps(message))
+
+def obstacle(prediction,direction):
+    """One direction ('fwd'|'rev') of a NavModelPrediction's obstacle verdict as
+    {blocked, grid_stop, clearance_m, nearest, violations}: the NavObstacleDirection
+    struct, or the flat fields of rhizome builds before it."""
+    value=prediction.get('obstacle_'+direction)
+    if isinstance(value,dict):return value
+    return dict(blocked=bool(value),grid_stop=bool(prediction.get('grid_stop_'+direction)),
+                clearance_m=prediction.get(f'clearance_{direction}_m',0.),
+                nearest=prediction.get('nearest_'+direction),violations=prediction.get('violations_'+direction,0))

@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 from sim_harness.export import export_mujoco
 from sim_harness.scene import _read_spec
 from .agriculture import compose_robot, robot_footprint, sha256
+from .rhizome_nav import obstacle
 from .contracts import PipelineError, read_json, write_json
 from .dataset import Recorder, inspect
 
@@ -411,8 +412,10 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                 if nav_config:
                     observation=controller.nav_infer(t,**nav_arrays);nav_results.append(observation)
                     prediction=observation['prediction']
-                    obstacle_values={key:prediction.get(key,False) for key in
-                        ('obstacle_enabled','obstacle_fwd','obstacle_rev','grid_stop_fwd','grid_stop_rev')} if nav_config.get('depth') else {}
+                    fwd,rev=obstacle(prediction,'fwd'),obstacle(prediction,'rev')
+                    obstacle_values=dict(obstacle_enabled=prediction.get('obstacle_enabled',False),
+                        obstacle_fwd=fwd['blocked'],obstacle_rev=rev['blocked'],
+                        grid_stop_fwd=fwd['grid_stop'],grid_stop_rev=rev['grid_stop']) if nav_config.get('depth') else {}
                     recorder.append('nav_model',t,driving=observation['driving'],
                         lane_lateral_m=prediction.get('lane_lateral_m',0.),row_heading_rad=prediction.get('row_heading_rad',0.),
                         fitted_row_count=len(prediction.get('rows_fitted',[])),
@@ -479,7 +482,7 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                 stops=[r for r in nav_results if r['prediction'].get('gate')=='OBSTACLE']
                 report['rhizome']['navigation']['obstacles']=dict(enabled=bool(nav_config.get('obstacle_detection')),
                     stop_frames=len(stops),first_stop_seconds=stops[0]['simulation_time'] if stops else None,
-                    grid_front_frames=sum(bool(r['prediction'].get('grid_stop_fwd')) for r in nav_results),
+                    grid_front_frames=sum(obstacle(r['prediction'],'fwd')['grid_stop'] for r in nav_results),
                     semantic_front_frames=sum(bool(r['prediction'].get('front',{}).get('obstacle_detected')) for r in nav_results),
                     input='Ideal rendered RGB/depth; no obstacle coordinates, labels or semantic masks')
     if benchmark:

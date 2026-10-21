@@ -9,6 +9,7 @@ import pytest
 from scene_pipeline.contracts import PipelineError
 from scene_pipeline.navigation import raw_depth,robot_dimensions
 from scene_pipeline.rhizome import RhizomeController,validate_config
+from scene_pipeline.rhizome_nav import obstacle
 from test_navigation import reference_inputs
 
 
@@ -68,8 +69,8 @@ def test_native_obstacle_debounce_stop_and_resume(obstacle_config,tmp_path,enabl
         arrays['front_depth'][:]=20000
         for i in range(4):
             observation,step=capture()
-            assert observation['prediction']['grid_stop_fwd']
-            assert observation['prediction']['obstacle_fwd']==(enabled and i==3)
+            assert obstacle(observation['prediction'],'fwd')['grid_stop']
+            assert obstacle(observation['prediction'],'fwd')['blocked']==(enabled and i==3)
         if enabled:
             assert observation['prediction']['gate']=='OBSTACLE'
             assert observation['goals']['waypoints']==[]
@@ -83,7 +84,7 @@ def test_native_obstacle_debounce_stop_and_resume(obstacle_config,tmp_path,enabl
         arrays['front_depth'][:]=0
         for i in range(11):
             observation,step=capture()
-            assert observation['prediction']['obstacle_fwd']==(enabled and i<10)
+            assert obstacle(observation['prediction'],'fwd')['blocked']==(enabled and i<10)
         assert observation['driving']
         observation,step=capture()
         assert step['twist'][0]>0

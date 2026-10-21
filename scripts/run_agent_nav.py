@@ -462,6 +462,7 @@ def main():
     from scene_pipeline.contracts import read_json
     from scene_pipeline.navigation import add_cameras, raw_depth, robot_dimensions
     from scene_pipeline.rhizome import RhizomeController
+    from scene_pipeline.rhizome_nav import obstacle
 
     scene = args.scene.expanduser().resolve()
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
@@ -724,13 +725,14 @@ def main():
                         if t > limit_until:
                             log('blind', unseen_m2=blind['unseen_m2'], first_unseen_body=blind['nearest_xy'])
                         limit_until = t + 1.0
-                now_blocked = (bool(prediction.get('obstacle_fwd')), bool(prediction.get('obstacle_rev')))
+                fwd, rev = obstacle(prediction, 'fwd'), obstacle(prediction, 'rev')
+                now_blocked = (fwd['blocked'], rev['blocked'])
                 if now_blocked != blocked:
                     blocked = now_blocked
                     log('obstacle', front=blocked[0], rear=blocked[1],
-                        clearance_fwd_m=round(prediction.get('clearance_fwd_m', 0), 2))
+                        clearance_fwd_m=round(fwd['clearance_m'], 2))
                     xyz = lambda p: (p['x'], p['y'], p['z']) if p else None
-                    ev = obstacle_event(blocked, xyz(prediction.get('nearest_fwd')), xyz(prediction.get('nearest_rev')))
+                    ev = obstacle_event(blocked, xyz(fwd['nearest']), xyz(rev['nearest']))
                     agent_event(ev['event'], ev['details'], loop_box)
                 if viewer:
                     viewer.sync()

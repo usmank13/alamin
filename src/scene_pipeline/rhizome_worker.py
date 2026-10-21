@@ -202,7 +202,8 @@ class Runtime:
             # drive_control: a blocked direction commanded zeroes lin + ang
             # (/vision/obstacle clip plus the OBSTACLE_* invariant).
             prediction=self.navigation.result.get('prediction',{});lin=self.last_command[0]
-            if (prediction.get('obstacle_fwd') and lin>0) or (prediction.get('obstacle_rev') and lin<0):
+            from rhizome_nav import obstacle
+            if (obstacle(prediction,'fwd')['blocked'] and lin>0) or (obstacle(prediction,'rev')['blocked'] and lin<0):
                 self.last_command=[0.,0.]
         result=dict(twist=self.last_command)
         if self.navigation:

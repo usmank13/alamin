@@ -6,6 +6,9 @@ import numpy as np
 from PIL import Image, ImageDraw
 from scipy.spatial.transform import Rotation
 
+from .rhizome_nav import obstacle
+
+
 
 def raw_depth(depth_m):
     """MuJoCo optical-axis metres to Rhizome GRAY16 (0.1 mm); zero=no return."""
@@ -60,8 +63,8 @@ def overlay(rgb, prediction, position):
     draw.rectangle((0,0,440,26),fill='black')
     draw.text((6,6),f"{position}: {prediction.get('gate','NO_FRAME')} / {prediction.get('steer_source','ROWS')}",fill='white')
     if 'obstacle_enabled' in prediction:
-        blocked=prediction.get('obstacle_fwd' if position=='front' else 'obstacle_rev',False)
-        grid=prediction.get('grid_stop_fwd' if position=='front' else 'grid_stop_rev',False)
+        verdict=obstacle(prediction,'fwd' if position=='front' else 'rev')
+        blocked,grid=verdict['blocked'],verdict['grid_stop']
         draw.rectangle((0,28,640,50),fill='black')
         draw.text((6,32),f"Obstacle {'ON' if prediction['obstacle_enabled'] else 'OFF'} | blocked: {blocked} | grid: {grid} | head: {view.get('obstacle_prob',0):.3f}",fill='red' if blocked else 'white')
         if blocked:draw.rectangle((1,1,image.width-2,image.height-2),outline='red',width=4)
