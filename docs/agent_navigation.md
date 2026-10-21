@@ -10,6 +10,8 @@ while the agent thinks.
 
 ## Setup
 
+- `uv sync --inexact --extra agent-nav` (torch CPU, the Anthropic/Gemini clients,
+  dataclasses-json for rhizome's robot description).
 - A rhizome checkout with `src/ai_agent` (`--rhizome`, default `../rhizome`)
   and host extensions built from it:
   `.venv/bin/python -m scene_pipeline.rhizome_build --root ../rhizome --output outputs/rhizome_host --jobs 4`.
