@@ -39,13 +39,13 @@ class Navigation:
                       cameras=config['cameras'],arrangement=config['arrangement'],steer_source=config['steer_source'],
                       camera=dict(nav=dict(color=dict(format=dict(shm='RGBA')))))
         if self.grid_capable:
-            dimensions=config.get('robot_dimensions') or runtime.documents('tools/provisioning/robot/config/dimensions.yml')[0]
+            dimensions=config.get('robot_dimensions')
             if hasattr(core,'RobotDescription'):
                 # Rhizome reads the footprint from /robot/description: robot_cad.yml's
-                # default robot with the simulated chassis' dimensions.
+                # default robot, resized to the simulated chassis when given.
                 core.RobotDescription.set_test_description(sim_description(core,runtime,dimensions))
             else:
-                params.update(dimensions=dimensions)
+                params.update(dimensions=dimensions or runtime.documents('tools/provisioning/robot/config/dimensions.yml')[0])
             params.update(obstacle_incident_dir=str((runtime.output/'obstacle_incidents').resolve()))
             params['camera']['nav']['combo']=dict(format=dict(shm='RGBA'))
         (runtime.conf/'nodes/nav_model.json').write_text(json.dumps(dict(meta=meta,config=params)))
@@ -155,11 +155,13 @@ class Navigation:
 
 def sim_description(core,runtime,dimensions):
     """RobotDescriptionMsg of robot_cad.yml's default robot, its chassis
-    resized to `dimensions` (dimensions.yml layout: robot, drive, wheel)."""
+    resized to `dimensions` if given (dimensions.yml layout: robot, drive, wheel)."""
     from robot_description.resolve import resolve
     resolved=resolve(runtime.documents('src/robot_description/robot_cad.yml')[0],
                      runtime.documents('src/base_control/tools.yml')[0],'','')
     message=resolved.message()
+    if not dimensions:
+        return core.RobotDescriptionMsg(json.dumps(message))
     description=json.loads(message['description'])
     chassis=description['chassis']
     chassis['body'].update(length=dimensions['robot']['length'],width=dimensions['robot']['width'])

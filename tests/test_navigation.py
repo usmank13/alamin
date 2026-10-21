@@ -50,7 +50,7 @@ def nav_config():
     root=Path(os.environ.get('RHIZOME_ROOT',repo.parent/'rhizome'))
     host=Path(os.environ.get('RHIZOME_HOST_BUILD',repo/'outputs/rhizome_host_nav/host'))
     python=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',repo.parent/'ml-aigen-tools/venv312/bin/python'))
-    package=Path(os.environ.get('RHIZOME_NAV_MODEL',repo/'outputs/nav_model_package/nav_rows_jdof5rzx_nav'))
+    package=Path(os.environ.get('RHIZOME_NAV_MODEL',repo/'outputs/nav_obstacle_package/nav_grid_4_nav'))
     if not (host/'build_manifest.json').exists() or not python.exists() or not (package/'model.ts').exists():
         pytest.skip('Requires the optional Rhizome host build, inference Python and nav package')
     return dict(root=str(root),host_build=str(host),python=str(python),nav_model=dict(package=str(package),cameras=['front']))
