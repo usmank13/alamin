@@ -114,6 +114,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
     latest = {'v': None}
     counter = {'n': 0}
 
+    guard = state.coverage
+
     def publish_locked(topic, msg):
         if topic == '/nav/goals':
             goals = json.loads(str(msg))
@@ -122,6 +124,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
                     w['point']['frame'] = 'odom'
             wps = goals.get('waypoints') or [{}]
             last = wps[-1].get('point', {})
+            guard.on_goals([(w['point']['x'], w['point']['y']) for w in goals.get('waypoints', [])],
+                           any(w.get('dir') == 'REVERSE' for w in goals.get('waypoints', [])))
             with state.lock:
                 state.goals = goals
                 state.progress.set_goal((last['x'], last['y']) if last.get('frame') == 'odom' else None)
@@ -235,7 +239,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         set_enabled=set_enabled, is_enabled=lambda: state.enabled, grab_frame=grab_frame,
         latest_frame=lambda: latest['v'], gemini_trajectory=gemini_trajectory,
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
-        start_capture=start_capture, stop_capture=stop_capture)
+        start_capture=start_capture, stop_capture=stop_capture,
+        check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t))
 
 
 def sim_aigen_cli(state, log, tools):
@@ -507,9 +512,19 @@ def main():
     log = Log(out / 'events.jsonl', state)
     node_cfg = list(yaml.safe_load_all((args.rhizome / 'src/ai_agent/ai_agent.node.yml').read_text()))[1]
     stop_keywords = node_cfg['stop_keywords']
+    from ai_agent.coverage import CoverageGuard
     from ai_agent.progress import ProgressMonitor, obstacle_event
+    from nav_model.swept_coverage import SeenMap
     state.progress = ProgressMonitor(node_cfg['agent_arrival_radius_m'], node_cfg['agent_stuck_radius_m'],
                                      node_cfg['agent_stuck_time_s'], node_cfg['agent_approach_m'])
+    dims = robot_dimensions(profile)['robot']
+    half_track = robot_dimensions(profile)['drive']['trackwidth'] / 2
+    state.coverage = CoverageGuard(
+        dims['length'] / 2, dims['width'] / 2, max_unseen_m2=node_cfg['coverage_max_unseen_m2'] if node_cfg['coverage_slowdown'] else math.inf,
+        recent_s=node_cfg['coverage_recent_s'], horizon_m=node_cfg['coverage_horizon_m'],
+        lookahead_m=node_cfg['coverage_lookahead_m'], camera_x_m=node_cfg['camera_x_m'],
+        hfov_deg=math.degrees(2 * math.atan(320 / intrinsics['fx'])), max_speed=node_cfg['coverage_max_speed'])
+    limit_until = -1.0  # sim time the agent's /drive/limits lease lapses (drive_control's 1 s)
     controller = RhizomeController(dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
                                         perception='none',  # goals arrive via set_goals
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
@@ -655,6 +670,9 @@ def main():
                 mujoco.mj_objectVelocity(model, data, mujoco.mjtObj.mjOBJ_BODY, chassis, vel, 0)  # world frame
                 forward = vel[3] * math.cos(yaw) + vel[4] * math.sin(yaw)
                 twist = controller.step(t, data.xpos[chassis], quat, forward)['twist']
+                fastest = abs(twist[0]) + half_track * abs(twist[1])  # drive_control.apply_drive_limit
+                if t < limit_until and fastest > state.coverage.max_speed:
+                    twist = [v * state.coverage.max_speed / fastest for v in twist]
                 # ponytail: yaw-rate PI stands in for a base that tracks its turn
                 # commands; open-loop skid steer here gets 4-35% of small rates.
                 # Replace with tuned wheel/soil contact if turning dynamics matter.
@@ -693,7 +711,16 @@ def main():
                     seen_objects.update(k for k, xy in objects.items() if in_view(xy[0], xy[1], state.pose, 8.0))
                 with state.lock:
                     state.camera = cam
-                prediction = controller.nav_infer(t, **nav_arrays)['prediction']
+                nav = controller.nav_infer(t, **nav_arrays)
+                prediction = nav['prediction']
+                if nav.get('seen'):
+                    s = nav['seen']
+                    blind = state.coverage.on_map(SeenMap.decode(s['t_s'], s['origin_x'], s['origin_y'], s['cell_m'],
+                                                                 s['size'], bytes(s['age'])), state.pose, t)
+                    if blind:  # AiAgent._on_seen: renew the /drive/limits lease
+                        if t > limit_until:
+                            log('blind', unseen_m2=blind['unseen_m2'], first_unseen_body=blind['nearest_xy'])
+                        limit_until = t + 1.0
                 now_blocked = (bool(prediction.get('obstacle_fwd')), bool(prediction.get('obstacle_rev')))
                 if now_blocked != blocked:
                     blocked = now_blocked

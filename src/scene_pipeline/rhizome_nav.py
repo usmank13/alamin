@@ -138,7 +138,7 @@ class Navigation:
         if self.grid_capable:
             self.obstacle=self.messages.get('/vision/obstacle',self.obstacle)
             self.result.update(obstacle=self.obstacle,obstacle_health=self.messages.get('nav_obstacle/health'),
-                               service_requests=self.services.copy())
+                               service_requests=self.services.copy(),seen=self.messages.pop('/nav_model/seen',None))
         return self.result
 
     def command_goals(self,t):
