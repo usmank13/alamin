@@ -534,7 +534,7 @@ def main():
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
                                         nav_model=dict(package=str(args.nav_package), device='cpu', cameras=['front', 'rear'],
                                                        depth=True, obstacle_detection=True, drive=False, threads=8,
-                                                       params=dict(obstacle_max_height_m=STEP_M, seen_publish_hz=5.0),  # as weeding-with-agent
+                                                       params=dict(obstacle_max_height_m=STEP_M, seen_publish_hz=5.0),  # as the dual-agent task
                                                        robot_dimensions=robot_dimensions(profile))),
                                    out, timeout=1e9)
 
