@@ -65,7 +65,7 @@ class SimState:
         self.pose = None  # (x, y, yaw) in odom == MuJoCo world
         self.camera = None  # latest nav_front capture
         self.mux = 'AUTONOMY'  # the sim operator has engaged autonomy
-        self.source = 'NONE'
+        self.source = 'AGENT'  # the sim operator gives the agent control (portal button)
         self.enabled = True
         self.goals = None  # WaypointsMsg JSON from the agent's /nav/goals
         self.reengage_at = None  # sim time the operator re-engages AUTONOMY
@@ -234,6 +234,11 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         return await ai_main.AiAgent.gemini_describe(g, jpeg, prompt)
 
     state.stop_capture = stop_capture
+
+    async def reply(text, include_frame=False):
+        log('agent_says', text=text)  # the operator channel
+        return 'ok'
+
     return tools.AgentInterface(
         publish_locked=publish_locked, call_service_locked=call_service_locked, cancel_nav=cancel_nav,
         set_enabled=set_enabled, is_enabled=lambda: state.enabled, grab_frame=grab_frame,
@@ -241,7 +246,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
         start_capture=start_capture, stop_capture=stop_capture,
         check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t),
-        owns_goals=lambda: state.source == 'AGENT')
+        owns_goals=lambda: state.source == 'AGENT', reply=reply)
 
 
 def sim_aigen_cli(state, log, tools):
@@ -316,28 +321,36 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
     host = make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, args.cam_K)
     tools._IMPLS['aigen_cli'] = sim_aigen_cli(state, log, tools)
 
+    from ai_agent.events import INTERRUPT_WAIT, coalesce_events
+
     async def wait_for_event(ctx, topics=None, timeout_s=300.0):
         # tools._wait_for_event with a simulation-time deadline.
+        wanted = (set(topics) | INTERRUPT_WAIT) if topics else None
         deadline = state.t + timeout_s
+        skipped, result = [], {'event': 'timeout', 'details': {}}
         while state.t < deadline:
             try:
                 ev = await asyncio.wait_for(ctx.event_queue.get(), 0.05)
             except asyncio.TimeoutError:
                 continue
-            if not topics or ev.get('event') in topics:
-                return json.dumps(ev)
-        return json.dumps({'event': 'timeout', 'details': {}})
+            if ctx.is_stale(ev):
+                continue
+            if wanted is None or ev.get('event') in wanted:
+                result = ev
+                break
+            skipped.append(ev)
+        while not ctx.event_queue.empty():
+            skipped.append(ctx.event_queue.get_nowait())
+        for ev in coalesce_events(skipped):
+            ctx.event_queue.put_nowait(ev)
+        return json.dumps(result)
     tools._IMPLS['wait_for_event'] = wait_for_event
-
-    class Operator:
-        async def send_message(self, chat_id, text, photo=None):
-            log('agent_says', text=text)
 
     async def main():
         loop_box['loop'] = asyncio.get_running_loop()
         queue = asyncio.Queue()
         loop_box['queue'] = queue
-        ctx = tools.ToolContext(memory=memory, telegram=Operator(), event_queue=queue, primary_chat_id=1, agent=host)
+        ctx = tools.ToolContext(memory=memory, event_queue=queue, agent=host)
         conv = Conversation(client=AsyncAnthropic() if args.llm == 'api' else None, model=cfg['models']['claude'],
                             system_prompt=L1_SYSTEM_PROMPT, memory=memory, tool_ctx=ctx)
         if args.llm == 'api':
@@ -381,6 +394,7 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
     """
     from claude_agent_sdk import (AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, ResultMessage,
                                   TextBlock, create_sdk_mcp_server, tool)
+    from ai_agent.conversation import mcp_content
     mark = {'t': 0.0, 'wall': time.perf_counter()}
 
     def make(name, desc, schema):
@@ -389,7 +403,7 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
             await wait_until(mark['t'] + time.perf_counter() - mark['wall'])
             result = await tools.dispatch(ctx, name, inp)
             mark['t'], mark['wall'] = state.t, time.perf_counter()
-            return {'content': [{'type': 'text', 'text': str(result)}]}
+            return {'content': mcp_content(result)}
         return handler
 
     server = create_sdk_mcp_server('rover', tools=[make(d['name'], d['description'], d['input_schema'])
@@ -439,7 +453,7 @@ def operator_say(text, host_cancel, loop_box, log, stop_keywords):
         host_cancel()  # reflexive, before Claude sees it
     log('operator', text=text)
     asyncio.run_coroutine_threadsafe(
-        loop_box['queue'].put({'event': 'telegram_msg', 'details': {'user': 'operator', 'chat_id': 1, 'text': text}}),
+        loop_box['queue'].put({'event': 'operator_msg', 'details': {'text': text, 'user': 'operator', 'source': 'stdin'}}),
         loop_box['loop'])
 
 
