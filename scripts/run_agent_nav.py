@@ -189,7 +189,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         with state.lock:
             return state.pose
 
-    def start_capture(name):
+    def start_capture(name, mode="recorder", duration_s=300):  # the sim records its own keyframes either way
         from ai_agent.capture import Keyframer
         root = out / 'captures' / ''.join(c if c.isalnum() or c in '-_' else '_' for c in name)
         (root / 'images').mkdir(parents=True, exist_ok=True)
