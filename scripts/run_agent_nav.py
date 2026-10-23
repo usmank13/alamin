@@ -235,6 +235,15 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
 
     state.stop_capture = stop_capture
 
+    def robot_state():
+        # AiAgent.robot_state's fields the sim has (no battery / e-stop / mux reason)
+        with state.lock:
+            pose = state.pose
+            return dict(agent_enabled=state.enabled, drive_mux=state.mux, nav_source=state.source,
+                        agent_owns_goals=state.source == 'AGENT',
+                        odom_pose=None if pose is None else dict(x=round(pose[0], 2), y=round(pose[1], 2),
+                                                                 yaw_deg=round(math.degrees(pose[2]), 1)))
+
     async def reply(text, include_frame=False):
         log('agent_says', text=text)  # the operator channel
         return 'ok'
@@ -246,7 +255,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
         start_capture=start_capture, stop_capture=stop_capture,
         check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t),
-        owns_goals=lambda: state.source == 'AGENT', reply=reply)
+        owns_goals=lambda: state.source == 'AGENT', reply=reply, robot_state=robot_state)
 
 
 def sim_aigen_cli(state, log, tools):
