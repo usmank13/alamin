@@ -1,0 +1,26 @@
+{
+  "seconds": 8,
+  "camera": {
+    "width": 640,
+    "height": 360
+  },
+  "controller": {
+    "root": "~/Desktop/code/rhizome",
+    "host_build": "outputs/rhizome_host_nav/host",
+    "python": "~/Desktop/code/ml-aigen-tools/venv312/bin/python",
+    "perception": "none",
+    "parameters": {
+      "auto_speed_max_ms": 0.18
+    },
+    "nav_model": {
+      "package": "outputs/nav_model_package/nav_rows_jdof5rzx_nav",
+      "device": "cpu",
+      "arrangement": 2,
+      "cameras": [
+        "front",
+        "rear"
+      ],
+      "steer_source": "rows"
+    }
+  }
+}

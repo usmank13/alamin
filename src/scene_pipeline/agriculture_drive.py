@@ -11,6 +11,7 @@ from PIL import Image, ImageDraw
 from sim_harness.export import export_mujoco
 from sim_harness.scene import _read_spec
 from .agriculture import compose_robot, robot_footprint, sha256
+from .rhizome_nav import obstacle
 from .contracts import PipelineError, read_json, write_json
 from .dataset import Recorder, inspect
 
@@ -128,13 +129,17 @@ def label_tables(model, manifest):
 def camera_rig(profile, width, height):
     rig={}
     for name,camera in profile['cameras'].items():
+        capture_width,capture_height=camera.get('width',width),camera.get('height',height)
         optics=camera['optics']
-        fx=optics['lens_mm']/optics['sensor_width_mm']*width
-        fy=optics['lens_mm']/optics['sensor_height_mm']*height
-        rig[name]={**camera,'width':width,'height':height,'rate_hz':10,
-                   'K':[[fx,0,width/2],[0,fy,height/2],[0,0,1]],
+        fx=optics['lens_mm']/optics['sensor_width_mm']*capture_width
+        fy=optics['lens_mm']/optics['sensor_height_mm']*capture_height
+        rig[name]={**camera,'width':capture_width,'height':capture_height,'rate_hz':10,
+                   'K':[[fx,0,capture_width/2],[0,fy,capture_height/2],[0,0,1]],
                    'depth_convention':'positive optical-axis distance, metres; ideal MuJoCo Z buffer',
                    'stream':'camera_'+name,'observation_model':'ideal RGB and depth; no stereo holes or noise'}
+        if camera.get('role')=='navigation':
+            rig[name].pop('depth_convention')
+            rig[name]['observation_model']='ideal RGB only; no depth or segmentation input to navigation'
     return rig
 
 
@@ -163,7 +168,15 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
     arm_commands=arm_schedule(config,profile)
     bounds=np.asarray(manifest['terrain']['bounds_m'])
     spawn=config.get('spawn',generation['spawn'])
-    spec,model,data=compose_robot(_read_spec(scene/'environment.mjz'),_read_spec(scene/'robot.mjz'),profile,spawn,bounds)
+    robot=_read_spec(scene/'robot.mjz')
+    nav_config=config.get('controller',{}).get('nav_model')
+    if nav_config:
+        from .navigation import add_cameras,robot_dimensions
+        if nav_config.get('depth'):
+            nav_config['robot_dimensions']=robot_dimensions(profile)
+        profile=add_cameras(robot,profile,nav_config)
+    nav_names={'nav_'+pos for pos in nav_config['cameras']} if nav_config else set()
+    spec,model,data=compose_robot(_read_spec(scene/'environment.mjz'),robot,profile,spawn,bounds)
     # Match the replay renderer's shadow budget; 4K shadow maps dominate
     # software capture time without improving depth or segmentation.
     spec.visual.quality.shadowsize=1024
@@ -186,7 +199,7 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
         from .rhizome import bind_physical_arm,bind_physical_arms
         if multi:
             controller_config,physical_arms=bind_physical_arms(controller_config,profile)
-            owned={a['camera'] for a in physical_arms.values()}
+            owned={a['camera'] for a in physical_arms.values()}|nav_names
             if 'names' not in config['camera']:cameras={name:cameras[name] for name in cameras if name in owned}
             if set(cameras)!=owned:raise PipelineError('RHIZOME_CONFIG','Capture cameras must match the selected physical arms')
         else:
@@ -196,12 +209,15 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
         if set(physical_arms)&arm_commands.keys():
             raise PipelineError('DRIVE_CONFIG','A physical arm cannot have both native and timed commands')
     if controller_config:
-        if controller_config.get('perception','none')!='none' and tier!='full':
+        if (nav_config or controller_config.get('perception','none')!='none') and tier!='full':
             raise PipelineError('RHIZOME_CONFIG','Visible perception requires --tier full')
         if controller_config.get('shadow_arm') and controller_config['shadow_arm']['camera'] not in cameras:
             raise PipelineError('RHIZOME_CONFIG','shadow_arm.camera is not in the robot rig')
-        if controller_config.get('perception')=='neural' and set(controller_config['neural']['target_positions_chassis_m'])!=set(profile['cameras']):
+        if controller_config.get('perception')=='neural' and set(controller_config['neural']['target_positions_chassis_m'])!=set(profile['cameras'])-nav_names:
             raise PipelineError('RHIZOME_CONFIG','Neural target mounts must cover exactly the simulated cameras')
+        if not nav_names<=set(cameras):raise PipelineError('RHIZOME_CONFIG','Capture must include the selected nav cameras')
+        if nav_config and not physical_arms and controller_config.get('perception','none')=='none' and 'names' not in config['camera']:
+            cameras={name:cameras[name] for name in cameras if name in nav_names}
     benchmark=manifest.get('weeding_benchmark')
     if benchmark:
         if set(physical_arms)!=set(benchmark.get('arms',[benchmark.get('arm')])):
@@ -231,7 +247,7 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
     frames={};neural_frames={};positions=[];failure=None;obstacle_contacts=set();max_contacts=0
     warnings=np.zeros(len(data.warning),dtype=int)
     recorder=Recorder(output/'data.h5',metadata)
-    renderer=None;controller=None;native_info=None
+    renderer=None;nav_renderer=None;controller=None;native_info=None;nav_results=[]
     oracle_count=0;neural_count=0;tracked_count=0;shadow_states=set();shadow_targets=set()
     arm_states={name:set() for name in physical_arms};arm_targets={name:set() for name in physical_arms}
     camera_counts={name:dict(oracle_detections=0,neural_detections=0,tracked_detections=0) for name in cameras}
@@ -244,6 +260,7 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                 **({'arms':physical_arms} if multi else {}),timeout=max(.001,timeout-(time.perf_counter()-started)))
             native_info=controller.info
         if tier=='full':renderer=mujoco.Renderer(model,height=height,width=width)
+        if nav_config:nav_renderer=mujoco.Renderer(model,height=480,width=640)
         for tick in range(steps+1):
             if time.perf_counter()-started>=timeout:
                 failure='Wall-clock budget exceeded';break
@@ -323,7 +340,29 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                                 accelerometer_truth=accel,accelerometer=accel+rng.normal(0,.03,3))
                 recorder.append('commands',t,requested_twist=np.asarray(requested),applied_twist=np.asarray(applied),wheel_target=targets)
             if renderer and tick%50==0:
+                nav_arrays={}
                 for name in cameras:
+                    if name in nav_names:
+                        nav_renderer.update_scene(data,'element/'+name,scene_option=option)
+                        rgb=nav_renderer.render().copy();cid=model.camera('element/'+name).id
+                        R=data.xmat[chassis].reshape(3,3);position=name.removeprefix('nav_')
+                        values=dict(rgb=rgb,K=np.asarray(cameras[name]['K']),
+                            position_robot=R.T@(data.cam_xpos[cid]-data.xpos[chassis]),
+                            rotation_robot=R.T@data.cam_xmat[cid].reshape(3,3)@np.diag([1,-1,-1]),
+                            height_m=np.asarray(cameras[name]['cam_height_m']))
+                        depth_capture={}
+                        if nav_config.get('depth'):
+                            from .navigation import raw_depth
+                            nav_renderer.enable_depth_rendering()
+                            try:depth=nav_renderer.render().copy()
+                            finally:nav_renderer.disable_depth_rendering()
+                            values['depth']=raw_depth(depth)
+                            depth_capture=dict(depth=depth,depth_raw=values['depth'])
+                        nav_arrays.update({position+'_'+key:value for key,value in values.items()})
+                        recorder.append('camera_'+name,t,rgb=rgb,position_world=data.cam_xpos[cid].copy(),
+                                        rotation_world=data.cam_xmat[cid].reshape(3,3).copy(),**depth_capture)
+                        frames[name]=rgb
+                        continue
                     renderer.update_scene(data,'element/'+name,scene_option=option)
                     rgb=renderer.render().copy()
                     renderer.enable_depth_rendering();depth=renderer.render().copy();renderer.disable_depth_rendering()
@@ -370,6 +409,19 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                             data.xmat[chassis].reshape(3,3),data.xpos[chassis],
                             controller_config['neural']['target_positions_chassis_m'][name],
                             controller_config['neural'].get('target_quaternions_chassis_wxyz',{}).get(name,[1,0,0,0]))
+                if nav_config:
+                    observation=controller.nav_infer(t,**nav_arrays);nav_results.append(observation)
+                    prediction=observation['prediction']
+                    fwd,rev=obstacle(prediction,'fwd'),obstacle(prediction,'rev')
+                    obstacle_values=dict(obstacle_enabled=prediction.get('obstacle_enabled',False),
+                        obstacle_fwd=fwd['blocked'],obstacle_rev=rev['blocked'],
+                        grid_stop_fwd=fwd['grid_stop'],grid_stop_rev=rev['grid_stop']) if nav_config.get('depth') else {}
+                    recorder.append('nav_model',t,driving=observation['driving'],
+                        lane_lateral_m=prediction.get('lane_lateral_m',0.),row_heading_rad=prediction.get('row_heading_rad',0.),
+                        fitted_row_count=len(prediction.get('rows_fitted',[])),
+                        goal_count=len(observation['goals']['waypoints']),inference_wall_seconds=observation['inference_wall_seconds'],**obstacle_values)
+                    from .navigation import overlay
+                    for name in nav_names:neural_frames[name]=overlay(frames[name],prediction,name.removeprefix('nav_'))
             max_contacts=max(max_contacts,data.ncon)
             for contact in data.contact:
                 names=[model.geom(int(g)).name for g in contact.geom]
@@ -393,6 +445,7 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
         if controller:controller.close()
         recorder.close()
         if renderer:renderer.close()
+        if nav_renderer:nav_renderer.close()
     data.ctrl[:]=0
     for name,frame in frames.items():Image.fromarray(frame).save(output/(name+'.png'))
     for name,frame in neural_frames.items():frame.save(output/(name+'_neural.png'))
@@ -406,10 +459,10 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                 calibrated=False,source_revision=generation['provenance'].get('inicio_revision'),
                 limitations=profile['limitations']+(native_info['limitations'] if native_info else ['Timed commands; no autonomous controller']))
     if controller_config:
-        final_goal=np.asarray(controller_config['waypoints'][-1]['xy'])
-        goal_distance=float(np.linalg.norm(data.xpos[chassis,:2]-final_goal))
+        final_goal=np.asarray(controller_config['waypoints'][-1]['xy']) if controller_config['waypoints'] else None
+        goal_distance=float(np.linalg.norm(data.xpos[chassis,:2]-final_goal)) if final_goal is not None else None
         arrival=(native_info or {}).get('local_control_parameters',{}).get('arrival_distance',.25)
-        report['rhizome']=dict(provenance=native_info,goal_distance_m=goal_distance,goal_reached=goal_distance<arrival,
+        report['rhizome']=dict(provenance=native_info,goal_distance_m=goal_distance,goal_reached=goal_distance<arrival if goal_distance is not None else None,
                                oracle_detections=oracle_count,tracked_detections=tracked_count,
                                neural_detections=neural_count,
                                arm_states=sorted(shadow_states),arm_target_ids=[] if multi else sorted(shadow_targets),
@@ -419,6 +472,19 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                                arms={name:dict(camera=a['camera'],states=sorted(arm_states[name]),target_ids=sorted(arm_targets[name])) for name,a in physical_arms.items()},
                                cameras=camera_counts,arm_feedback='MuJoCo' if physical_arms else 'software motor model',
                                physical_weeding=False)
+        if nav_config:
+            from collections import Counter
+            report['rhizome']['navigation']=dict(mode='vision_mapless',frames=len(nav_results),
+                driving_frames=sum(r['driving'] for r in nav_results),
+                gates=dict(Counter(r['prediction'].get('gate','NO_PREDICTION') for r in nav_results)),
+                ground_truth_row_inputs=False,goal_watchdog_seconds=(native_info or {}).get('navigation',{}).get('goal_watchdog_seconds',.5))
+            if nav_config.get('depth'):
+                stops=[r for r in nav_results if r['prediction'].get('gate')=='OBSTACLE']
+                report['rhizome']['navigation']['obstacles']=dict(enabled=bool(nav_config.get('obstacle_detection')),
+                    stop_frames=len(stops),first_stop_seconds=stops[0]['simulation_time'] if stops else None,
+                    grid_front_frames=sum(obstacle(r['prediction'],'fwd')['grid_stop'] for r in nav_results),
+                    semantic_front_frames=sum(bool(r['prediction'].get('front',{}).get('obstacle_detected')) for r in nav_results),
+                    input='Ideal rendered RGB/depth; no obstacle coordinates, labels or semantic masks')
     if benchmark:
         from .weeding import evaluate,evaluate_multi
         report['simulation_passed']=report['passed']
@@ -430,6 +496,9 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
     if video and shutil.which('ffmpeg') and len(positions)>1:
         from .replay import video as replay
         replay(output,model=model)
+        if nav_config:
+            from .navigation import prediction_video
+            prediction_video(output)
     from .inspection import scene_page
     scene_page(output)
     return report

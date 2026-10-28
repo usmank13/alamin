@@ -1,0 +1,28 @@
+{
+  "seconds": 25,
+  "camera": {
+    "width": 640,
+    "height": 360
+  },
+  "controller": {
+    "root": "~/Desktop/code/rhizome-nav-grid",
+    "host_build": "outputs/rhizome_host_obstacle/host",
+    "python": "~/Desktop/code/ml-aigen-tools/venv312/bin/python",
+    "perception": "none",
+    "parameters": {
+      "auto_speed_max_ms": 0.18
+    },
+    "nav_model": {
+      "package": "outputs/nav_obstacle_package/nav_grid_4_nav",
+      "device": "cpu",
+      "arrangement": 2,
+      "cameras": [
+        "front",
+        "rear"
+      ],
+      "steer_source": "rows",
+      "depth": true,
+      "obstacle_detection": true
+    }
+  }
+}

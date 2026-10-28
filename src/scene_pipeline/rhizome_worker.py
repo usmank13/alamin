@@ -44,6 +44,8 @@ class Runtime:
         meta,params=documents('src/nav/local_control.node.yml')
         params.update(auto_speed_max_ms=.25,turn_speed=.2,boost_speed_max_ms=0.,goals_stale_sec=0.)
         params.update(config.get('parameters',{}))
+        self.goals_topic='/nav_model/goals' if config.get('nav_model') else '/nav/goals'
+        params['goals_topic']=self.goals_topic
         # Every fixture tick runs once. Freshness is enforced by the parent RPC
         # deadline, not production wall-clock goals expiry or speed boosting.
         (conf/'nodes/local_control.json').write_text(json.dumps(dict(meta=meta,config=params)))
@@ -62,13 +64,18 @@ class Runtime:
             dict(point=dict(x=w['xy'][0],y=w['xy'][1],frame='odom'),
                  dir=w.get('direction','FORWARD'),type=w.get('type','NORMAL')) for w in config['waypoints']]})
         self.trackers={};self.conf=conf;self.arm=None;self.last_time=None
-        self.row_profile=None
+        self.row_profile=None;self.nav_arm_held=False
         self.output=Path(output)
         self.tracker_config=documents('src/vision/tracker_0.node.yml') if config.get('perception','none')!='none' else None
         self.last_command=[0.,0.]
         if config.get('shadow_arm'):
             self.init_arm(config['shadow_arm'])
         self.neural=None
+        self.navigation=None
+        if config.get('nav_model') and self.navigation_enabled:
+            sys.path.insert(0,str(self.root/'src'))
+            from rhizome_nav import Navigation
+            self.navigation=Navigation(self,config['nav_model'])
         if config.get('perception')=='neural':
             sys.path.insert(0,str(self.root/'src'))
             from rhizome_perception import NeuralPerception
@@ -99,6 +106,14 @@ class Runtime:
         if self.neural:
             self.info['neural']=self.neural.info
             self.info['limitations'][3]='Neural perception on ideal rendered RGB/depth; inference targets use configured payload frames'
+        if self.navigation:
+            self.info['navigation']=self.navigation.info
+            self.info['limitations'][0]='Mapless NavModel guidance and LocalControl; task mux, geofence and hardware nodes are not running'
+            if self.arm is None:
+                self.info['limitations'][-1]='No active weeding planner in this navigation worker'
+            self.info['limitations'].extend(self.navigation.info['limitations'])
+            for path in (self.root/'src/nav_model').glob('*.py'):
+                self.sources[str(path.relative_to(self.root))]=hashlib.sha256(path.read_bytes()).hexdigest()
 
     def create_node(self,name,kind,subscriptions):
         os.environ['NODE_NAME']=name
@@ -116,7 +131,9 @@ class Runtime:
                              'Rebuild current host bindings and select controller.host_build or RHIZOME_HOST_BUILD.')
         self.ph=physics
         hardware=self.documents('test/data/physics/arm_1.yml')[0]
-        tools=self.documents('src/base_control/arms.yml')[0]
+        # Tool shapes: base_control/tools.yml since rhizome's robot description, arms.yml before.
+        catalog='src/base_control/tools.yml' if (self.root/'src/base_control/tools.yml').exists() else 'src/base_control/arms.yml'
+        tools=self.documents(catalog)[0]
         params=self.documents('src/physics/physics_0.node.yml')[1]
         self.arm_snapshot=dict(hardware=hardware,tools=tools,physics=params,mount=config,
                                note='Provisional stock test arm, chassis-aligned; geometry, joint limits and mount are not calibrated to RAPTOR_30')
@@ -174,12 +191,26 @@ class Runtime:
         self.last_time=t
         x,y,z=msg['position'];qw,qx,qy,qz=msg['quaternion']
         pose=dict(x=x,y=y,z=z,qw=qw,qx=qx,qy=qy,qz=qz,frame='odom')
+        self.pose=pose;self.forward_mps=msg['forward_mps']
         if self.navigation_enabled and round(t*100)%10==0:
             odom=self.p.OdometryMsg(dict(pose=pose,twist=dict(v=msg['forward_mps'],w=0)))
-            self.fixture.test_single({'/odom':odom,'/nav/goals':self.goals},lambda:None)
+            goals=self.navigation.command_goals(t) if self.navigation else self.goals
+            self.fixture.test_single({'/odom':odom,self.goals_topic:goals},lambda:None)
             self.last_command=[self.command.lin,self.command.ang]
+        if self.navigation and not self.navigation.command_goals(t).waypoints:self.last_command=[0.,0.]
+        if self.navigation and self.navigation.shadow:
+            # drive_control: a blocked direction commanded zeroes lin + ang
+            # (/vision/obstacle clip plus the OBSTACLE_* invariant).
+            prediction=self.navigation.result.get('prediction',{});lin=self.last_command[0]
+            from rhizome_nav import obstacle
+            if (obstacle(prediction,'fwd')['blocked'] and lin>0) or (obstacle(prediction,'rev')['blocked'] and lin<0):
+                self.last_command=[0.,0.]
         result=dict(twist=self.last_command)
-        if self.arm or self.neural:
+        if self.navigation:
+            enabled=bool(self.navigation.command_goals(t).waypoints)
+            turn=self.navigation.result.get('prediction',{}).get('steer_source')=='TURN'
+            result['navigation']=dict(driving=enabled,arm_enabled=enabled and not turn)
+        if self.arm or self.neural or self.navigation:
             # Rhizome roots the graph at ROBOT: /frames/odom contains the
             # ODOM origin expressed in ROBOT, the inverse of MuJoCo's pose.
             r=((1-2*(qy*qy+qz*qz),2*(qx*qy-qz*qw),2*(qx*qz+qy*qw)),
@@ -208,13 +239,24 @@ class Runtime:
                 for track_id,seen in list(self.detection_seen.items()):
                     if t-seen>self.detection_timeout:
                         self.arm.remove_detection(track_id);del self.detection_seen[track_id]
+            if self.nav_arm_held:
+                self.arm.arm_state_manager.clear_pitch_override();self.arm.arm_state_manager.clear_yaw_override()
             self.arm.step(.01)
+            arm_enabled=result.get('navigation',{}).get('arm_enabled',msg.get('arm_enabled',True))
+            self.nav_arm_held=not arm_enabled
+            if self.nav_arm_held:
+                self.arm.arm_state_manager.set_pitch_override(0.)
+                self.arm.arm_state_manager.set_yaw_override(0.)
+                # PLAYBACK motors read the already computed command; refresh
+                # it after applying the navigation hold in this same tick.
+                self.arm.arm_state_manager.compute_commanded()
             self.motors.step(.01)
             state=self.arm.get_targeting_state()
             result['arm']=dict(commanded=[self.motors.commanded_yaw,self.motors.commanded_pitch],
                                measured=[self.motors.measured_yaw,self.motors.measured_pitch],
                                target_id=self.arm.weeding_mode_controller.locked_target_id,
                                state=str(state.state),detections=len(self.arm.get_detection_states()))
+            if 'arm_enabled' in msg or self.navigation:result['arm']['navigation_held']=self.nav_arm_held
             if self.config.get('targeting_diagnostics'):
                 fields=('track_id','x','y','z','size','in_reach_circle','in_reach_triangle',
                         'strike_ready','is_locked_target','is_eliminated','is_valid_candidate',
@@ -308,6 +350,12 @@ class Runtime:
             if total>0:self.arm.set_weed_pressure(weeds/total)
         return {**result,**diagnostics}
 
+    def nav_infer(self,msg):
+        import numpy as np
+        if self.navigation is None:raise ValueError('Vision navigation is not configured')
+        with np.load(msg['frame_file'],allow_pickle=False) as arrays:
+            return self.navigation.infer(msg['time'],arrays)
+
 
 def main():
     protocol=os.fdopen(os.dup(1),'w',buffering=1)
@@ -321,6 +369,8 @@ def main():
             elif msg['op']=='step':result=runtime.step(msg)
             elif msg['op']=='observe':result=runtime.observe(msg)
             elif msg['op']=='infer':result=runtime.infer(msg)
+            elif msg['op']=='nav_infer':result=runtime.nav_infer(msg)
+            elif msg['op']=='set_goals':runtime.goals=runtime.p.WaypointsMsg(msg['goals']);result={}
             else:raise ValueError('Unknown worker operation')
             protocol.write(json.dumps(result,allow_nan=False)+'\n')
         except Exception as exc:

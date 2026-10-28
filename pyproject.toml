@@ -13,6 +13,18 @@ dependencies = ["mujoco==3.13.0", "numpy==2.5.3", "pillow==12.3.0"]
 dev = ["pytest==9.1.1"]
 rhizome = ["PyYAML>=6,<7"]
 agent = ["pydantic-ai-slim[openrouter]==2.44.0"]
+# scripts/run_agent_nav.py: rhizome's ai_agent and nav_model in the loop (docs/agent_navigation.md)
+agent-nav = [
+    "torch==2.6.0",
+    "dataclasses-json>=0.6,<1",
+    "PyYAML>=6,<7",
+    "anthropic==1.13.0",
+    "claude-agent-sdk==0.2.165",
+    "google-genai==2.29.0",
+    "python-telegram-bot==22.8",
+    "scipy==1.18.1",
+    "h5py>=3.12,<4",
+]
 retrieval = ["pycollada>=0.9,<1", "networkx>=3,<4", "coacd==1.0.14"]
 prototypes = ["trimesh==5.1.0", "coacd==1.0.14", "scipy==1.18.1"]
 pipeline = [
@@ -35,3 +47,11 @@ packages = ["src/sim_harness", "src/scene_pipeline"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

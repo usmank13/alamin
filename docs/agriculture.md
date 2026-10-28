@@ -48,6 +48,39 @@ means the realized count is recorded in the output rather than fixed in advance.
 
 ## Configuration and composition
 
+### Longer soybean obstacle scene
+
+`examples/agriculture/soybean30_obstacle.json` keeps the early soybean growth
+stages (0.14–0.33), six rows at 30-inch spacing, and scattered Palmer amaranth
+and parthenium. It doubles the planting positions per row from 60 to 120 and
+extends the terrain to approximately 10 m along the driving direction. The Gen 3
+robot starts at `(-3, 0)`, facing +X; a static, collidable 1 × 1 × 1 m orange cube
+is centered at `(1, 0)` in its path. The cube uses obstruction class 9 and a
+separate `obstacle_cube` instance, and its bottom rests on the highest terrain
+under its footprint. Its vertical placement is specific to this seeded terrain;
+adjust it if changing the terrain or obstacle position.
+
+```bash
+.venv/bin/pipeline agriculture generate \
+  --config examples/agriculture/soybean30_obstacle.json \
+  --inicio-root ../ml-aigen-inicio \
+  --blender "$HOME/Downloads/blender-5.1.2-linux-x64/blender" \
+  --output outputs/soybean30_obstacle_inicio
+
+.venv/bin/pipeline agriculture robot outputs/soybean30_obstacle_inicio \
+  --urdf '/data/URDF EXPORT GEN 3.0' --layout RAPTOR_30 \
+  --inicio-root ../ml-aigen-inicio --output outputs/soybean30_obstacle_gen3
+
+.venv/bin/pipeline inspect outputs/soybean30_obstacle_gen3 --viewer
+```
+
+Use this scene as the input to `agriculture-drive` with the existing navigation
+or weeding run configs. Navigation runs add the front/rear navigation cameras
+as usual. The cube supplies geometry and labels for detector evaluation; the
+scene itself does not add obstacle avoidance to Rhizome's row-following model.
+
+### Settings
+
 The generation config accepts Inicio's single-scenario JSON or YAML run format.
 The `lsystem` block goes directly through Inicio's existing population pipeline,
 including its species, growth stages, row spacing, flat/furrow/bed terrain and
