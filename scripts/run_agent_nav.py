@@ -126,6 +126,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
             last = wps[-1].get('point', {})
             guard.on_goals([(w['point']['x'], w['point']['y']) for w in goals.get('waypoints', [])],
                            any(w.get('dir') == 'REVERSE' for w in goals.get('waypoints', [])))
+            state.world.on_goals([(w['point']['x'], w['point']['y']) for w in goals.get('waypoints', [])
+                                  if w['point']['frame'] == 'odom'], state.pose, state.t)
             with state.lock:
                 state.goals = goals
                 state.progress.set_goal((last['x'], last['y']) if last.get('frame') == 'odom' else None)
@@ -142,6 +144,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         return []
 
     def cancel_nav():
+        state.world.on_goals([], state.pose, state.t)
         with state.lock:
             state.goals = None
             state.progress.set_goal(None)
@@ -164,7 +167,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         counter['n'] += 1
         fid = counter['n']
         (frames / f'{fid:04d}_{position}.jpg').write_bytes(jpeg)
-        latest['v'] = dict(frame_id=fid, depth=cam['depth'], intrinsics=cam['intrinsics'],
+        latest['v'] = dict(frame_id=fid, pose=state.pose, depth=cam['depth'], intrinsics=cam['intrinsics'],
                            extrinsics=cam['extrinsics'], jpeg_bytes=jpeg, n_bytes=len(jpeg))
         return dict(frame_id=fid, jpeg_bytes=jpeg, snapshot=dict(
             frame_id=fid, n_jpeg_bytes=len(jpeg), intrinsics=cam['intrinsics'],
@@ -242,7 +245,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
             return dict(agent_enabled=state.enabled, drive_mux=state.mux, nav_source=state.source,
                         agent_owns_goals=state.source == 'AGENT',
                         odom_pose=None if pose is None else dict(x=round(pose[0], 2), y=round(pose[1], 2),
-                                                                 yaw_deg=round(math.degrees(pose[2]), 1)))
+                                                                 yaw_deg=round(math.degrees(pose[2]), 1)),
+                        working_memory=state.world.full(pose, state.t))
 
     async def reply(text, include_frame=False):
         log('agent_says', text=text)  # the operator channel
@@ -359,7 +363,8 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         loop_box['loop'] = asyncio.get_running_loop()
         queue = asyncio.Queue()
         loop_box['queue'] = queue
-        ctx = tools.ToolContext(memory=memory, event_queue=queue, agent=host)
+        ctx = tools.ToolContext(memory=memory, event_queue=queue, agent=host, world=state.world,
+                                config={'scan': cfg.get('scan')})
         conv = Conversation(client=AsyncAnthropic() if args.llm == 'api' else None, model=cfg['models']['claude'],
                             system_prompt=L1_SYSTEM_PROMPT, memory=memory, tool_ctx=ctx)
         if args.llm == 'api':
@@ -381,6 +386,7 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         while not stop.is_set():
             ev = await queue.get()
             await conv.add_user_event(ev)
+            conv.add_text(state.world.digest(state.pose, state.t))  # AiAgent._agent_loop
             started = time.perf_counter()
             try:
                 final = await conv.run_until_quiescent()
@@ -427,10 +433,12 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
     async with ClaudeSDKClient(options) as client:
         while not stop.is_set():
             ev = await queue.get()
+            sent = len(conv.messages)
             await conv.add_user_event(ev)  # rover's event -> user text formatting
+            conv.add_text(state.world.digest(state.pose, state.t))  # AiAgent._agent_loop
             mark['t'], mark['wall'] = state.t, time.perf_counter()
             started = time.perf_counter()
-            await client.query(conv.messages[-1]['content'])
+            await client.query('\n'.join(m['content'] for m in conv.messages[sent:]))
             final = ''
             async for msg in client.receive_response():
                 transcript.append(repr(msg))
@@ -542,6 +550,10 @@ def main():
     from ai_agent.coverage import CoverageGuard
     from ai_agent.progress import ProgressMonitor, obstacle_event
     from nav_model.swept_coverage import SeenMap
+    from ai_agent.world import WorkingMemory
+    state.world = WorkingMemory(robot_dimensions(profile)['robot']['length'] / 2,
+                                robot_dimensions(profile)['robot']['width'] / 2,
+                                **(node_cfg.get('working_memory') or {}))
     state.progress = ProgressMonitor(node_cfg['agent_arrival_radius_m'], node_cfg['agent_stuck_radius_m'],
                                      node_cfg['agent_stuck_time_s'], node_cfg['agent_approach_m'])
     dims = robot_dimensions(profile)['robot']
@@ -721,7 +733,9 @@ def main():
             if tick % 500 == 0:  # 1 Hz, as the node's Tick
                 with state.lock:
                     ev = state.progress.update(state.pose, t)
+                state.world.on_pose(state.pose, t)
                 if ev:
+                    state.world.on_event(ev, state.pose, t)
                     log(ev['event'], **ev['details'])
                     agent_event(ev['event'], ev['details'], loop_box)
                 if state.reengage_at is not None and t >= state.reengage_at:
@@ -742,8 +756,12 @@ def main():
                 prediction = nav['prediction']
                 if nav.get('seen'):
                     s = nav['seen']
-                    blind = state.coverage.on_map(SeenMap.decode(s['header']['timestamp']['secs'] + 1e-9 * s['header']['timestamp']['nsecs'], s['origin_x'], s['origin_y'], s['cell_m'],
-                                                                 s['size'], bytes(s['age'])), state.pose, t)
+                    seen = SeenMap.decode(s['header']['timestamp']['secs'] + 1e-9 * s['header']['timestamp']['nsecs'],
+                                          s['origin_x'], s['origin_y'], s['cell_m'], s['size'], bytes(s['age']),
+                                          bytes(s.get('tall') or b''))
+                    state.world.on_seen(seen.origin, seen.cell_m, seen.age_s.numpy(),
+                                        None if seen.tall is None else seen.tall.numpy())
+                    blind = state.coverage.on_map(seen, state.pose, t)
                     if blind:  # AiAgent._on_seen: renew the /drive/limits lease
                         if t > limit_until:
                             log('blind', unseen_m2=blind['unseen_m2'], first_unseen_body=blind['nearest_xy'])
@@ -751,11 +769,14 @@ def main():
                 fwd, rev = obstacle(prediction, 'fwd'), obstacle(prediction, 'rev')
                 now_blocked = (fwd['blocked'], rev['blocked'])
                 if now_blocked != blocked:
+                    rising = tuple(b and not old for b, old in zip(now_blocked, blocked))
                     blocked = now_blocked
                     log('obstacle', front=blocked[0], rear=blocked[1],
                         clearance_fwd_m=round(fwd['clearance_m'], 2))
                     xyz = lambda p: (p['x'], p['y'], p['z']) if p else None
                     ev = obstacle_event(blocked, xyz(fwd['nearest']), xyz(rev['nearest']))
+                    state.world.on_obstacle(rising, xyz(fwd['nearest']), xyz(rev['nearest']), state.pose, t)
+                    state.world.on_event(ev, state.pose, t)
                     agent_event(ev['event'], ev['details'], loop_box)
                 if viewer:
                     viewer.sync()
