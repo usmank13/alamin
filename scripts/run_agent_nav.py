@@ -45,6 +45,7 @@ def parse():
     p.add_argument('--claude-model', help='Default: claude-sonnet-5 (sdk) or models.claude in ai_agent.node.yml (api)')
     p.add_argument('--nav-package', type=Path, default=REPO / 'outputs/nav_obstacle_package/nav_grid_4_nav',
                    help='nav_model obstacle-grid package, run in shadow mode as on the rover')
+    p.add_argument('--nav-device', default='cpu', help='nav_model torch device (cpu, cuda)')
     p.add_argument('--max-speed', type=float, default=0.3, help='LocalControl auto_speed_max_ms')
     p.add_argument('--spawn', type=float, nargs=3, metavar=('X', 'Y', 'YAW_DEG'))
     p.add_argument('--viewer', action='store_true', help='Live MuJoCo viewer (uses GLFW instead of EGL)')
@@ -71,6 +72,7 @@ class SimState:
         self.reengage_at = None  # sim time the operator re-engages AUTONOMY
         self.agent_error = None
         self.capture = None  # splat capture in progress: {dir, keyframer, frames}
+        self.push_times = []  # sim time of each non-empty /nav/goals push
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -130,7 +132,10 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
                                   if w['point']['frame'] == 'odom'], state.pose, state.t)
             with state.lock:
                 state.goals = goals
-                state.progress.set_goal((last['x'], last['y']) if last.get('frame') == 'odom' else None)
+                state.progress.set_goal((last['x'], last['y']) if last.get('frame') == 'odom' else None,
+                                        state.world.wake_before_s)
+                if goals.get('waypoints'):
+                    state.push_times.append(state.t)
             log('goals', waypoints=[(round(w['point']['x'], 2), round(w['point']['y'], 2), w['point']['frame'])
                                     for w in goals.get('waypoints', [])])
 
@@ -450,6 +455,21 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
             (out / 'conversation.json').write_text(json.dumps(transcript, indent=1))
 
 
+def smoothness(xy, push_times, hz=100, moving_mps=0.05, parked_s=2.0):
+    """Stop-and-go in a run: share of time moving (0.5 s mean speed above
+    moving_mps), parked stretches longer than parked_s, and how many goal
+    pushes the agent made while the rover was still moving (planning on the
+    move) rather than after it stopped."""
+    speed = np.linalg.norm(np.diff(xy, axis=0), axis=1) * hz
+    moving = np.convolve(speed, np.ones(hz // 2) / (hz // 2), 'same') > moving_mps
+    edges = np.flatnonzero(np.diff(np.r_[1, moving.astype(int), 1]))
+    gaps = [(b - a) / hz for a, b in zip(edges[::2], edges[1::2]) if (b - a) / hz > parked_s]
+    on_move = sum(bool(moving[min(max(int(t * hz) - hz // 3, 0), len(moving) - 1)]) for t in push_times)
+    return dict(moving_pct=round(100 * float(moving.mean()), 1), parked_gaps=len(gaps),
+                parked_total_s=round(float(sum(gaps)), 1), parked_longest_s=round(float(max(gaps, default=0.0)), 1),
+                goal_pushes=len(push_times), pushes_while_moving=on_move)
+
+
 def surface_distance(model, target, max_m=50.0):
     """fn(data) -> closest distance between the robot's and the target's collision geoms."""
     import mujoco
@@ -555,7 +575,8 @@ def main():
                                 robot_dimensions(profile)['robot']['width'] / 2,
                                 **(node_cfg.get('working_memory') or {}))
     state.progress = ProgressMonitor(node_cfg['agent_arrival_radius_m'], node_cfg['agent_stuck_radius_m'],
-                                     node_cfg['agent_stuck_time_s'], node_cfg['agent_approach_m'])
+                                     node_cfg['agent_stuck_time_s'], node_cfg['agent_plan_ahead_s'],
+                                     node_cfg['agent_cruise_mps'])
     dims = robot_dimensions(profile)['robot']
     half_track = robot_dimensions(profile)['drive']['trackwidth'] / 2
     state.coverage = CoverageGuard(
@@ -567,7 +588,7 @@ def main():
     controller = RhizomeController(dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
                                         perception='none',  # goals arrive via set_goals
                                         parameters=dict(auto_speed_max_ms=args.max_speed),
-                                        nav_model=dict(package=str(args.nav_package), device='cpu', cameras=['front', 'rear'],
+                                        nav_model=dict(package=str(args.nav_package), device=args.nav_device, cameras=['front', 'rear'],
                                                        depth=True, obstacle_detection=True, drive=False, threads=8,
                                                        params=dict(obstacle_max_height_m=STEP_M, seen_publish_hz=5.0),  # as the dual-agent task
                                                        robot_dimensions=robot_dimensions(profile))),
@@ -823,7 +844,7 @@ def main():
                   path_length_m=float(np.linalg.norm(np.diff(positions[:, :2], axis=0), axis=1).sum()),
                   coverage_pct=round(100 * float(seen_cells.mean()), 1),
                   objects_seen=f'{len(seen_objects)}/{len(objects)}', objects_missed=sorted(set(objects) - seen_objects),
-                  mission=args.mission)
+                  mission=args.mission, **smoothness(positions[:, :2], state.push_times))
     if args.target:
         final = target_distance(data)
         report.update(target=args.target, target_reached_at_s=target_reached_at,
