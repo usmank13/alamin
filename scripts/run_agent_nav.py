@@ -34,9 +34,9 @@ STEP_M = 0.12
 def parse():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--scene', type=Path, default=REPO / 'outputs/soybean30_obstacle_gen3')
-    p.add_argument('--rhizome', type=Path, default=REPO.parent / 'rhizome', help='rhizome checkout with ai_agent (usman/ai-agent until merged)')
-    p.add_argument('--host-build', type=Path, default=REPO / 'outputs/rhizome_host_agent/host')
-    p.add_argument('--worker-python', type=Path, default=REPO.parent / 'ml-aigen-tools/venv312/bin/python')
+    p.add_argument('--rhizome', type=Path, help='Rhizome checkout (or RHIZOME_ROOT)')
+    p.add_argument('--host-build', type=Path, help='Verified host directory (or RHIZOME_HOST_BUILD)')
+    p.add_argument('--worker-python', type=Path, default=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',sys.executable)))
     p.add_argument('--mission', default='Drive forward along the row you are in for about 4 metres, then stop and report where you ended up.')
     p.add_argument('--seconds', type=float, default=180, help='Simulated duration')
     p.add_argument('--realtime', type=float, default=1.0, help='Sim speed vs wall clock; 1.0 keeps LLM latency faithful')
@@ -54,6 +54,12 @@ def parse():
                    help='Reached = robot within this many metres of the target, surface to surface '
                         '(missions ask for a ~2 m standoff)')
     p.add_argument('--output', type=Path)
+    p.add_argument('--obstacle-max-height', type=float, default=STEP_M,
+                   help="nav_model obstacle_max_height_m (the rover's default is 0.25; crops are ~0.15 m)")
+    p.add_argument('--nav-params', type=json.loads, default={},
+                   help='JSON of nav_model node.yml overrides, e.g. {"turn_first_side": "right"}')
+    p.add_argument('--weed', action='store_true',
+                   help='Run every payload arm through Rhizome weeding on oracle detections; arms weed while nav_model drives')
     return p.parse_args()
 
 
@@ -73,6 +79,9 @@ class SimState:
         self.agent_error = None
         self.capture = None  # splat capture in progress: {dir, keyframer, frames}
         self.push_times = []  # sim time of each non-empty /nav/goals push
+        self.nav = {}  # latest NavModelPrediction JSON
+        self.delegated_at = None  # pose when NAV_MODEL took over
+        self.nav_change = None  # ai_agent.progress.SettledChange
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -160,6 +169,22 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
 
     def set_enabled(on):
         state.enabled = bool(on)
+
+    def set_nav_source(name):
+        # AiAgent.set_nav_source + navigation's set-nav-source (clears /nav/goals).
+        if not state.enabled:
+            return '[refused: /agent/enable is false]'
+        if name not in ('AGENT', 'NAV_MODEL', 'GPS_ROUTE', 'NONE'):
+            return f'[refused: unknown source {name!r}]'
+        with state.lock:
+            state.source = name
+            state.goals = None
+            state.progress.set_goal(None)
+            if name == 'NAV_MODEL':
+                state.delegated_at = state.pose
+                state.nav_change.reset()
+        log('nav_source', text=name)
+        return name
 
     def grab_frame(position='front'):
         with state.lock:
@@ -251,6 +276,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
                         agent_owns_goals=state.source == 'AGENT',
                         odom_pose=None if pose is None else dict(x=round(pose[0], 2), y=round(pose[1], 2),
                                                                  yaw_deg=round(math.degrees(pose[2]), 1)),
+                        nav_model=nav_facts(state),
                         working_memory=state.world.full(pose, state.t))
 
     async def reply(text, include_frame=False):
@@ -264,7 +290,22 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         gemini_describe=gemini_describe, debug_overlay_update=debug_overlay_update, odom_pose=odom_pose,
         start_capture=start_capture, stop_capture=stop_capture,
         check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t),
-        owns_goals=lambda: state.source == 'AGENT', reply=reply, robot_state=robot_state)
+        owns_goals=lambda: state.source == 'AGENT', reply=reply, robot_state=robot_state,
+        set_nav_source=set_nav_source)
+
+
+def nav_facts(state):
+    """AiAgent._nav_model_facts from the latest prediction JSON."""
+    p, pose = state.nav, state.pose
+    out = dict(gate=p.get('gate'), driving=bool(p.get('driving')), steer_source=p.get('steer_source'),
+               rows=len(p.get('rows_fitted') or []), lane_lateral_m=round(float(p.get('lane_lateral_m', 0.0)), 2),
+               turns_done=int(p.get('turns_done', 0)))
+    if p.get('rows_fitted') and pose is not None:
+        rel = math.degrees(float(p.get('row_heading_rad', 0.0)) - pose[2])
+        out['row_heading_rel_deg'] = round((rel + 90) % 180 - 90)
+    if state.source == 'NAV_MODEL' and state.delegated_at is not None and pose is not None:
+        out['moved_m'] = round(math.dist(state.delegated_at[:2], pose[:2]), 1)
+    return out
 
 
 def sim_aigen_cli(state, log, tools):
@@ -496,6 +537,10 @@ def operator_say(text, host_cancel, loop_box, log, stop_keywords):
 
 def main():
     args = parse()
+    from scene_pipeline.rhizome_install import inspect_install
+    install=inspect_install(args.rhizome,args.host_build)
+    args.rhizome=Path(install['root'])
+    args.host_build=Path(install['host_build'])
     for key in ('GEMINI_API_KEY',) + (('ANTHROPIC_API_KEY',) if args.llm == 'api' else ()):
         if not os.environ.get(key):
             sys.exit(f'{key} is not set')
@@ -541,6 +586,7 @@ def main():
     args.cam_K = K.tolist()  # both nav cameras share it
     intrinsics = dict(fx=float(K[0, 0]), fy=float(K[1, 1]), cx=float(K[0, 2]), cy=float(K[1, 2]), width=640, height=480)
     chassis = model.body('element/chassis').id
+    stow = {}  # actuator id -> ctrl: where held (ARMS_UP) arms go
     # Stow the weeding arms (the rover lifts them when not weeding). Hanging at
     # zero, their tools plough into the ground when reversing.
     for arm in profile.get('arms', []):
@@ -555,10 +601,14 @@ def main():
                 best = (pitch, data.site_xpos[site][2])
         data.qpos[jid] = sign[1] * best[0]
         for key, motor in (('yaw_joint', 0.0), ('pitch_joint', best[0])):
-            data.ctrl[model.actuator('element/' + arm[key]).id] = sign[0 if key == 'yaw_joint' else 1] * motor
+            stow[model.actuator('element/' + arm[key]).id] = sign[0 if key == 'yaw_joint' else 1] * motor
+    for aid, value in stow.items():
+        data.ctrl[aid] = value
     mujoco.mj_forward(model, data)
     wheel_names = ['element/' + w['id'] for w in profile['wheels']]
     controls = np.array([model.actuator(n).id for n in wheel_names])
+    # Single-sampled, so segmentation labels stay exact for oracle detections.
+    model.vis.quality.offsamples = 0
     renderer = mujoco.Renderer(model, height=480, width=640)
     option = mujoco.MjvOption()
     option.geomgroup[3:] = 0
@@ -568,7 +618,8 @@ def main():
     node_cfg = list(yaml.safe_load_all((args.rhizome / 'src/ai_agent/ai_agent.node.yml').read_text()))[1]
     stop_keywords = node_cfg['stop_keywords']
     from ai_agent.coverage import CoverageGuard
-    from ai_agent.progress import ProgressMonitor, obstacle_event
+    from ai_agent.progress import ProgressMonitor, SettledChange, obstacle_event
+    state.nav_change = SettledChange(node_cfg['nav_model_event_settle_s'])
     from nav_model.swept_coverage import SeenMap
     from ai_agent.world import WorkingMemory
     state.world = WorkingMemory(robot_dimensions(profile)['robot']['length'] / 2,
@@ -585,14 +636,34 @@ def main():
         lookahead_m=node_cfg['coverage_lookahead_m'], camera_x_m=node_cfg['camera_x_m'],
         hfov_deg=math.degrees(2 * math.atan(320 / intrinsics['fx'])), max_speed=node_cfg['coverage_max_speed'])
     limit_until = -1.0  # sim time the agent's /drive/limits lease lapses (drive_control's 1 s)
-    controller = RhizomeController(dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
-                                        perception='none',  # goals arrive via set_goals
-                                        parameters=dict(auto_speed_max_ms=args.max_speed),
-                                        nav_model=dict(package=str(args.nav_package), device=args.nav_device, cameras=['front', 'rear'],
-                                                       depth=True, obstacle_detection=True, drive=False, threads=8,
-                                                       params=dict(obstacle_max_height_m=STEP_M, seen_publish_hz=5.0),  # as the dual-agent task
-                                                       robot_dimensions=robot_dimensions(profile))),
-                                   out, timeout=1e9)
+    controller_cfg = dict(root=str(args.rhizome), host_build=str(args.host_build), python=str(args.worker_python),
+                          perception='none',  # goals arrive via set_goals
+                          parameters=dict(auto_speed_max_ms=args.max_speed),
+                          # As the dual-agent task: nav_model drives while /nav/source is NAV_MODEL,
+                          # and otherwise watches the agent's goals for obstacles.
+                          nav_model=dict(package=str(args.nav_package), device=args.nav_device, cameras=['front', 'rear'],
+                                         depth=True, obstacle_detection=True, drive=True, arbitrated=True, threads=8,
+                                         params=dict(obstacle_max_height_m=args.obstacle_max_height, seen_publish_hz=5.0, **args.nav_params),
+                                         robot_dimensions=robot_dimensions(profile)))
+    arms = {}
+    if args.weed:
+        from scene_pipeline.agriculture_drive import label_tables, shadow_row_profile
+        from scene_pipeline.rhizome import (RhizomeMultiController, bind_physical_arms, visible_detections,
+                                            visible_row_geometry)
+        controller_cfg.update(perception='oracle_visible', physical_arms=[a['id'] for a in profile['arms']])
+        controller_cfg, arms = bind_physical_arms(controller_cfg, profile)
+        controller = RhizomeMultiController(controller_cfg, out, arms, timeout=1e9)
+        instance_ids, instances, _ = label_tables(model, manifest)
+        payload_rig = camera_rig(profile, 640, 360)
+        payload_renderer = mujoco.Renderer(model, height=360, width=640)
+        tool_geoms = {name: model.geom('element/' + a['pitch_joint'] + '_tool_collision').id for name, a in arms.items()}
+        plants = [(k, v) for k, v in manifest['instances'].items() if v.get('category') in ('crop', 'weed')]
+        plant_xyz = np.array([v['position_m'] for _, v in plants])
+        plant_min_d = np.full(len(plants), np.inf)  # closest low tool pass, xy metres
+        arm_targets = {name: set() for name in arms}
+    else:
+        controller = RhizomeController(controller_cfg, out, timeout=1e9)
+    sent_source = None
 
     def cancel():
         with state.lock:
@@ -662,6 +733,19 @@ def main():
     if sys.stdin.isatty():
         threading.Thread(target=stdin_reader, daemon=True).start()
 
+    def inbox_reader():
+        # Operator messages for a background run: append lines to <output>/operator_inbox.txt.
+        path, done = out / 'operator_inbox.txt', 0
+        path.touch()
+        while not stop.is_set():
+            lines = path.read_text().splitlines()
+            for line in lines[done:]:
+                if line.strip():
+                    operator_say(line.strip(), cancel, loop_box, log, stop_keywords)
+            done = len(lines)
+            time.sleep(1.0)
+    threading.Thread(target=inbox_reader, daemon=True).start()
+
     viewer = None
     if args.viewer:
         import mujoco.viewer
@@ -726,10 +810,33 @@ def main():
                 if goals is not sent:
                     controller.request(dict(op='set_goals', time=t, goals=goals))
                     sent = goals
+                if state.source != sent_source:
+                    controller.request(dict(op='set_source', time=t, source=state.source))
+                    sent_source = state.source
                 vel = np.zeros(6)
                 mujoco.mj_objectVelocity(model, data, mujoco.mjtObj.mjOBJ_BODY, chassis, vel, 0)  # world frame
                 forward = vel[3] * math.cos(yaw) + vel[4] * math.sin(yaw)
-                twist = controller.step(t, data.xpos[chassis], quat, forward)['twist']
+                if arms:
+                    measured = {name: np.asarray(a['motor_to_joint_sign']) * [
+                        data.joint('element/' + a[k]).qpos[0] for k in ('yaw_joint', 'pitch_joint')]
+                        for name, a in arms.items()}
+                    result = controller.step(t, data.xpos[chassis], quat, forward, measured)
+                    for name, arm in result['arms'].items():
+                        a = arms[name]
+                        for axis, key in enumerate(('yaw_joint', 'pitch_joint')):
+                            aid = model.actuator('element/' + a[key]).id
+                            data.ctrl[aid] = stow[aid] if arm['navigation_held'] else np.clip(
+                                arm['commanded'][axis] * a['motor_to_joint_sign'][axis], *model.actuator_ctrlrange[aid])
+                        if arm['target_id'] >= 0:
+                            arm_targets[name].add(arm['target_id'])
+                        if not arm['navigation_held']:
+                            tool = data.geom_xpos[tool_geoms[name]]
+                            low = tool[2] < plant_xyz[:, 2] + 0.04
+                            d = np.where(low, np.hypot(*(plant_xyz[:, :2] - tool[:2]).T), np.inf)
+                            np.minimum(plant_min_d, d, out=plant_min_d)
+                    twist = result['twist']
+                else:
+                    twist = controller.step(t, data.xpos[chassis], quat, forward)['twist']
                 fastest = abs(twist[0]) + half_track * abs(twist[1])  # drive_control.apply_drive_limit
                 if t < limit_until and fastest > state.coverage.max_speed:
                     twist = [v * state.coverage.max_speed / fastest for v in twist]
@@ -759,6 +866,12 @@ def main():
                     state.world.on_event(ev, state.pose, t)
                     log(ev['event'], **ev['details'])
                     agent_event(ev['event'], ev['details'], loop_box)
+                if state.source == 'NAV_MODEL' and state.nav:  # AiAgent.Tick
+                    if state.nav_change.update((state.nav.get('gate'), bool(state.nav.get('driving'))), t):
+                        ev = dict(event='nav_model', details=nav_facts(state))
+                        state.world.on_event(ev, state.pose, t)
+                        log('nav_model', **ev['details'])
+                        agent_event('nav_model', ev['details'], loop_box)
                 if state.reengage_at is not None and t >= state.reengage_at:
                     with state.lock:
                         state.mux, state.reengage_at = 'AUTONOMY', None
@@ -773,8 +886,27 @@ def main():
                     seen_objects.update(k for k, xy in objects.items() if in_view(xy[0], xy[1], state.pose, 8.0))
                 with state.lock:
                     state.camera = cam
+                if arms and state.source == 'NAV_MODEL' and tick % 100 == 0:
+                    # ponytail: payload perception at 5 Hz, only while arms can weed; trackers
+                    # restart on each hand-over. Run it always if tracks must persist.
+                    for name, a in arms.items():
+                        payload_renderer.update_scene(data, 'element/' + a['camera'], scene_option=option)
+                        payload_renderer.enable_segmentation_rendering()
+                        try:
+                            raw = payload_renderer.render().copy()
+                        finally:
+                            payload_renderer.disable_segmentation_rendering()
+                        geom = raw[:, :, 0]
+                        valid = (raw[:, :, 1] == int(mujoco.mjtObj.mjOBJ_GEOM)) & (geom >= 0) & (geom < model.ngeom)
+                        visible = instances[np.where(valid, geom, model.ngeom)]
+                        controller.observe(t, a['camera'], visible_detections(visible, instance_ids, manifest),
+                                           shadow_row_profile(model, data, chassis, a['position_chassis_m'],
+                                                              a.get('quaternion_chassis_wxyz', [1, 0, 0, 0])),
+                                           visible_row_geometry(visible, instance_ids, manifest))
                 nav = controller.nav_infer(t, **nav_arrays)
                 prediction = nav['prediction']
+                with state.lock:
+                    state.nav = prediction
                 if nav.get('seen'):
                     s = nav['seen']
                     seen = SeenMap.decode(s['header']['timestamp']['secs'] + 1e-9 * s['header']['timestamp']['nsecs'],
@@ -798,8 +930,9 @@ def main():
                     ev = obstacle_event(blocked, xyz(fwd['nearest']), xyz(rev['nearest']))
                     state.world.on_obstacle(rising, xyz(fwd['nearest']), xyz(rev['nearest']), state.pose, t)
                     state.world.on_event(ev, state.pose, t)
-                    agent_event(ev['event'], ev['details'], loop_box)
-                if viewer:
+                    if state.source == 'AGENT':  # AiAgent: obstacle events only while the agent drives
+                        agent_event(ev['event'], ev['details'], loop_box)
+                if viewer and viewer.is_running():  # the window may be closed mid-run
                     viewer.sync()
             corners = robot_footprint(profile) @ data.xmat[chassis].reshape(3, 3)[:2, :2].T + data.xpos[chassis, :2]
             if (corners < bounds[0]).any() or (corners > bounds[1]).any():
@@ -845,6 +978,16 @@ def main():
                   coverage_pct=round(100 * float(seen_cells.mean()), 1),
                   objects_seen=f'{len(seen_objects)}/{len(objects)}', objects_missed=sorted(set(objects) - seen_objects),
                   mission=args.mission, **smoothness(positions[:, :2], state.push_times))
+    if arms:
+        hit = plant_min_d < 0.04  # ponytail: tool centre within 4 cm of the root, low; a contact proxy
+        by_plot = {}
+        for (name, v), h in zip(plants, hit):
+            plot = by_plot.setdefault(v.get('plot_id', '?'), dict(weeds=0, weeds_hit=0, crops=0, crops_hit=0))
+            kind = 'weeds' if v['category'] == 'weed' else 'crops'
+            plot[kind] += 1
+            plot[kind + '_hit'] += int(h)
+        report['weeding'] = dict(plots=by_plot, targets_locked={n: len(v) for n, v in arm_targets.items()},
+                                 hit='tool centre within 4 cm (xy) of the root, below root + 4 cm')
     if args.target:
         final = target_distance(data)
         report.update(target=args.target, target_reached_at_s=target_reached_at,

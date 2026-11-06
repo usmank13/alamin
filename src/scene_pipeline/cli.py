@@ -17,6 +17,12 @@ def main(argv=None):
     parser.add_argument('--cache-dir',type=Path,help='Writable evidence cache (also SCENE_PIPELINE_CACHE)')
     parser.add_argument('--asset-store',type=Path,help='Retrieved asset library (also SCENE_PIPELINE_ASSET_STORE)')
     sub=parser.add_subparsers(dest='command',required=True)
+    p=sub.add_parser('rhizome-inspect',help='Verify an install and inspect a runtime-selected Rhizome task')
+    p.add_argument('--root',type=Path,help='Rhizome checkout (or RHIZOME_ROOT)')
+    p.add_argument('--host-build',type=Path,help='Verified host directory (or RHIZOME_HOST_BUILD)')
+    p.add_argument('--task',required=True,help='Name under src/tasks, without .yml')
+    p.add_argument('--config-dir',type=Path,help='Explicit hardware configuration, such as payloads.yml')
+    p.add_argument('--output',type=Path,help='Write the full configuration and provenance snapshot as JSON')
     agriculture=sub.add_parser('agriculture').add_subparsers(dest='agriculture_command',required=True)
     p=agriculture.add_parser('generate');p.add_argument('--config',type=Path,required=True)
     p.add_argument('--inicio-root',type=Path,required=True);p.add_argument('--blender',required=True)
@@ -108,7 +114,15 @@ def main(argv=None):
             runtime=Runtime(backend=args.agent_backend,model=args.model,max_cost_usd=args.max_cost_usd,
                             responses=read_json(args.responses) if args.responses else [])
             agent_options=dict(runtime=runtime)
-        if args.command=='agriculture':
+        if args.command=='rhizome-inspect':
+            from .rhizome_install import inspect_install
+            from .rhizome_task import Task
+            from .contracts import write_json
+            install=inspect_install(args.root,args.host_build)
+            task=Task(install['root'],args.task,config_dir=args.config_dir).snapshot()
+            result=dict(install=install,**task)
+            if args.output:write_json(args.output,result)
+        elif args.command=='agriculture':
             from .agriculture import generate,compile_bundle
             if args.agriculture_command=='generate':
                 result=generate(args.config,args.inicio_root,args.blender,args.output,timeout=args.timeout)

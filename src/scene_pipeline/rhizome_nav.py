@@ -16,6 +16,10 @@ class Navigation:
         # Shadow: nav_model only watches the runtime's goals (e.g. the ai_agent's)
         # for obstacles, as on the rover where navigation or the agent drives.
         self.shadow=config.get('drive',True) is False
+        # Arbitrated: nav_model drives only while /nav/source is NAV_MODEL
+        # (goals_topic /nav/goals); otherwise it watches the runtime's goals.
+        self.arbitrated=bool(config.get('arbitrated'))
+        self.source='NONE'
         self.services=[];self.obstacle={}
         self.grid_capable=hasattr(nm.NavModel,'_configure_model')
         if (config.get('depth') or config.get('obstacle_detection')) and not self.grid_capable:
@@ -35,6 +39,7 @@ class Navigation:
         meta.pop('includes',None)
         params.update(task['nodes']['nav_model'])
         params.update(config.get('params',{}))  # node.yml overrides, e.g. obstacle_max_height_m
+        if self.arbitrated:params['goals_topic']='/nav/goals'
         params.update(drive=not self.shadow,use_map=False,model_dir=config['package'],model_file=config['model_file'],
                       cameras=config['cameras'],arrangement=config['arrangement'],steer_source=config['steer_source'],
                       camera=dict(nav=dict(color=dict(format=dict(shm='RGBA')))))
@@ -62,7 +67,9 @@ class Navigation:
         package=NavModelPackage(config['package'],device=config['device'],model_file=config['model_file'],num_threads=config.get('threads',2))
         warm=package.warmup(batch=len(config['cameras']))
         error=package.selftest()
-        if error is not None and (not np.isfinite(error) or error>1e-3):
+        # GPU kernels differ from the CPU-traced reference by ~0.13 (sub-pixel), as on the Orin.
+        limit=.25 if config['device']=='cuda' else 1e-3
+        if error is not None and (not np.isfinite(error) or error>limit):
             raise ValueError(f'Navigation package selftest failed: {error}')
         self.fixture,self.node=runtime.create_node('nav_model',lambda:SimNavModel(frame_sources={},package_loader=lambda _:package),{})
         self.node.model=package;self.node._loaded_source=config['package'];self.node._debug_factory=None
@@ -131,11 +138,11 @@ class Navigation:
                 node.frames[position]=self.nm.Frame(rgba,capture,depth)
             else:node.frames[position]=self.nm.Frame(rgba,capture)
         node._camera_errors={pos:'Missing simulated camera frame' for pos in self.config['cameras'] if pos not in node.frames}
-        if self.shadow:node.goals=self.r.goals
+        if self.shadow or self.arbitrated:node.goals=self.r.goals
         start=time.perf_counter();node.Tick()
         prediction=self.messages.get('/nav_model/prediction',{})
         healthy=all(self.invariants.values())
-        goals=self.messages.get('/nav_model/goals',{}) if healthy else {}
+        goals=self.messages.get(node.goals_topic,{}) if healthy else {}
         self.goals=p.WaypointsMsg(goals);self.last_capture=t
         self.result=dict(simulation_time=t,prediction=prediction,goals=json.loads(str(self.goals)),
             nav_goal=self.messages.get('/nav/goal'),invariants=self.invariants.copy(),
@@ -147,8 +154,17 @@ class Navigation:
                                service_requests=self.services.copy(),seen=self.messages.pop('/nav_model/seen',None))
         return self.result
 
+    def set_source(self,name):
+        self.source=name
+        message=self.r.p.NavSourceMsg();message.requested=getattr(self.r.p.NavSource,name)
+        self.node.nav_source=message  # what Subscribe stores before the callback
+        self.node._on_nav_source(message)
+
+    @property
+    def owns(self):return self.arbitrated and self.source=='NAV_MODEL'
+
     def command_goals(self,t):
-        if self.shadow:return self.r.goals
+        if self.shadow or (self.arbitrated and not self.owns):return self.r.goals
         fresh=self.last_capture is not None and 0<=t-self.last_capture<=self.goal_timeout
         return self.goals if fresh and self.result.get('driving') else self.r.p.WaypointsMsg()
 

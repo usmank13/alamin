@@ -1,5 +1,9 @@
 # Rhizome software in MuJoCo
 
+For task configuration and the pending real-node integration, see the
+[host contract and Rhizome handoff](rhizome_host_contract.md). The adapters
+described below are the existing LocalControl/weeding baseline.
+
 Alamin can run Rhizome's compiled `LocalControlNode` against the simulated
 robot's pose. Four native `TrackerNode` instances consume either neural RGB/depth
 predictions or explicitly selected visible-plant oracle detections. An optional native `PhysicsEnvironment` and `SimMotorController`
@@ -36,17 +40,17 @@ flowchart LR
 ## Run
 
 Use Python 3.12, Alamin's `pipeline` extra and the new `rhizome` extra. Rhizome
-must have matching host bindings under `build/host/py/pyzome`: `core`, `nav`,
-`node_test`, and, for weeding, `tracker` and `physics`. Build them in Rhizome
-using its host build workflow if missing. No daemon, ROS, cloud account or live
+must have matching host bindings: `core`, `nav`, `node_test`, `tracker` and
+`physics`. Use the verified build command below. No daemon, ROS, cloud account or live
 robot connection is needed.
 
 For the current weeding integration, build an isolated set of all five modules:
 
 ```bash
-.venv/bin/python -m scene_pipeline.rhizome_build --root ../rhizome \
-  --output outputs/rhizome_host_current --jobs 4
-export RHIZOME_HOST_BUILD="$PWD/outputs/rhizome_host_current/host"
+export RHIZOME_ROOT=/absolute/path/to/rhizome-checkout
+.venv/bin/python -m scene_pipeline.rhizome_build --root "$RHIZOME_ROOT" \
+  --output outputs/rhizome_host --jobs 4
+export RHIZOME_HOST_BUILD="$PWD/outputs/rhizome_host/host"
 ```
 
 Choose a fresh output directory when rebuilding. This avoids stale dependency
@@ -72,9 +76,9 @@ example's spawn at `[-2, 0]` and sets a goal at `[0, 0]`. To run navigation with
 rendering, set `controller.perception` to `"none"`, remove `shadow_arm`, and use
 `--tier state --no-video`. Visible-plant perception requires full camera capture.
 
-`controller.root` selects the Rhizome checkout and expands `~`. Optional
-`controller.python` selects a separate interpreter for the perception
-environments. It must match the bindings' ABI and have PyYAML. Alamin does not
+`controller.root` overrides `RHIZOME_ROOT` and expands `~`. Optional
+`controller.python` overrides `RHIZOME_INFERENCE_PYTHON`; otherwise the running
+interpreter is used. It must match the bindings' ABI and have PyYAML. Alamin does not
 change the sibling repo or install its node/service configuration globally.
 
 ## Neural perception
@@ -82,9 +86,9 @@ change the sibling repo or install its node/service configuration globally.
 `examples/agriculture/soybean30_neural_rows.json` selects the geometry upgrade of
 `/data/models/edge_packages/multicrop_td_wzmle4cf_grid` with soybean conditioning.
 Build the upgraded package as described below before running this config.
-It uses the existing `../ml-aigen-tools/venv312` interpreter, which has PyTorch,
-NumPy, OpenCV and PyYAML, plus the selected Rhizome checkout's host bindings and
-Python sources. Set `controller.python` if using another compatible environment.
+Use an interpreter with PyTorch, NumPy, OpenCV and PyYAML, plus the selected
+Rhizome checkout's host bindings and Python sources. Select it with
+`RHIZOME_INFERENCE_PYTHON` or `controller.python`.
 Alamin's main interpreter does not need PyTorch.
 
 ```bash
@@ -241,20 +245,21 @@ removal. `physical_weeding` is explicitly false. SEARCHING is a valid recorded
 planner state; use target IDs and state transitions to confirm actual engagement.
 
 ```bash
-RHIZOME_ROOT=../rhizome MUJOCO_GL=osmesa .venv/bin/python -m pytest \
+MUJOCO_GL=osmesa .venv/bin/python -m pytest \
   tests/test_rhizome.py tests/test_agriculture.py -q
 ```
 
 Tests exercise native forward/reverse/stop commands, a closed-loop MuJoCo goal,
 stable native tracks, weed selection and pitch-down, plus worker-death handling.
-Native checks skip when the optional checkout/build is unavailable; they do not
-substitute mock controllers.
+Native checks skip when no checkout is selected. An explicitly selected missing
+or mismatched install fails; tests do not substitute mock controllers.
 
 `tests/test_rhizome_perception.py` additionally checks optical/target transforms,
 the supplied core against `reference.npz`, sensor depth conversion, scaled
 intrinsics, real four-camera neural capture without oracle access, and model-load
 failure handling. Optional environment overrides are `RHIZOME_MODEL` and
-`RHIZOME_INFERENCE_PYTHON`; these tests skip if those dependencies are absent.
+`RHIZOME_INFERENCE_PYTHON`. Unconfigured optional packages may skip; explicitly
+selected missing packages or interpreters fail.
 
 ## Next connections
 

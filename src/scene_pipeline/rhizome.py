@@ -15,17 +15,16 @@ import time
 import numpy as np
 
 from .contracts import PipelineError, write_json
+from .rhizome_install import install_paths, inspect_install
 
 
 def validate_config(config):
     if not isinstance(config,dict):
         raise PipelineError('RHIZOME_CONFIG','controller must be a JSON object')
     cfg = dict(config)
-    if not cfg.get('root'):
-        raise PipelineError('RHIZOME_CONFIG', 'controller.root must name a Rhizome checkout')
-    cfg['root']=str(Path(cfg['root']).expanduser().resolve())
-    cfg['host_build']=str(Path(cfg.get('host_build',os.environ.get('RHIZOME_HOST_BUILD',
-                          Path(cfg['root'])/'build/host'))).expanduser().resolve())
+    root,host=install_paths(cfg.get('root'),cfg.get('host_build'))
+    cfg.update(root=str(root),host_build=str(host))
+    cfg.setdefault('python',os.environ.get('RHIZOME_INFERENCE_PYTHON',sys.executable))
     if 'targeting_diagnostics' in cfg and not isinstance(cfg['targeting_diagnostics'],bool):
         raise PipelineError('RHIZOME_CONFIG','targeting_diagnostics must be boolean')
     if 'physical_arm' in cfg and (not isinstance(cfg['physical_arm'],str) or not cfg['physical_arm']):
@@ -81,14 +80,11 @@ def validate_config(config):
                 or waypoint.get('type','NORMAL') not in ('NORMAL','TURN','ARMS_UP')):
             raise PipelineError('RHIZOME_CONFIG', 'Invalid waypoint: expected xy, FORWARD/REVERSE direction and NORMAL/TURN/ARMS_UP type')
     params = cfg.get('parameters', {})
-    limits = {'auto_speed_max_ms':(0,1), 'turn_speed':(0,1), 'max_turn_rate':(.01,1),
-              'lookahead_distance':(.05,10), 'arrival_distance':(.01,2), 'kp':(.01,10)}
-    if not isinstance(params,dict) or set(params)-limits.keys():
-        raise PipelineError('RHIZOME_CONFIG', f'Controller parameters must be among {list(limits)}')
-    for key, value in params.items():
-        low,high=limits[key]
-        if not isinstance(value,(float,int)) or not math.isfinite(value) or not low<=value<=high:
-            raise PipelineError('RHIZOME_CONFIG', f'{key} must be between {low} and {high}')
+    if not isinstance(params,dict) or not all(isinstance(key,str) for key in params):
+        raise PipelineError('RHIZOME_CONFIG', 'Controller parameters must be a JSON object')
+    try:json.dumps(params,allow_nan=False)
+    except (ValueError,TypeError) as exc:
+        raise PipelineError('RHIZOME_CONFIG', 'Controller parameters must contain finite JSON values') from exc
     if cfg.get('perception','none') not in ('none','oracle_visible','neural'):
         raise PipelineError('RHIZOME_CONFIG', 'perception must be none, oracle_visible or neural')
     if cfg.get('perception')=='neural':
@@ -169,6 +165,7 @@ def bind_physical_arm(config, profile):
 class RhizomeController:
     def __init__(self, config, output, *, timeout=30, worker_name=None):
         self.config=validate_config(config)
+        inspect_install(self.config['root'],self.config['host_build'])
         self.output=Path(output)/'rhizome'
         if worker_name is not None:self.output=self.output/worker_name
         self.output.mkdir(parents=True)
@@ -182,7 +179,7 @@ class RhizomeController:
         self.process=None
         try:
             self.process=subprocess.Popen(
-                [str(Path(config.get('python',sys.executable)).expanduser().absolute()), '-u', '-X', 'faulthandler',
+                [str(Path(self.config['python']).expanduser().absolute()), '-u', '-X', 'faulthandler',
                  str(Path(__file__).with_name('rhizome_worker.py'))],
                 stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,
                 text=True,env=env,cwd=self.output)
@@ -330,6 +327,10 @@ class RhizomeMultiController:
 
     def infer(self,t,camera,**arrays):
         return self._call(self._owner(camera),'infer',t,camera,**arrays)
+
+    def request(self,message):
+        """Navigation requests (set_goals, set_source) go to the worker that drives."""
+        return self._call('navigation' if self.nav_worker else self.navigation_arm,'request',message)
 
     def nav_infer(self,t,**arrays):
         if self.nav_worker is None:raise PipelineError('RHIZOME_CONFIG','No vision navigation worker')

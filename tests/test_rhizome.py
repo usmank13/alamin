@@ -16,23 +16,32 @@ from test_agriculture import bundle
 
 @pytest.fixture
 def rhizome_root():
-    root=Path(os.environ.get('RHIZOME_ROOT',Path(__file__).resolve().parents[2]/'rhizome'))
-    host=Path(os.environ.get('RHIZOME_HOST_BUILD',root/'build/host'))
-    if not (host/'py/pyzome').exists():
-        pytest.skip('Needs RHIZOME_ROOT with a Python 3.12 host build')
-    pytest.importorskip('yaml')
-    return str(root)
+    if not os.environ.get('RHIZOME_ROOT'):
+        pytest.skip('Set RHIZOME_ROOT and RHIZOME_HOST_BUILD for native integration tests')
+    from scene_pipeline.rhizome_install import inspect_install
+    return inspect_install()['root']
 
 
 def test_config_rejects_ambiguous_and_unimplemented_modes():
     cfg=dict(root='/tmp/rhizome',waypoints=[dict(xy=[1,0])])
-    for changes in ({'waypoints':[]},{'perception':'neural'}, {'parameters':{'goals_stale_sec':0}},
+    for changes in ({'waypoints':[]},{'perception':'neural'}, {'parameters':[]},
                     {'waypoints':[dict(xy=[float('nan'),0])]}, {'shadow_arm':{}},
-                    {'parameters':{'auto_speed_max_ms':-1}}):
+                    {'parameters':{'auto_speed_max_ms':float('inf')}}):
         with pytest.raises(PipelineError):validate_config({**cfg,**changes})
     with pytest.raises(PipelineError):drive_config(dict(controller=cfg,commands=[]))
     normalized=drive_config(dict(controller=cfg))
     assert drive_config(normalized)==normalized
+    assert validate_config({**cfg,'parameters':{'goals_stale_sec':.5}})['parameters']=={'goals_stale_sec':.5}
+
+
+def test_controller_configuration_uses_selected_install_and_interpreter(monkeypatch,tmp_path):
+    monkeypatch.setenv('RHIZOME_ROOT',str(tmp_path/'source'))
+    monkeypatch.setenv('RHIZOME_HOST_BUILD',str(tmp_path/'host'))
+    monkeypatch.setenv('RHIZOME_INFERENCE_PYTHON',str(tmp_path/'python'))
+    cfg=validate_config(dict(waypoints=[dict(xy=[1,0])]))
+    assert cfg['root']==str(tmp_path/'source')
+    assert cfg['host_build']==str(tmp_path/'host')
+    assert cfg['python']==str(tmp_path/'python')
 
 
 def test_oracle_only_reports_visible_plants():
@@ -70,9 +79,10 @@ def test_oracle_keeps_interleaved_rows_separate_and_ids_stable(angle):
 
 @pytest.mark.parametrize('goal,direction,expected', [([1,0],'FORWARD',1),([-1,0],'REVERSE',-1)])
 def test_native_controller_uses_feedback_and_stops(rhizome_root,tmp_path,goal,direction,expected):
-    cfg=dict(root=rhizome_root,waypoints=[dict(xy=goal,direction=direction)])
+    cfg=dict(root=rhizome_root,waypoints=[dict(xy=goal,direction=direction)],parameters={'goals_stale_sec':.5})
     controller=RhizomeController(cfg,tmp_path)
     try:
+        assert controller.info['local_control_parameters']['goals_stale_sec']==.5
         assert controller.step(0,[0,0,.84],[1,0,0,0],0)['twist'][0]*expected>0
         for tick in range(1,11):result=controller.step(tick*.01,[*goal,.84],[1,0,0,0],0)
         assert result['twist']==[0,0]
@@ -180,9 +190,18 @@ def test_detection_expiry_uses_simulation_time_not_inference_wall_time(rhizome_r
     import yaml
     # Keep native binaries/configs, shortening only the registry TTL to make
     # a real wall-clock delay cheap to test. No simulator-specific TTL override.
-    original=Path(rhizome_root);root=tmp_path/'rhizome_source';(root/'src/physics').mkdir(parents=True)
-    for name in ('build','test'):(root/name).symlink_to(original/name,target_is_directory=True)
-    for name in ('nav','vision','base_control'):(root/'src'/name).symlink_to(original/'src'/name,target_is_directory=True)
+    original=Path(rhizome_root);root=tmp_path/'rhizome_source';root.mkdir()
+    # A complete read-only view preserves the native source fingerprint while
+    # this test changes only its own Python/YAML configuration.
+    for path in original.iterdir():
+        if path.name!='src':(root/path.name).symlink_to(path,target_is_directory=path.is_dir())
+    (root/'src').mkdir()
+    for path in (original/'src').iterdir():
+        if path.name!='physics':(root/'src'/path.name).symlink_to(path,target_is_directory=path.is_dir())
+    (root/'src/physics').mkdir()
+    for path in (original/'src/physics').iterdir():
+        if path.name!='physics_0.node.yml':
+            (root/'src/physics'/path.name).symlink_to(path,target_is_directory=path.is_dir())
     params=list(yaml.safe_load_all((original/'src/physics/physics_0.node.yml').read_text()))
     params[1]['environment']['detection_timeout']=.3
     (root/'src/physics/physics_0.node.yml').write_text(yaml.safe_dump_all(params))

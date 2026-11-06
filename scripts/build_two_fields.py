@@ -330,7 +330,6 @@ def build(source, tractor, out):
                    reference_waypoints_m=np.concatenate((route[::10], route[-1:])).tolist(),
                    instruction='Leave the west soybean plot, follow the dirt road past the parked tractor and turn left around the tree, enter the northeast soybean plot with north-south rows, and stop near its far end. Stay on the road between plots and avoid vegetation and equipment.')
     reference_drive = dict(seconds=240, controller=dict(
-        root=str(REPO.parent/'rhizome'), host_build=str(REPO/'outputs/rhizome_host_current/host'),
         perception='none', waypoints=[dict(xy=xy) for xy in mission['reference_waypoints_m']],
         parameters=dict(auto_speed_max_ms=.3, arrival_distance=.15)))
     provenance = dict(source=str(source.resolve()), bundle_sha256=sha256(source/'bundle/bundle.json'),

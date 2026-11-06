@@ -24,12 +24,11 @@ class Runtime:
         self.config=config
         self.root=Path(config['root']).expanduser().resolve()
         host=Path(config.get('host_build',self.root/'build/host')).expanduser().resolve()
-        if (host/'build_manifest.json').exists():
-            if __package__:
-                from .rhizome_build import verify
-            else:
-                from rhizome_build import verify
-            verify(host)
+        if __package__:
+            from .rhizome_build import verify
+        else:
+            from rhizome_build import verify
+        verify(host,self.root)
         build=host/'py'
         sys.path.insert(0,str(build))
         from pyzome import core, nav, node_test
@@ -198,7 +197,7 @@ class Runtime:
             self.fixture.test_single({'/odom':odom,self.goals_topic:goals},lambda:None)
             self.last_command=[self.command.lin,self.command.ang]
         if self.navigation and not self.navigation.command_goals(t).waypoints:self.last_command=[0.,0.]
-        if self.navigation and self.navigation.shadow:
+        if self.navigation and (self.navigation.shadow or self.navigation.arbitrated):
             # drive_control: a blocked direction commanded zeroes lin + ang
             # (/vision/obstacle clip plus the OBSTACLE_* invariant).
             prediction=self.navigation.result.get('prediction',{});lin=self.last_command[0]
@@ -209,7 +208,9 @@ class Runtime:
         if self.navigation:
             enabled=bool(self.navigation.command_goals(t).waypoints)
             turn=self.navigation.result.get('prediction',{}).get('steer_source')=='TURN'
-            result['navigation']=dict(driving=enabled,arm_enabled=enabled and not turn)
+            # Arms weed only under nav_model's own NORMAL goals, as /nav/goal on the rover.
+            own=not (self.navigation.shadow or self.navigation.arbitrated) or self.navigation.owns
+            result['navigation']=dict(driving=enabled,arm_enabled=enabled and own and not turn)
         if self.arm or self.neural or self.navigation:
             # Rhizome roots the graph at ROBOT: /frames/odom contains the
             # ODOM origin expressed in ROBOT, the inverse of MuJoCo's pose.
@@ -370,6 +371,7 @@ def main():
             elif msg['op']=='observe':result=runtime.observe(msg)
             elif msg['op']=='infer':result=runtime.infer(msg)
             elif msg['op']=='nav_infer':result=runtime.nav_infer(msg)
+            elif msg['op']=='set_source':runtime.navigation.set_source(msg['source']);result={}
             elif msg['op']=='set_goals':runtime.goals=runtime.p.WaypointsMsg(msg['goals']);result={}
             else:raise ValueError('Unknown worker operation')
             protocol.write(json.dumps(result,allow_nan=False)+'\n')

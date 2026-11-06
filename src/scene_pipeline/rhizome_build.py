@@ -11,7 +11,7 @@ MODULES=('core','physics','nav','tracker','node_test')
 
 def source_identity(root):
     root=Path(root)
-    paths=subprocess.check_output(['git','-C',str(root),'ls-files','-z'],text=True).split('\0')
+    paths=subprocess.check_output(['git','-C',str(root),'ls-files','--cached','--others','--exclude-standard','-z'],text=True).split('\0')
     digest=hashlib.sha256()
     for name in sorted(paths):
         path=root/name
@@ -34,12 +34,20 @@ def stamp(root, host, identity):
     return manifest
 
 
-def verify(host):
-    host=Path(host)
+def verify(host, root=None):
+    """Verify the selected checkout, not just the checkout named by the build."""
+    host=Path(host).resolve()
     manifest=json.loads((host/'build_manifest.json').read_text())
-    if source_identity(manifest['source_root'])['compiled_sources_sha256']!=manifest['compiled_sources_sha256']:
+    root=Path(root or manifest['source_root']).resolve()
+    if source_identity(root)['compiled_sources_sha256']!=manifest['compiled_sources_sha256']:
         raise ValueError('Rhizome source/build mismatch; rebuild host extensions in a fresh directory')
+    for module in MODULES:
+        matches=list((host/'py/pyzome').glob(module+'.*.so'))
+        if len(matches)!=1 or matches[0].name not in manifest['modules_sha256']:
+            raise ValueError(f'Expected exactly one verified {module} extension')
     for name,digest in manifest['modules_sha256'].items():
+        if Path(name).name!=name:
+            raise ValueError('Invalid extension path in Rhizome build manifest')
         if hashlib.sha256((host/'py/pyzome'/name).read_bytes()).hexdigest()!=digest:
             raise ValueError(f'Rhizome extension changed after verified build: {name}')
     return manifest

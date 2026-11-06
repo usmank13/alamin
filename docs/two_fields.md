@@ -43,8 +43,6 @@ Rhizome source/build paths, model package and credentials. For example:
 ```bash
 .venv/bin/python scripts/run_agent_nav.py \
   --scene outputs/two_fields_corner \
-  --rhizome ../rhizome-orin-agent \
-  --host-build outputs/rhizome_host_agent/host \
   --seconds 240 --output outputs/two_fields_corner_agent \
   --mission "Leave the west soybean plot, follow the dirt road past the parked tractor and turn left around the tree, enter the northeast soybean plot with north-south rows, and stop near its far end. Stay on the road between plots and avoid vegetation and equipment."
 ```
@@ -54,8 +52,8 @@ consume `mission.json` or automatically score this positional goal; compare the
 final pose with that file's goal and tolerance. Do not use `--target` with a plot
 name: that option expects a physical manifest object.
 
-For a supplied-waypoint LocalControl baseline, adjust the checkout/build paths
-in `reference_drive.json` to a matching installed pair, then run:
+For a supplied-waypoint LocalControl baseline, set `RHIZOME_ROOT` and
+`RHIZOME_HOST_BUILD` to a matching installed pair, then run:
 
 ```bash
 MUJOCO_GL=egl .venv/bin/pipeline run outputs/two_fields_corner \

@@ -5,7 +5,6 @@
     "height": 360
   },
   "controller": {
-    "root": "~/Desktop/code/rhizome",
     "waypoints": [
       {
         "xy": [
@@ -32,13 +31,11 @@
       "arm_4"
     ],
     "targeting_diagnostics": true,
-    "python": "~/Desktop/code/ml-aigen-tools/venv312/bin/python",
     "neural": {
       "package": "outputs/multicrop_td_wzmle4cf_grid_geometry",
       "crop_species": "soybean",
       "device": "cpu"
     },
-    "host_build": "outputs/rhizome_host_current/host",
     "planner_debug": true
   }
 }

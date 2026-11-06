@@ -36,18 +36,17 @@ def main():
     package=Path(nav['package']).expanduser().resolve()
     if not (package/'model.ts').is_file():parser.error(f'Missing obstacle-grid package: {package}')
     from scene_pipeline.rhizome_build import verify
-    host=Path(controller['host_build']).expanduser().resolve()
-    source=Path(controller['root']).expanduser().resolve()
+    from scene_pipeline.rhizome_install import install_paths
+    source,host=install_paths(controller.get('root'),controller.get('host_build'))
     try:
-        manifest=verify(host)
-        if Path(manifest['source_root']).resolve()!=source:raise ValueError('Build belongs to another checkout')
+        verify(host,source)
     except (OSError,ValueError):
         build=repo/'outputs'/('rhizome_host_obstacle_'+stamp)
         print(f'Building matching Rhizome host extensions in {build}',flush=True)
         subprocess.run([sys.executable,'-m','scene_pipeline.rhizome_build','--root',str(source),
                         '--output',str(build),'--jobs','4'],check=True)
         host=build/'host'
-    controller['host_build']=str(host)
+    controller.update(root=str(source),host_build=str(host))
     from scene_pipeline.agriculture_drive import run
     report=run(scene,output,config=config,seconds=args.seconds,video=not args.no_video,timeout=1800)
     nav_report=report.get('rhizome',{}).get('navigation',{})

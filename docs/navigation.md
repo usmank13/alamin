@@ -21,11 +21,12 @@ The downloaded archive was extracted, without modifying the original, into
 source archive hash. The package includes its own numerical self-test, run at
 worker startup. The default uses CPU, `model.ts`, and arrangement 2 (two rows).
 
-Build matching current Rhizome extensions in a fresh directory:
+Set `RHIZOME_ROOT` to your checkout, then build matching Rhizome extensions in a fresh directory:
 
 ```bash
-.venv/bin/python -m scene_pipeline.rhizome_build --root ../rhizome \
+.venv/bin/python -m scene_pipeline.rhizome_build --root "$RHIZOME_ROOT" \
   --output outputs/rhizome_host_nav --jobs 4
+export RHIZOME_HOST_BUILD="$PWD/outputs/rhizome_host_nav/host"
 ```
 
 Then run the existing early soybean scene:
@@ -38,15 +39,14 @@ MUJOCO_GL=egl .venv/bin/pipeline run outputs/soybean30_early_gen3 \
 .venv/bin/pipeline replay outputs/soybean30_nav_model --viewer --paused
 ```
 
-Use fresh output directories for rebuilds/reruns. The config selects
-`../ml-aigen-tools/venv312/bin/python`, which supplies Torch, OpenCV, SciPy,
-Shapely, dataclasses-json and PyYAML. It selects the new host build explicitly; do not mix current
-source with older host binaries.
+Use fresh output directories for rebuilds/reruns. Set `RHIZOME_INFERENCE_PYTHON`
+to an interpreter with Torch, OpenCV, SciPy, Shapely, dataclasses-json and PyYAML.
+The install is selected through `RHIZOME_ROOT` and `RHIZOME_HOST_BUILD`.
 
 The existing inference environment needed these additional dependencies:
 
 ```bash
-uv pip install --python ../ml-aigen-tools/venv312/bin/python \
+uv pip install --python "$RHIZOME_INFERENCE_PYTHON" \
   'shapely==2.1.2' 'dataclasses-json==0.6.7'
 ```
 
@@ -54,9 +54,8 @@ uv pip install --python ../ml-aigen-tools/venv312/bin/python \
 
 ### Obstacle-grid checkout and package
 
-`examples/agriculture/soybean30_obstacle_drive.json` selects the local
-`../rhizome-nav-grid` checkout (`usman/nav-obstacle-grid`) and its matching
-`nav_grid_4_nav` package in `outputs/nav_obstacle_package/`. The archive's source
+`examples/agriculture/soybean30_obstacle_drive.json` uses the selected checkout
+and the `nav_grid_4_nav` package in `outputs/nav_obstacle_package/`. The archive's source
 path and SHA-256 are retained in `archive.json`. The older `nav_rows_jdof5rzx_nav`
 package has no depth/obstacle outputs and cannot run this version of the node.
 
@@ -76,8 +75,9 @@ off. Scene generation and model export are separate preparation steps.
 The equivalent explicit build/run commands are:
 
 ```bash
-.venv/bin/python -m scene_pipeline.rhizome_build --root ../rhizome-nav-grid \
+.venv/bin/python -m scene_pipeline.rhizome_build --root "$RHIZOME_ROOT" \
   --output outputs/rhizome_host_obstacle --jobs 4
+export RHIZOME_HOST_BUILD="$PWD/outputs/rhizome_host_obstacle/host"
 
 MUJOCO_GL=egl .venv/bin/pipeline run outputs/soybean30_obstacle_gen3 \
   --flow agriculture-drive --config examples/agriculture/soybean30_obstacle_drive.json \

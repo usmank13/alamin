@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 import h5py
 import numpy as np
@@ -17,9 +18,11 @@ from test_rhizome import rhizome_root
 
 @pytest.fixture
 def neural_config(rhizome_root):
-    python=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',Path(rhizome_root).parent/'ml-aigen-tools/venv312/bin/python'))
+    python=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',sys.executable))
     package=Path(os.environ.get('RHIZOME_MODEL','/data/models/edge_packages/multicrop_td_wzmle4cf_grid'))
     if not python.exists() or not any((package/name).exists() for name in ('model.ts','core.ts')):
+        if os.environ.get('RHIZOME_INFERENCE_PYTHON') or os.environ.get('RHIZOME_MODEL'):
+            pytest.fail('Explicit inference Python or crop package is unavailable')
         pytest.skip('Needs RHIZOME_INFERENCE_PYTHON and RHIZOME_MODEL')
     return dict(root=rhizome_root,python=str(python),waypoints=[dict(xy=[1,0])],perception='neural',
         neural=dict(package=str(package),crop_species='soybean',device='cpu',

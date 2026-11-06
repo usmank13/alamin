@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import time
 
 import h5py
@@ -47,11 +48,16 @@ def test_nav_config_has_no_required_route_and_rejects_bad_options():
 @pytest.fixture
 def nav_config():
     repo=Path(__file__).resolve().parents[1]
-    root=Path(os.environ.get('RHIZOME_ROOT',repo.parent/'rhizome'))
-    host=Path(os.environ.get('RHIZOME_HOST_BUILD',repo/'outputs/rhizome_host_nav/host'))
-    python=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',repo.parent/'ml-aigen-tools/venv312/bin/python'))
+    if not os.environ.get('RHIZOME_ROOT'):
+        pytest.skip('Set RHIZOME_ROOT and RHIZOME_HOST_BUILD for native navigation tests')
+    from scene_pipeline.rhizome_install import inspect_install
+    install=inspect_install()
+    root=Path(install['root']);host=Path(install['host_build'])
+    python=Path(os.environ.get('RHIZOME_INFERENCE_PYTHON',sys.executable))
     package=Path(os.environ.get('RHIZOME_NAV_MODEL',repo/'outputs/nav_obstacle_package/nav_grid_4_nav'))
-    if not (host/'build_manifest.json').exists() or not python.exists() or not (package/'model.ts').exists():
+    if not python.exists() or not (package/'model.ts').exists():
+        if os.environ.get('RHIZOME_INFERENCE_PYTHON') or os.environ.get('RHIZOME_NAV_MODEL'):
+            pytest.fail('Explicit inference Python or navigation package is unavailable')
         pytest.skip('Requires the optional Rhizome host build, inference Python and nav package')
     return dict(root=str(root),host_build=str(host),python=str(python),nav_model=dict(package=str(package),cameras=['front']))
 
