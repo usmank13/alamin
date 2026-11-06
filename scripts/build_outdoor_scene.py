@@ -26,7 +26,6 @@ from sim_harness.scene import _read_spec
 
 S = A / 'outputs/outdoor_assets'
 K = S / 'kenney'
-GZ = {l.split()[0]: str(S / l.split()[1]) for l in (S / 'gz_packages.txt').read_text().splitlines()}  # name -> asset.mjz
 
 
 def glb_prop(glb, length_m, out):
@@ -63,6 +62,7 @@ def yawq(deg): return [math.cos(math.radians(deg) / 2), 0, 0, math.sin(math.radi
 
 
 def build(out, kind):
+    GZ = {l.split()[0]: str(S / l.split()[1]) for l in (S / 'gz_packages.txt').read_text().splitlines()}
     out = Path(out); out.mkdir(parents=True)
     n = 301; xs = np.linspace(-15, 15, n); X, Y = np.meshgrid(xs, xs)
     z = np.zeros((n, n))

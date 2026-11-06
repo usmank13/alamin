@@ -23,6 +23,9 @@ The [Gen 3 robot importer](docs/gen3.md) adds four articulated weeding arms,
 passive rocker suspension, Inicio payload-layout options and MuJoCo arm feedback
 for the native Rhizome planner. [Payload layout files](docs/gen3.md#custom-payload-counts-and-lateral-positions)
 configure the installed arm count and lateral spacing.
+[Two connected soybean plots](docs/two_fields.md) provide an approximately 20 m gap,
+a dirt road with a 90-degree turn, trees, bushes and a parked tractor for
+navigation into a perpendicular field.
 The [weeding acceptance benchmark](docs/weeding.md) adds paired oracle/neural
 scenarios, native targeting diagnostics and independent weed/crop contact scoring.
 [The soybean field experiment](docs/soybean30.md) compares oracle and neural
