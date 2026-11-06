@@ -454,7 +454,7 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
     sent) is the model's, and the next tool waits until sim time catches up.
     """
     from claude_agent_sdk import (AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, ResultMessage,
-                                  TextBlock, create_sdk_mcp_server, tool)
+                                  TextBlock, ThinkingBlock, create_sdk_mcp_server, tool)
     from ai_agent.conversation import mcp_content
     mark = {'t': 0.0, 'wall': time.perf_counter()}
 
@@ -474,6 +474,7 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
         system_prompt=conv.system_prompt + '\n\n# Persistent memory index\n\n' + conv.memory.read_index(),
         mcp_servers={'rover': server}, tools=[], allowed_tools=names, setting_sources=[],
         permission_mode='bypassPermissions', model=args.claude_model or 'claude-sonnet-5',
+        thinking={'type': 'adaptive', 'display': 'summarized'},  # as the rover's SdkConversation
         max_turns=200, cwd=str(out))
     transcript = []
     async with ClaudeSDKClient(options) as client:
@@ -489,7 +490,14 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
             async for msg in client.receive_response():
                 transcript.append(repr(msg))
                 if isinstance(msg, AssistantMessage):
+                    # A response spans the agent's waits: log its reasoning as it streams.
+                    for b in msg.content:
+                        if isinstance(b, ThinkingBlock) and b.thinking.strip():
+                            log('thinking', text=b.thinking.strip())
+                        elif isinstance(b, TextBlock) and b.text.strip():
+                            log('says', text=b.text.strip())
                     final = ' '.join(b.text for b in msg.content if isinstance(b, TextBlock)) or final
+                    (out / 'conversation.json').write_text(json.dumps(transcript, indent=1))
                 elif isinstance(msg, ResultMessage) and msg.is_error:
                     state.agent_error = f'[sdk error: {msg.result}]'
             log('agent_final', text=final, wall_s=round(time.perf_counter() - started, 2))
