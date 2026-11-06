@@ -27,7 +27,8 @@ from sim_harness.export import export_mujoco
 from sim_harness.scene import _read_spec, load_scene
 from build_outdoor_scene import glb_prop, yawq
 
-BOUNDS = np.array([[-22., -10.], [14., 31.]])
+# 10 m of headland west of the west plot: a 3.5 m K-turn fits past its end.
+BOUNDS = np.array([[-28., -10.], [14., 31.]])
 PLOTS = [dict(id='west', centre_m=[-14., 0.], yaw_deg=0,
               bounds_m=[[-18., -2.7], [-10., 2.7]]),
          dict(id='east', centre_m=[5., 23.], yaw_deg=90,
@@ -82,9 +83,13 @@ def surface(x, y):
     return z - road * .018 * np.exp(-((distance-.85)/.18)**2)
 
 
+def samples(axis, step):
+    return int(round((BOUNDS[1, axis]-BOUNDS[0, axis])/step)) + 1
+
+
 def landscape_texture(path):
     rng = np.random.default_rng(19)
-    x, y = np.meshgrid(np.linspace(*BOUNDS[:, 0], 1801), np.linspace(*BOUNDS[::-1, 1], 2051))
+    x, y = np.meshgrid(np.linspace(*BOUNDS[:, 0], samples(0, .02)), np.linspace(*BOUNDS[::-1, 1], samples(1, .02)))
     noise = rng.normal(0, 1, x.shape)
     broad = gaussian_filter(noise, 25)
     broad /= broad.std()
@@ -284,7 +289,7 @@ def build(source, tractor, out):
     if not tractor.is_file():
         raise FileNotFoundError(tractor)
     out.mkdir(parents=True, exist_ok=False)
-    xs, ys = np.linspace(*BOUNDS[:,0], 361), np.linspace(*BOUNDS[:,1], 411)
+    xs, ys = np.linspace(*BOUNDS[:,0], samples(0, .1)), np.linspace(*BOUNDS[:,1], samples(1, .1))
     x, y = np.meshgrid(xs, ys); z = surface(x, y)
     np.savez_compressed(out/'terrain.npz', elevation_m=z)
     empty = dict(terrain=dict(file='terrain.npz', bounds_m=BOUNDS.tolist()), instances=[],

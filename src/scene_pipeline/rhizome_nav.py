@@ -20,6 +20,10 @@ class Navigation:
         # (goals_topic /nav/goals); otherwise it watches the runtime's goals.
         self.arbitrated=bool(config.get('arbitrated'))
         self.source='NONE'
+        # Surveyed field boundaries ([[xmin, ymin], [xmax, ymax]], world m). On
+        # handing to NAV_MODEL the field holding the robot becomes the route's
+        # field_boundary, as an operator loads a field's route; world == MAP.
+        self.fields=config.get('fields') or []
         self.services=[];self.obstacle={}
         self.grid_capable=hasattr(nm.NavModel,'_configure_model')
         if (config.get('depth') or config.get('obstacle_detection')) and not self.grid_capable:
@@ -114,6 +118,11 @@ class Navigation:
         odom_frame=p.CoordinateFrame(json.loads(str(self.r.odom_frame)))
         odom_frame.header.timestamp=p.nanoseconds(transform_ns)
         node.transforms.update(odom_frame)
+        if self.fields:
+            # RTK: MAP == ODOM == the simulation world.
+            map_frame=p.make_frame(p.Pose(frame=p.Frame.MAP),p.Pose(frame=p.Frame.ODOM))
+            map_frame.header.topic='/frames/map';map_frame.header.timestamp=p.nanoseconds(transform_ns)
+            node.transforms.update(map_frame)
         node.frames={};self.messages={};self.invariants={}
         for position in self.config['cameras']:
             key=position+'_'
@@ -156,9 +165,27 @@ class Navigation:
 
     def set_source(self,name):
         self.source=name
+        if name=='NAV_MODEL' and self.fields:self.load_field()
         message=self.r.p.NavSourceMsg();message.requested=getattr(self.r.p.NavSource,name)
         self.node.nav_source=message  # what Subscribe stores before the callback
         self.node._on_nav_source(message)
+
+    def load_field(self):
+        """Write the route of the field the robot is in (or nearest) and point
+        /settings/navigation at it."""
+        p=self.r.p;x,y=self.r.pose['x'],self.r.pose['y']
+        def gap(b):return float(np.hypot(max(b[0][0]-x,0,x-b[1][0]),max(b[0][1]-y,0,y-b[1][1])))
+        (x0,y0),(x1,y1)=min(self.fields,key=gap)
+        origin=p.Point(x=-88.,y=40.,z=0.,frame=p.Frame.GPS)
+        def gps(u,v):
+            g=p.geo.map_to_gps(p.Point(x=float(u),y=float(v),z=0.,frame=p.Frame.MAP),origin)
+            return dict(x=g.x,y=g.y,z=0.)
+        # One file per field: nav_model reloads the boundary when the name changes.
+        path=self.r.output/f'nav_route_{x0:g}_{y0:g}.json'
+        path.write_text(json.dumps(dict(origin=dict(x=origin.x,y=origin.y,z=0.),
+            field_boundary=[gps(x0,y0),gps(x1,y0),gps(x1,y1),gps(x0,y1)])))
+        self.node.nav_settings.route_name=str(path.resolve())
+        self.result['field']=[[x0,y0],[x1,y1]]
 
     @property
     def owns(self):return self.arbitrated and self.source=='NAV_MODEL'

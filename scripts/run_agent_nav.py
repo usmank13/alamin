@@ -643,6 +643,7 @@ def main():
                           # and otherwise watches the agent's goals for obstacles.
                           nav_model=dict(package=str(args.nav_package), device=args.nav_device, cameras=['front', 'rear'],
                                          depth=True, obstacle_detection=True, drive=True, arbitrated=True, threads=8,
+                                         fields=[plot['bounds_m'] for plot in manifest.get('plots', [])],
                                          params=dict(obstacle_max_height_m=args.obstacle_max_height, seen_publish_hz=5.0, **args.nav_params),
                                          robot_dimensions=robot_dimensions(profile)))
     arms = {}
