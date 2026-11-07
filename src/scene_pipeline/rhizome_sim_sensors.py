@@ -90,7 +90,7 @@ def run(config):
             snapshot_path.replace(STATE)
             stats['state_samples'] += 1
             if trajectory:
-                trajectory.write(json.dumps(dict(time=float(data.time),xyz=data.xpos[model.body('element/chassis').id].tolist(),
+                trajectory.write(json.dumps(dict(time=float(data.time),qpos=data.qpos.tolist(),qvel=data.qvel.tolist(),xyz=data.xpos[model.body('element/chassis').id].tolist(),
                     motors={f'{pid}/{k}':dict(motors.feedback(k),reference=motors.motors[k].reference,parameters=motors.motors[k].params,zeroed=motors.motors[k].zeroed) for pid,motors in adapters.items() for k in motors.motors}))+'\n')
             stats['max_snapshot_write_seconds'] = max(stats['max_snapshot_write_seconds'],time.monotonic()-publish_begin)
             next_publish = now+.02
