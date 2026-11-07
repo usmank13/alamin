@@ -83,6 +83,7 @@ class SimState:
         self.push_times = []  # sim time of each non-empty /nav/goals push
         self.nav = {}  # latest NavModelPrediction JSON
         self.delegated_at = None  # pose when NAV_MODEL took over
+        self.fields = []  # plot bounds [[xmin, ymin], [xmax, ymax]]: routes the sim can load
         self.nav_change = None  # ai_agent.progress.SettledChange
 
     def effective_goals(self):
@@ -305,6 +306,11 @@ def nav_facts(state):
     if p.get('rows_fitted') and pose is not None:
         rel = math.degrees(float(p.get('row_heading_rad', 0.0)) - pose[2])
         out['row_heading_rel_deg'] = round((rel + 90) % 180 - 90)
+    if state.fields and pose is not None:  # the loaded route: the nearest field, as in rhizome_nav
+        from ai_agent.world import field_facts
+        from scene_pipeline.rhizome_nav import nearest_field
+        (x0, y0), (x1, y1) = nearest_field(state.fields, pose[0], pose[1])
+        out['field'] = field_facts([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], pose)
     if state.source == 'NAV_MODEL' and state.delegated_at is not None and pose is not None:
         out['moved_m'] = round(math.dist(state.delegated_at[:2], pose[:2]), 1)
     return out
@@ -630,6 +636,7 @@ def main():
     option.geomgroup[3:] = 0
 
     state = SimState()
+    state.fields = [plot['bounds_m'] for plot in manifest.get('plots', [])]
     log = Log(out / 'events.jsonl', state)
     node_cfg = list(yaml.safe_load_all((args.rhizome / 'src/ai_agent/ai_agent.node.yml').read_text()))[1]
     stop_keywords = node_cfg['stop_keywords']

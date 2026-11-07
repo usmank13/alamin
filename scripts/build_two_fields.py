@@ -299,7 +299,7 @@ def build(source, tractor, out):
     add_ground_visual(spec, xs, ys, z, out/'ground.png')
     add_plants(spec, manifest, bundle, source/'bundle')
     props = [('oak_inside_corner', True, [-1, 5]), ('oak_north', True, [10, 13]),
-             ('bush_1', False, [-7, 4]), ('bush_2', False, [-7, -6.6]),
+             ('bush_1', False, [-7, 8]), ('bush_2', False, [-7, -6.6]),
              ('bush_3', False, [0, 10]), ('bush_4', False, [9, 18]),
              ('bush_5', False, [-19, 5]), ('bush_6', False, [0, 27])]
     for i, (name, tree, xy) in enumerate(props):
