@@ -21,7 +21,7 @@ def source_identity(root):
                 compiled_sources_sha256=digest.hexdigest())
 
 
-def stamp(root, host, identity):
+def stamp(root, host, identity, *, binaries=()):
     root=Path(root).resolve();host=Path(host).resolve()
     if source_identity(root)!=identity:raise ValueError('Rhizome sources changed during build; rebuild in a fresh directory')
     modules={}
@@ -29,7 +29,12 @@ def stamp(root, host, identity):
         matches=list((host/'py/pyzome').glob(name+'.*.so'))
         if len(matches)!=1:raise ValueError(f'Expected exactly one compiled {name} extension')
         modules[matches[0].name]=hashlib.sha256(matches[0].read_bytes()).hexdigest()
-    manifest=dict(source_root=str(root),**identity,modules_sha256=modules)
+    executables={}
+    for name in binaries:
+        if Path(name).name!=name:
+            raise ValueError('Invalid executable name')
+        executables[name]=hashlib.sha256((host/'bin'/name).read_bytes()).hexdigest()
+    manifest=dict(source_root=str(root),**identity,modules_sha256=modules,binaries_sha256=executables)
     (host/'build_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return manifest
 
@@ -50,6 +55,11 @@ def verify(host, root=None):
             raise ValueError('Invalid extension path in Rhizome build manifest')
         if hashlib.sha256((host/'py/pyzome'/name).read_bytes()).hexdigest()!=digest:
             raise ValueError(f'Rhizome extension changed after verified build: {name}')
+    for name,digest in manifest.get('binaries_sha256',{}).items():
+        if Path(name).name!=name:
+            raise ValueError('Invalid executable path in Rhizome build manifest')
+        if hashlib.sha256((host/'bin'/name).read_bytes()).hexdigest()!=digest:
+            raise ValueError(f'Rhizome executable changed after verified build: {name}')
     return manifest
 
 
@@ -58,6 +68,7 @@ def main():
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True,help='Fresh build directory; host modules go under output/host')
     parser.add_argument('--jobs',type=int,default=4)
+    parser.add_argument('--task',help='Also build native executables selected by this Rhizome task')
     args=parser.parse_args();root=args.root.resolve();output=args.output.resolve()
     if output.exists():parser.error('Choose a fresh output directory to avoid stale dependency files and archive members')
     if args.jobs<1:parser.error('--jobs must be positive')
@@ -65,10 +76,21 @@ def main():
     output.mkdir(parents=True)
     host=output/'host'
     targets=[str(host/'py/pyzome'/(name+suffix)) for name in MODULES]
+    binaries=[]
+    if args.task:
+        from .rhizome_task import Task
+        task=Task(root,args.task)
+        names={name for nodes in task.services().values() for name in nodes}
+        for name in sorted(names):
+            if list((root/'src').glob(f'*/{name}.main.cpp')):
+                targets.append(str(host/'bin'/name))
+                binaries.append(name)
+            elif not list((root/'src').glob(f'*/{name}.main.py')):
+                raise ValueError(f'Task node {name} has no discoverable entry point')
     with (output/'build.log').open('w') as log:
         subprocess.run(['make','-C',str(root),f'BUILD_DIR={output}',f'JOBS={args.jobs}','CCACHE=',*targets],
                        stdout=log,stderr=subprocess.STDOUT,check=True)
-    print(json.dumps(stamp(root,host,identity),indent=2))
+    print(json.dumps(stamp(root,host,identity,binaries=binaries),indent=2))
 
 
 if __name__=='__main__':main()

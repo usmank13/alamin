@@ -15,7 +15,10 @@ The actual-node observation runner is now available as
 It runs the unmodified AiAgent entry point with live MuJoCo sensor topics and
 native RGB-D SHM streams. It is a stationary subset of the selected task, not
 yet full navigation or weeding integration. The existing navigation adapter
-below remains separate.
+below remains separate. The same entry point also provides
+[native wheel and arm acceptance checks](native_controls.md), without agent
+credentials. These connect the real control nodes to MuJoCo motor feedback;
+they are separate checks from the default stationary agent observation mode.
 
 Select one checkout and a host build produced from its native sources:
 

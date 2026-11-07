@@ -1,7 +1,7 @@
-"""Launch the actual Rhizome AiAgent with live MuJoCo observations.
+"""Run Rhizome against live MuJoCo observations and measured motor hardware.
 
-This is an observation-only integration milestone, not the full task launcher.
-Rhizome owns the agent loop and services. Motion/control nodes are not connected.
+The default agent mode is stationary. Explicit control/weeding checks start
+task-selected native control processes without invoking a language model.
 """
 import argparse
 import hashlib
@@ -23,9 +23,9 @@ def save(path, value):
     Path(path).write_text(json.dumps(value, indent=2)+'\n')
 
 
-def stage(root, output, task_name, agent_config=None):
+def stage(root, output, task_name, agent_config=None, *, require_agent=True):
     task = Task(root, task_name)
-    if 'ai_agent' not in task.services().get('rover', []):
+    if require_agent and 'ai_agent' not in task.services().get('rover', []):
         raise ValueError(f'Task {task_name} does not select ai_agent on rover')
     runtime = output/'runtime'
     conf = runtime/'conf'
@@ -46,7 +46,8 @@ def stage(root, output, task_name, agent_config=None):
     overrides['voice'] = {**overrides.get('voice', {}), 'dir': '/data/agent/voice'}
     # A simulation launch must not activate a provisioned Telegram connection.
     overrides['keys'] = {**overrides.get('keys', {}), 'telegram': '/tmp/no-telegram.json'}
-    effective_task = merge_patch(task.config, {'nodes': {'ai_agent': overrides}})
+    effective_task = merge_patch(task.config, {'nodes': {'ai_agent': overrides}}) if require_agent else task.config
+    (conf/'payloads.yml').write_text('payloads: []\n')
     save(runtime/'opt/task/task.json', effective_task)
     return runtime
 
@@ -75,12 +76,20 @@ def child(role, config):
 
             def __init__(self):
                 super().__init__(core.NodeConfig('alamin_observer'))
-                self.log = (output/'topics.jsonl').open('w', buffering=1)
+                log_dir = Path('/dev/shm') if config.get('control_test') else output
+                self.log = (log_dir/'topics.jsonl').open('w', buffering=1)
                 for topic in ('/agent/transcript','/agent/enable','/agent/busy','/nav/goals',
-                              '/drive/limits','/odom','/camera/nav/front/intrinsics/color','/frames/nav_front'):
+                              '/drive/limits','/drive','/nav/drive','drive_control/health','local_control/health',
+                              '/drive_mux/state','/drive_mux/reason','/odom','/camera/nav/front/intrinsics/color','/frames/nav_front'):
                     self.Subscribe(topic, None, lambda msg, t=topic: self.log.write(
                         json.dumps(dict(topic=t,wall=time.time(),message=json.loads(str(msg))))+'\n'))
         Observer().Run()
+    elif role == 'oracle':
+        from .rhizome_weeding_check import oracle
+        oracle(config)
+    elif role == 'control-check':
+        from .rhizome_control_check import run
+        run(config)
     elif role == 'camera-check':
         from camera.shm_stream_pipeline import ShmStreamParams, ShmStreamPipeline
         from PIL import Image
@@ -105,6 +114,9 @@ def child(role, config):
 
 
 def supervise(config):
+    if config.get('control_test'):
+        from .rhizome_control_check import supervise_controls
+        return supervise_controls(config)
     from pyzome import core
     output = Path(config['output'])
     children = []
@@ -206,6 +218,8 @@ def supervise(config):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--weeding-test',action='store_true',help='Native arm startup homing and oracle weeding bench')
+    p.add_argument('--control-test',action='store_true',help='Exercise task-selected native controls without starting the agent')
     p.add_argument('--scene',type=Path)
     p.add_argument('--output',type=Path)
     p.add_argument('--rhizome',type=Path)
@@ -218,8 +232,10 @@ def main():
     p.add_argument('--chassis-configuration',default='')
     p.add_argument('--payload-configuration',default='')
     p.add_argument('--runtime-config',type=Path,help=argparse.SUPPRESS)
-    p.add_argument('--child',choices=['supervise','relay','sensors','render','publish','observe','camera-check'],help=argparse.SUPPRESS)
+    p.add_argument('--child',choices=['supervise','relay','sensors','render','publish','observe','camera-check','control-check','oracle'],help=argparse.SUPPRESS)
     args = p.parse_args()
+    if args.weeding_test:
+        args.control_test = True
     if args.child:
         config = json.loads(args.runtime_config.read_text())
         return supervise(config) if args.child == 'supervise' else child(args.child,config)
@@ -238,7 +254,7 @@ def main():
     if not isinstance(overrides,dict):
         p.error('agent-config must be a JSON object')
     output.mkdir(parents=True, exist_ok=False)
-    runtime = stage(root,output,args.task,overrides)
+    runtime = stage(root,output,args.task,overrides,require_agent=not args.control_test)
     for name in ('aigen','aigen_helpers.sh'):
         (runtime/'opt/image/bin'/name).symlink_to(root/'scripts'/name)
     programs = {}
@@ -250,7 +266,7 @@ def main():
     save(output/'cli_programs.json',programs)
     config = dict(scene=str(scene),output=str(output),root=str(root),host_build=str(host),
                   entry_point=str(root/'src/ai_agent/ai_agent.main.py'),task=args.task,
-                  seconds=args.seconds,camera_hz=args.camera_hz,mission=args.mission,
+                  seconds=args.seconds,camera_hz=args.camera_hz,mission=args.mission,control_test=args.control_test,weeding_test=args.weeding_test,
                   chassis_configuration=args.chassis_configuration,payload_configuration=args.payload_configuration)
     save(output/'launch.json',config)
     save(output/'install.json',install)
@@ -260,8 +276,8 @@ def main():
     env.pop('NODE_NAME',None)
     env.update(PYTHONPATH=os.pathsep.join([str(host/'py'),str(root/'src'),str(Path(__file__).resolve().parents[1])]),
                AIGEN_DEVICE='dev_machine', AIGEN_CONFIG_PATH='/tmp/conf', PYTHONDONTWRITEBYTECODE='1',
-               HOME='/tmp/home',XDG_CACHE_HOME='/tmp/home/.cache',
-               MUJOCO_GL=os.environ.get('MUJOCO_GL','egl'),LP_NUM_THREADS=os.environ.get('LP_NUM_THREADS','1'))
+               HOME='/tmp/home',XDG_CACHE_HOME='/tmp/home/.cache',AIGEN_MOTOR_SOCKET='/tmp/motors-0.sock',
+               MUJOCO_GL=os.environ.get('MUJOCO_GL','egl'),LP_NUM_THREADS='1',OMP_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')
     etc_mounts = ['--tmpfs','/etc']
     for path in sorted(Path('/etc').iterdir()):
         if path.name != 'aigen':
@@ -272,6 +288,9 @@ def main():
                '--bind',str(runtime/'opt'),'/opt/aigen','--bind',str(runtime/'etc'),'/etc/aigen',
                '--bind',str(runtime/'data'),'/data','--chdir','/tmp',
                sys.executable,'-u','-m',MODULE,'--child','supervise','--runtime-config',str(output/'launch.json')]
+    if args.weeding_test:
+        command[1:1] = ['--unshare-net']
+        env.update(AIGEN_HOST_ROVER_ADDRESS='127.0.0.1',AIGEN_HOST_DEVICE_INDEX='0',AIGEN_DEVICE='rover')
     result = subprocess.run(command,env=env)
     if result.returncode:
         raise SystemExit(f'Rhizome simulation exited {result.returncode}; see {output}')

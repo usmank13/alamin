@@ -183,7 +183,44 @@ def test_native_motor_manager_drives_mujoco(rig, tmp_path):
         server.poll(.1)
         np.testing.assert_array_equal(data.qfrc_applied, 0)
     feedback = json.loads(stdout.strip().splitlines()[-1])
+    assert feedback['wheel']['load_position'] > .1
+    assert feedback['arm']['load_position'] > .02
     assert feedback['wheel']['position'] > .1
     assert feedback['arm']['position'] > .02
     assert data.qpos[0] > .1 and data.qpos[1] < -.02
     assert feedback['wheel']['error_vec'] == feedback['arm']['error_vec'] == 0
+
+
+def test_absolute_load_ring_is_independent_of_motor_zero(rig):
+    model,data,_,now=rig
+    adapter=MujocoMotors(model,data,{(0,21):MotorBinding('arm',-1,load_offset_rad=3.2,encoder_zeroed=True)},clock=lambda:now[0])
+    key=(0,21)
+    data.qpos[1]=-.4
+    before=adapter.feedback(key)
+    assert before['position']==pytest.approx(.4)
+    assert before['load_position']==pytest.approx(3.6)
+    assert adapter.handle(request('zeroed',key=key)) is True
+    adapter.handle(request('zero_encoder',.2,key))
+    assert adapter.feedback(key)['position']==pytest.approx(.2)
+    assert adapter.feedback(key)['load_position']==pytest.approx(3.6)
+    assert data.qpos[1]==-.4
+    adapter.handle(request('reset',key=key))
+    assert adapter.handle(request('zeroed',key=key)) is True
+    assert adapter.feedback(key)['position']==pytest.approx(.2)
+
+
+def test_odrive_does_not_apply_mab_config_feedforward(rig):
+    _,data,adapter,_=rig
+    params=configure('POSITION');params['ff_torque']=-2
+    adapter.handle(request('configure',params))
+    adapter.handle(request('enable'))
+    adapter.handle(request('command',ref('POSITION')))
+    adapter.apply()
+    assert data.qfrc_applied[0]==0
+
+
+def test_watchdog_uses_odrive_error_for_native_recovery(rig):
+    _,_,adapter,now=rig
+    start(adapter,(0,12),'VELOCITY',velocity=1)
+    now[0]=.3
+    assert adapter.feedback((0,12))['error_vec']==0x01000000

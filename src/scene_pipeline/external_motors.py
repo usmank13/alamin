@@ -21,6 +21,8 @@ class MotorBinding:
     joint: str
     sign: int = 1
     temperature_c: float = 25.0
+    load_offset_rad: float = 0.0
+    encoder_zeroed: bool = False
 
 
 @dataclass
@@ -69,13 +71,14 @@ class MujocoMotors:
                     or binding.sign not in (-1, 1)):
                 raise ValueError('Bindings need nonnegative (interface, motor ID) and sign +/-1')
             _number(binding.temperature_c)
+            _number(binding.load_offset_rad)
             joint = model.joint(binding.joint)
             if model.jnt_type[joint.id] != mujoco.mjtJoint.mjJNT_HINGE:
                 raise ValueError('Motor bindings require hinge joints')
             dof, qpos = int(joint.dofadr[0]), int(joint.qposadr[0])
             if any(m.dof == dof for m in self.motors.values()):
                 raise ValueError('A joint cannot have multiple motor owners')
-            self.motors[key] = _Motor(binding, dof, qpos)
+            self.motors[key] = _Motor(binding, dof, qpos, zeroed=binding.encoder_zeroed)
         for m in self.motors.values():
             jid = model.joint(m.binding.joint).id
             for aid in range(model.nu):
@@ -85,16 +88,17 @@ class MujocoMotors:
                     model.actuator_biasprm[aid] = 0
             data.qfrc_applied[m.dof] = 0
 
-    def stop(self, keys):
+    def stop(self, keys, error=1):
         for key in keys:
             m = self.motors[key]
-            m.enabled, m.reference, m.error = False, None, 1
+            m.enabled, m.reference, m.error = False, None, error
             self.data.qfrc_applied[m.dof] = 0
 
     def _expire(self, key):
         m = self.motors[key]
         if m.enabled and self.clock() - m.last_command > self.watchdog_s:
-            self.stop([key])
+            # ODrive CAN axis_error WATCHDOG_TIMER_EXPIRED; native MotorManager handles recovery.
+            self.stop([key], error=0x01000000)
 
     def feedback(self, key):
         self._expire(key)
@@ -102,7 +106,7 @@ class MujocoMotors:
         sign = m.binding.sign
         return dict(error_vec=m.error, temperature=m.binding.temperature_c,
                     position=sign * float(self.data.qpos[m.qpos]) + m.offset,
-                    load_position=(sign * float(self.data.qpos[m.qpos])) % (2 * math.pi),
+                    load_position=(sign * float(self.data.qpos[m.qpos]) + m.binding.load_offset_rad) % (2 * math.pi),
                     velocity=sign * float(self.data.qvel[m.dof]),
                     torque=sign * float(self.data.qfrc_applied[m.dof]))
 
@@ -184,7 +188,8 @@ class MujocoMotors:
                 elif p['mode'] == 'IMPEDANCE':
                     torque = p['kp'] * (r['position_ref'] - f['position']) + p['kd'] * (r['velocity_ref'] - f['velocity'])
                 if p['mode'] != 'IDLE':
-                    torque += r['torque_ref'] + p['ff_torque']
+                    # The ODrive backend forwards command torque only; config ff_torque is MAB-specific.
+                    torque += r['torque_ref']
                 limit = min(p['max_torque'], m.config['max_torque'])
                 torque = float(np.clip(torque, -limit, limit))
             self.data.qfrc_applied[m.dof] = m.binding.sign * torque

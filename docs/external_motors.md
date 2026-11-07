@@ -49,8 +49,10 @@ position with a proportional outer loop and velocity inner loop, impedance,
 torque, and idle. It applies the tighter of hardware and configured torque limits.
 This is an approximation of motor electronics, not a reproduction of ODrive
 firmware. Temperature is an explicit binding constant (default 25 C); the load
-encoder is the joint angle modulo one revolution. Electrical, thermal and
-load-encoder mounting details are not modeled.
+encoder is the joint angle plus its explicit mounting offset, modulo one
+revolution. The load-ring coordinate stays independent of motor encoder zeroing.
+Electrical and thermal dynamics are not modeled. The native ODrive backend
+ignores configuration `ff_torque`; the adapter applies command torque only.
 
 Encoder zero/absolute-position operations change reported coordinates without
 moving the body. Zero validity persists through a motor reset within the run.
@@ -60,13 +62,14 @@ errors and a fresh command before torque can be applied.
 The watchdog defaults to 250 ms of wall time and is configurable at construction.
 Feedback reads do not refresh it. Expiry, connection loss or invalid requests
 remove effort and latch an error; clear plus enable and a new command are required
-to resume. Error bit `1` is a generic adapter fault, not an emulated vendor-specific
-error. No command is replayed automatically. This is currently a wall-clock
+to resume. Watchdog expiry reports the ODrive `WATCHDOG_TIMER_EXPIRED` bit, so native
+MotorManager can apply its normal recovery policy. Other adapter faults use bit `1`. No command is replayed automatically. This is currently a wall-clock
 interface; a paused/slower-than-real-time task still needs the shared clock work.
 
 MAB, trapezoid trajectories, electrical calibration, provisioning and motor-ID
-changes are rejected explicitly. Full arm startup/homing and complete task health
-have not yet been validated; the adapter must not be used to claim those pass.
+changes are rejected explicitly. The [native control checks](native_controls.md)
+validate four-arm startup/homing and simultaneous driving/weeding with oracle
+perception. Complete agent missions and neural perception remain separate checks.
 
 ## Tests
 

@@ -24,6 +24,7 @@ agent-nav = [
     "python-telegram-bot==22.8",
     "scipy==1.18.1",
     "h5py>=3.12,<4",
+    "pyzmq>=26,<28",
 ]
 retrieval = ["pycollada>=0.9,<1", "networkx>=3,<4", "coacd==1.0.14"]
 prototypes = ["trimesh==5.1.0", "coacd==1.0.14", "scipy==1.18.1"]

@@ -47,3 +47,12 @@ def test_stage_rejects_task_without_agent(tmp_path):
     (root/'src/tasks/test.yml').write_text('{}')
     with pytest.raises(ValueError,match='does not select ai_agent'):
         stage(root,tmp_path/'run','test')
+
+
+def test_control_task_staging_does_not_inject_an_agent(tmp_path):
+    root=tmp_path/'rhizome'
+    (root/'src/tasks').mkdir(parents=True)
+    (root/'src/tasks/drive.yml').write_text('services: {rover: []}\nnodes: {drive_control: {drive_limit_lease_sec: 2}}\n')
+    runtime=stage(root,tmp_path/'run','drive',require_agent=False)
+    task=json.loads((runtime/'opt/task/task.json').read_text())
+    assert task['nodes']=={'drive_control':{'drive_limit_lease_sec':2}}

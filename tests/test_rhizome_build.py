@@ -39,6 +39,17 @@ def test_manifest_must_cover_all_loaded_extensions(install):
     with pytest.raises(ValueError,match='exactly one verified core'):verify(host,root)
 
 
+def test_manifest_checks_built_node_executables(install):
+    root,host=install
+    (host/'bin').mkdir()
+    binary=host/'bin/drive_control'
+    binary.write_bytes(b'original native node')
+    stamp(root,host,source_identity(root),binaries=['drive_control'])
+    assert 'drive_control' in verify(host,root)['binaries_sha256']
+    binary.write_bytes(b'replaced native node')
+    with pytest.raises(ValueError,match='executable changed'):verify(host,root)
+
+
 def test_new_untracked_native_sources_require_rebuild(install):
     root,host=install
     (root/'src/new_dependency.hpp').write_text('constexpr int version = 2;\n')
