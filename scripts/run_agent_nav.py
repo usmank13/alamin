@@ -883,7 +883,8 @@ def main():
                     log(ev['event'], **ev['details'])
                     agent_event(ev['event'], ev['details'], loop_box)
                 if state.source == 'NAV_MODEL' and state.nav:  # AiAgent.Tick
-                    if state.nav_change.update((state.nav.get('gate'), bool(state.nav.get('driving'))), t):
+                    if state.nav_change.update((state.nav.get('gate'), bool(state.nav.get('driving')),
+                                                str(state.nav.get('steer_source')).endswith('TURN')), t):
                         ev = dict(event='nav_model', details=nav_facts(state))
                         state.world.on_event(ev, state.pose, t)
                         log('nav_model', **ev['details'])
