@@ -298,14 +298,15 @@ def build(source, tractor, out):
     landscape_texture(out/'ground.png')
     add_ground_visual(spec, xs, ys, z, out/'ground.png')
     add_plants(spec, manifest, bundle, source/'bundle')
-    props = [('oak_inside_corner', True, [-1, 5]), ('oak_north', True, [10, 13]),
-             ('bush_1', False, [-7, 8]), ('bush_2', False, [-7, -6.6]),
-             ('bush_3', False, [0, 10]), ('bush_4', False, [9, 18]),
-             ('bush_5', False, [-19, 5]), ('bush_6', False, [0, 27])]
+    # Nothing collides within a plot's K-turn reach: 6 m past the row ends, 4.5 m to the sides.
+    props = [('oak_inside_corner', True, [-1, 5]), ('oak_north', True, [12.5, 9]),
+             ('bush_1', False, [-7, 8]), ('bush_2', False, [-7, -9]),
+             ('bush_3', False, [0, 10]), ('bush_4', False, [13, 17]),
+             ('bush_5', False, [-19, 8]), ('bush_6', False, [-4, 27])]
     for i, (name, tree, xy) in enumerate(props):
         add_prop(spec, manifest, vegetation(tree, 40+i), name, xy)
     tractor_mjz = Path(glb_prop(tractor, 4.2, out/'props/tractor.mjz'))
-    add_prop(spec, manifest, _read_spec(tractor_mjz), 'parked_tractor', [-3, -6], -15)
+    add_prop(spec, manifest, _read_spec(tractor_mjz), 'parked_tractor', [-1, -6], -15)
     license_file = tractor.parents[2]/'License.txt'
     shutil.copy(license_file, out/'props/tractor_LICENSE.txt')
     spec.add_texture(name='sky', type=mujoco.mjtTexture.mjTEXTURE_SKYBOX,
