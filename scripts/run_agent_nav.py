@@ -58,8 +58,6 @@ def parse():
                    help="nav_model obstacle_max_height_m (the rover's default is 0.25; crops are ~0.15 m)")
     p.add_argument('--nav-params', type=json.loads, default={},
                    help='JSON of nav_model node.yml overrides, e.g. {"turn_first_side": "right"}')
-    p.add_argument('--look-each-wake', action='store_true',
-                   help='Experiment: attach the front frame to every wait_for_event result while the agent drives')
     p.add_argument('--weed', action='store_true',
                    help='Run every payload arm through Rhizome weeding on oracle detections; arms weed while nav_model drives')
     return p.parse_args()
@@ -430,12 +428,6 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
             log('tool', text=f'{name}({json.dumps(inp)[:300]})')
             res = await dispatch(ctx_, name, inp)
             log('result', text=f'{name} -> {str(res)[:4000]}')
-            if args.look_each_wake and name == 'wait_for_event' and state.source == 'AGENT':
-                # Experiment: while it drives, every wake comes with what the front camera sees.
-                frame = await dispatch(ctx_, 'grab_frame', {})
-                as_blocks = lambda r: [{'type': 'text', 'text': r}] if isinstance(r, str) else list(r)
-                res = as_blocks(res) + as_blocks(frame)
-                log('look', text='front frame attached to wait_for_event')
             return res
         tools.dispatch = logged
         if args.llm == 'sdk':

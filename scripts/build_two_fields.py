@@ -28,7 +28,7 @@ from sim_harness.scene import _read_spec, load_scene
 from build_outdoor_scene import glb_prop, yawq
 
 # 10 m of headland west of the west plot: a 3.5 m K-turn fits past its end.
-BOUNDS = np.array([[-28., -10.], [14., 31.]])
+BOUNDS = np.array([[-28., -10.], [14., 36.]])
 PLOTS = [dict(id='west', centre_m=[-14., 0.], yaw_deg=0,
               bounds_m=[[-18., -2.7], [-10., 2.7]]),
          dict(id='east', centre_m=[5., 23.], yaw_deg=90,
