@@ -28,7 +28,7 @@ from sim_harness.scene import _read_spec, load_scene
 from build_outdoor_scene import glb_prop, yawq
 
 # 10 m of headland west of the west plot: a 3.5 m K-turn fits past its end.
-BOUNDS = np.array([[-28., -10.], [14., 36.]])
+BOUNDS = np.array([[-28., -14.], [14., 36.]])
 PLOTS = [dict(id='west', centre_m=[-14., 0.], yaw_deg=0,
               bounds_m=[[-18., -2.7], [-10., 2.7]]),
          dict(id='east', centre_m=[5., 23.], yaw_deg=90,
@@ -300,7 +300,7 @@ def build(source, tractor, out):
     add_plants(spec, manifest, bundle, source/'bundle')
     # Nothing collides within a plot's K-turn reach: 6 m past the row ends, 4.5 m to the sides.
     props = [('oak_inside_corner', True, [-1, 5]), ('oak_north', True, [12.5, 9]),
-             ('bush_1', False, [-7, 8]), ('bush_2', False, [-7, -9]),
+             ('bush_1', False, [-7, 8]), ('bush_2', False, [-7, -8.5]),
              ('bush_3', False, [0, 10]), ('bush_4', False, [13, 17]),
              ('bush_5', False, [-19, 8]), ('bush_6', False, [-4, 27])]
     for i, (name, tree, xy) in enumerate(props):

@@ -308,7 +308,8 @@ def nav_facts(state):
         from ai_agent.world import field_facts
         from scene_pipeline.rhizome_nav import nearest_field
         (x0, y0), (x1, y1) = nearest_field(state.fields, pose[0], pose[1])
-        out['field'] = field_facts([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], pose)
+        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        out['field'] = {**field_facts(corners, pose), 'corners_odom': [list(c) for c in corners]}  # odom == world
     if state.source == 'NAV_MODEL' and state.delegated_at is not None and pose is not None:
         out['moved_m'] = round(math.dist(state.delegated_at[:2], pose[:2]), 1)
     return out
