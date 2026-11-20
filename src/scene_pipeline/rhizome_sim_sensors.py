@@ -3,6 +3,7 @@
 No agent or navigation policy is implemented here. Control checks use the
 external motor protocol; stationary observations keep the scene servos.
 """
+from contextlib import nullcontext
 import gc
 import json
 from pathlib import Path
@@ -13,6 +14,7 @@ import numpy as np
 from PIL import Image
 from scipy.spatial.transform import Rotation
 
+from sim_harness.adapters import stepping
 from sim_harness.scene import _read_spec, load_scene
 from sim_harness.export import export_mujoco
 from .agriculture import compose_robot
@@ -25,8 +27,6 @@ CONTROL_STATS = Path('/dev/shm/sensors.json')
 PUBLISHER_STATS = Path('/dev/shm/publisher.json')
 
 def run(config):
-    from pyzome import core
-
     scene = Path(config['scene'])
     output = Path(config['output'])
     generation = json.loads((scene/'generation.json').read_text())
@@ -40,17 +40,27 @@ def run(config):
     model.vis.quality.shadowsize = 512
     export_mujoco(spec, data, output/'world.mjz')
     (output/'camera_profile.json').write_text(json.dumps(profile))
-    from .rhizome_hardware import connect
-    adapters,servers = connect(model,data,profile,config) if config.get('control_test') else ({},[])
-    trajectory = Path('/dev/shm/physics.jsonl').open('w',buffering=1) if adapters else None
-    status_path = CONTROL_STATS if adapters else output/'sensors.json'
-    stats = {'state_samples': 0, 'max_physics_lag_s': 0.0, 'motion_connected': bool(adapters),
+    hardware = None
+    if config.get('control_test'):
+        from .rhizome_hardware import RhizomeMotorAdapter, motor_bindings
+        hardware = RhizomeMotorAdapter(model, data, motor_bindings(model, profile, config))
+    with stepping(model, data, hardware) as step:
+        log = Path('/dev/shm/physics.jsonl').open('w', buffering=1) if hardware else nullcontext()
+        with log as trajectory:
+            _run_physics(model, data, output, step, hardware, trajectory)
+
+
+def _run_physics(model, data, output, step, hardware, trajectory):
+    from pyzome import core
+
+    status_path = CONTROL_STATS if hardware else output/'sensors.json'
+    stats = {'state_samples': 0, 'max_physics_lag_s': 0.0, 'motion_connected': bool(hardware),
              'max_snapshot_write_seconds': 0.0, 'max_step_batch_seconds': 0.0,
              'physics_overruns': 0}
     # The static scene graph lives for this process; keep it out of periodic GC scans.
     gc.freeze()
     start = time.monotonic()
-    clock_started = not config.get('control_test')
+    clock_started = hardware is None
     next_publish = start
     next_status = start
     while True:
@@ -61,9 +71,7 @@ def run(config):
         lag = now-start-data.time
         stats['max_physics_lag_s'] = max(stats['max_physics_lag_s'], lag)
         if lag > .5:
-            if adapters:
-                for motors in adapters.values():
-                    motors.stop(motors.motors)
+            if hardware:
                 stats['physics_overruns'] += 1
                 status_path.write_text(json.dumps(stats,indent=2)+'\n')
                 raise RuntimeError(f'Actuated physics fell {lag:.3f}s behind wall time')
@@ -71,14 +79,10 @@ def run(config):
             stats['physics_overruns'] += 1
             print(f'Physics scheduling overrun: {lag:.3f}s; navigation timing not validated',flush=True)
         step_begin = time.monotonic()
-        for server in servers:
-            server.poll(0)
+        if hardware:
+            hardware.poll()
         while data.time < now-start:
-            for motors in adapters.values():
-                motors.apply()
-            for server in servers:
-                server.poll(0)
-            mujoco.mj_step(model, data)
+            step()
         stats['max_step_batch_seconds'] = max(stats['max_step_batch_seconds'],time.monotonic()-step_begin)
         if now >= next_publish:
             publish_begin = time.monotonic()
@@ -91,7 +95,7 @@ def run(config):
             stats['state_samples'] += 1
             if trajectory:
                 trajectory.write(json.dumps(dict(time=float(data.time),qpos=data.qpos.tolist(),qvel=data.qvel.tolist(),xyz=data.xpos[model.body('element/chassis').id].tolist(),
-                    motors={f'{pid}/{k}':dict(motors.feedback(k),reference=motors.motors[k].reference,parameters=motors.motors[k].params,zeroed=motors.motors[k].zeroed) for pid,motors in adapters.items() for k in motors.motors}))+'\n')
+                    motors={f'{pid}/{k}':dict(motors.feedback(k),reference=motors.motors[k].reference,parameters=motors.motors[k].params,zeroed=motors.motors[k].zeroed) for pid,motors in hardware.devices.items() for k in motors.motors}))+'\n')
             stats['max_snapshot_write_seconds'] = max(stats['max_snapshot_write_seconds'],time.monotonic()-publish_begin)
             next_publish = now+.02
         if now >= next_status:
@@ -101,8 +105,8 @@ def run(config):
             temporary.write_text(json.dumps(stats,indent=2)+'\n')
             temporary.replace(status_path)
             next_status = now+1
-        if servers:
-            servers[0].poll(.0005)
+        if hardware:
+            hardware.servers[0].poll(.0005)
         else:
             time.sleep(.001)
 

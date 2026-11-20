@@ -61,7 +61,13 @@ def child(role, config):
         relay.start()
         threading.Event().wait()
     elif role == 'sensors':
+        import signal
         from .rhizome_sim_sensors import run
+
+        def terminate(signum, frame):
+            raise SystemExit(0)
+
+        signal.signal(signal.SIGTERM, terminate)
         run(config)
     elif role == 'render':
         from .rhizome_sim_sensors import render
@@ -284,9 +290,12 @@ def main():
             etc_mounts += ['--ro-bind',str(path),str(path)]
     command = ['bwrap','--die-with-parent','--unshare-pid','--unshare-ipc',
                '--ro-bind','/','/','--dev-bind','/dev','/dev','--tmpfs','/dev/shm','--proc','/proc',*etc_mounts,
-               '--bind',str(output),str(output),'--bind',str(runtime),'/tmp',
+               '--bind',str(runtime),'/tmp',
                '--bind',str(runtime/'opt'),'/opt/aigen','--bind',str(runtime/'etc'),'/etc/aigen',
-               '--bind',str(runtime/'data'),'/data','--chdir','/tmp',
+               '--bind',str(runtime/'data'),'/data',
+               # Inputs and outputs can live under /data or /tmp on the host.
+               '--ro-bind',str(root),str(root),'--ro-bind',str(host),str(host),
+               '--ro-bind',str(scene),str(scene),'--bind',str(output),str(output),'--chdir','/tmp',
                sys.executable,'-u','-m',MODULE,'--child','supervise','--runtime-config',str(output/'launch.json')]
     if args.weeding_test:
         command[1:1] = ['--unshare-net']

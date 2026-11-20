@@ -224,3 +224,28 @@ def test_watchdog_uses_odrive_error_for_native_recovery(rig):
     start(adapter,(0,12),'VELOCITY',velocity=1)
     now[0]=.3
     assert adapter.feedback((0,12))['error_vec']==0x01000000
+
+
+def test_rhizome_motor_adapter_moves_and_releases_each_socket(rig, tmp_path):
+    from scene_pipeline.rhizome_hardware import RhizomeMotorAdapter
+    from sim_harness.adapters import stepping
+
+    model, data, _, _ = rig
+    bindings = {0: {(0, 12): MotorBinding('wheel')}, 1: {(1, 21): MotorBinding('arm')}}
+    hardware = RhizomeMotorAdapter(model, data, bindings, tmp_path)
+    with stepping(model, data, hardware) as step:
+        with connect(hardware.servers[0]) as client:
+            assert exchange(hardware.servers[0], client, request('configure', configure('VELOCITY')))['ok']
+            assert exchange(hardware.servers[0], client, request('enable'))['ok']
+            assert exchange(hardware.servers[0], client, request('command', ref('VELOCITY', velocity=2)))['ok']
+            for _ in range(10):
+                step()
+            assert data.qpos[0] > 0
+    np.testing.assert_array_equal(data.qfrc_applied, 0)
+    assert not list(tmp_path.glob('*.sock'))
+
+    occupied = tmp_path / 'motors-1.sock'
+    occupied.touch()
+    with pytest.raises(OSError):
+        RhizomeMotorAdapter(model, data, bindings, tmp_path)
+    assert list(tmp_path.glob('*.sock')) == [occupied]

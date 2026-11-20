@@ -10,6 +10,31 @@ Start with [running and reproducing the pipeline](docs/running.md). The
 that can read files and execute commands. Supplying `--program` requires neither
 Codex nor an API-backed agent. Prompt-only generation has optional model adapters.
 
+## Connect your robot controller
+
+From the repo root, install the base harness and fetch the two stock robots.
+This example drives the Robot Soccer Kit base using its measured position.
+
+```bash
+bash scripts/setup.sh
+PYTHONPATH=examples .venv/bin/sim examples/lab.xml --robots examples/robots.json \
+  --adapter soccer_adapter:Drive --backend egl --seconds 3 --output outputs/soccer-drive
+```
+
+Open `outputs/soccer-drive/rgb.png` for the final frame and `ground_truth.json`
+for named body poses. Omit `--adapter` and choose another output directory for
+a passive comparison. Use `--viewer --backend glfw` to watch the controller run live.
+
+A robot manifest supplies the MJCF, instance name, and initial pose. Install
+your controller as a Python module or put its directory on `PYTHONPATH`.
+Pass `--adapter module:factory` to construct it with `(model, data)` after
+composition. Bind namespaced joints, sensors and actuators once. On each
+`before_step()`, read feedback and write actuator commands. Alamin advances
+the physics clock. Use `close()` to release your stack's resources on exit.
+The runnable controller is in [soccer_adapter.py](examples/soccer_adapter.py).
+
+## Agricultural simulation and Rhizome
+
 For the Element RAPTOR_30 robot, Inicio-generated crop rows and terrain, and
 four-camera MuJoCo driving captures, see [agricultural simulation](docs/agriculture.md).
 For native waypoint control, neural RGB/depth perception, plant tracking and provisional weeding/arm commands,
@@ -26,6 +51,8 @@ configure the installed arm count and lateral spacing.
 [Two connected soybean plots](docs/two_fields.md) provide an approximately 20 m gap,
 a dirt road with a 90-degree turn, trees, bushes and a parked tractor for
 navigation into a perpendicular field.
+For branch-native camera-to-strike simulation on one soybean row, see the
+[native crop build and row-pass walkthrough](docs/native_crop_build.md).
 The [weeding acceptance benchmark](docs/weeding.md) adds paired oracle/neural
 scenarios, native targeting diagnostics and independent weed/crop contact scoring.
 [The soybean field experiment](docs/soybean30.md) compares oracle and neural

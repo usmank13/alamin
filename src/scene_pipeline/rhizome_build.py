@@ -68,25 +68,29 @@ def main():
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True,help='Fresh build directory; host modules go under output/host')
     parser.add_argument('--jobs',type=int,default=4)
-    parser.add_argument('--task',help='Also build native executables selected by this Rhizome task')
+    selection=parser.add_mutually_exclusive_group()
+    selection.add_argument('--binaries', nargs='+', metavar='NAME',
+                           help='Build and verify specific host executables from this checkout')
+    selection.add_argument('--task',help='Also build native executables selected by this Rhizome task')
     args=parser.parse_args();root=args.root.resolve();output=args.output.resolve()
     if output.exists():parser.error('Choose a fresh output directory to avoid stale dependency files and archive members')
     if args.jobs<1:parser.error('--jobs must be positive')
     identity=source_identity(root);suffix=sysconfig.get_config_var('EXT_SUFFIX')
-    output.mkdir(parents=True)
     host=output/'host'
     targets=[str(host/'py/pyzome'/(name+suffix)) for name in MODULES]
-    binaries=[]
+    names=set(args.binaries or [])
     if args.task:
         from .rhizome_task import Task
         task=Task(root,args.task)
         names={name for nodes in task.services().values() for name in nodes}
-        for name in sorted(names):
-            if list((root/'src').glob(f'*/{name}.main.cpp')):
-                targets.append(str(host/'bin'/name))
-                binaries.append(name)
-            elif not list((root/'src').glob(f'*/{name}.main.py')):
-                raise ValueError(f'Task node {name} has no discoverable entry point')
+    native={path.name.removesuffix('.main.cpp') for path in (root/'src').glob('*/*.main.cpp')}
+    scripts={path.name.removesuffix('.main.py') for path in (root/'src').glob('*/*.main.py')} if args.task else set()
+    unknown=names-native-scripts
+    if unknown:
+        parser.error(f'No buildable entry point for {", ".join(sorted(unknown))}')
+    binaries=sorted(native & names)
+    targets.extend(str(host/'bin'/name) for name in binaries)
+    output.mkdir(parents=True)
     with (output/'build.log').open('w') as log:
         subprocess.run(['make','-C',str(root),f'BUILD_DIR={output}',f'JOBS={args.jobs}','CCACHE=',*targets],
                        stdout=log,stderr=subprocess.STDOUT,check=True)

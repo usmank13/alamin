@@ -93,3 +93,16 @@ def test_build_stamp_detects_changed_source_and_binary(tmp_path):
     source.write_text('int radius = 1;\n')
     (modules/'physics.test.so').write_bytes(b'stale binary')
     with pytest.raises(ValueError,match='extension changed'):verify(host)
+
+
+def test_invalid_host_binary_leaves_output_available(install, tmp_path, monkeypatch):
+    import sys
+    from scene_pipeline.rhizome_build import main
+
+    root, _ = install
+    output = tmp_path / 'new-host'
+    monkeypatch.setattr(sys, 'argv', ['rhizome_build', '--root', str(root), '--output',
+                                     str(output), '--binaries', '../proxy'])
+    with pytest.raises(SystemExit):
+        main()
+    assert not output.exists()

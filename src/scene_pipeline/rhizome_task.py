@@ -25,6 +25,10 @@ Loader.yaml_implicit_resolvers={
 Loader.add_implicit_resolver('tag:yaml.org,2002:bool',
     re.compile(r'^(?:true|True|TRUE|false|False|FALSE)$'),list('tTfF'))
 
+# Rhizome's native loader also recognizes JSON-style numbers such as 5e-09.
+Loader.add_implicit_resolver('tag:yaml.org,2002:float',
+    re.compile(r'^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?[eE][+-]?[0-9]+$'), list('-0123456789'))
+
 
 def merge_patch(target, patch):
     if not isinstance(patch,dict):return deepcopy(patch)

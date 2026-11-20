@@ -108,3 +108,11 @@ def test_selected_checkout_tasks():
     assert agent['nodes']['local_control']['config']['goals_topic']=='/nav/goals'
     assert drive['nodes']['nav_model']['config']['drive'] is True
     assert drive['nodes']['local_control']['config']['goals_topic']=='/nav_model/goals'
+
+
+
+def test_scientific_notation_matches_native_task_parser(source):
+    write(source/'src/tasks/example.yml', "nodes: {nav: {weight: 5e-09, label: '5e-09'}}\n")
+    config = Task(source, 'example').node('nav')['config']
+    assert config['weight'] == 5e-9
+    assert config['label'] == '5e-09'

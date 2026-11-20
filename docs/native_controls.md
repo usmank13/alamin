@@ -92,10 +92,30 @@ directory at shutdown. After activation
 an overrun greater than 0.5 s fails the run and removes motor
 effort. Native stale-input checks and the wall-clock motor watchdog remain active.
 
+## Connect a separate motor client
+
+The supervised commands above launch Rhizome's native processes, sensors and MuJoCo together.
+For a motor-only bench with your own client, the same hardware adapter also runs in
+the base simulator. Use a completed control run's world and launch file, the
+corresponding verified host build, and a checkout with the external motor backend.
+
+```bash
+export ALAMIN_RHIZOME_LAUNCH="$PWD/outputs/native_drive_check/launch.json"
+export PYTHONPATH="$RHIZOME_HOST_BUILD/py:$RHIZOME_ROOT/src"
+.venv/bin/sim outputs/native_drive_check/world.mjz --viewer --backend glfw \
+  --adapter scene_pipeline.rhizome_hardware:from_launch
+```
+
+Start the motor client with `AIGEN_MOTOR_SOCKET=/tmp/motors-0.sock` in the
+same mount namespace. A weeding control launch also opens a motor socket for
+each configured payload. The viewer paces the simulation in wall time for
+the native watchdog. Sensor publishers, task processes and contact capture
+belong to the supervised run.
+
 ## Agent-session handoff
 
-The reusable hardware path is `rhizome_hardware.connect` plus the physics and
-sensor processes in `rhizome_sim_sensors`. `rhizome_control_check` launches the
+The native simulator binds joints with `rhizome_hardware.motor_bindings` and
+steps `RhizomeMotorAdapter` alongside the sensor processes in `rhizome_sim_sensors`. `rhizome_control_check` launches the
 task's native node processes on isolated rover/payload proxies; its final child
 is a test driver that publishes ordinary goals and selects the muxes.
 

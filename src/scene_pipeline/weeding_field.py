@@ -16,15 +16,35 @@ from .contracts import read_json,write_json
 from .weeding import arm_transform,swept_clearance
 
 
+def field_plants(manifest):
+    return [dict(id=name,category=p['category'],position_m=p['position_m'],
+                 radius_m=.06 if p['category']=='crop' else .015,
+                 height_m=.15 if p['category']=='crop' else .04)
+            for name,p in manifest['instances'].items() if p['category'] in ('crop','weed')]
+
+
+def tool_contacts(plants, tree, p0, r0, p1, r1, half):
+    """Yield proxy intersections across two measured tool poses."""
+    if tree is None:
+        return
+    center = (p0 + p1) / 2
+    # Enclose the swept box, largest capsule radius and interpolation tolerance.
+    radius = np.linalg.norm(half) + np.linalg.norm(p1 - p0) / 2 + .06 + .001
+    for index in tree.query_ball_point(center[:2], radius):
+        plant = plants[index]
+        if abs(center[2] - (plant['position_m'][2] + plant['height_m'] / 2)) > radius + plant['height_m'] / 2:
+            continue
+        clearance = swept_clearance(p0, r0, p1, r1, half, plant)
+        if clearance <= 0:
+            yield plant, clearance
+
+
 def analyze(root):
     root=Path(root);manifest=read_json(root/'manifest.json');rig=read_json(root/'rig.json')
     config=read_json(root/'drive_config.json')['controller']
     names=config.get('physical_arms',[config.get('physical_arm')])
     arms={a['id']:a for a in rig['profile']['arms'] if a['id'] in names}
-    plants=[dict(id=name,category=p['category'],position_m=p['position_m'],
-                 radius_m=.06 if p['category']=='crop' else .015,
-                 height_m=.15 if p['category']=='crop' else .04)
-            for name,p in manifest['instances'].items() if p['category'] in ('crop','weed')]
+    plants=field_plants(manifest)
     tree=cKDTree([p['position_m'][:2] for p in plants]) if plants else None
     by_category={label:[p for p in plants if p['category']==label] for label in ('crop','weed')}
     trees={label:cKDTree([p['position_m'][:2] for p in values]) for label,values in by_category.items() if values}
@@ -71,16 +91,9 @@ def analyze(root):
             rotations=tool['rotation_world'][:];halves=tool['half_size_m'][:];active=set()
             for index,t in enumerate(times):
                 previous=max(0,index-1);p0,p1=positions[previous],positions[index]
-                # Enclose every orientation of the swept box and all capsule
-                # radii. This broad phase cannot omit a capsule intersection.
-                center=(p0+p1)/2
-                radius=np.linalg.norm(halves[index])+np.linalg.norm(p1-p0)/2+.06+.001
-                candidates=tree.query_ball_point(center[:2],radius) if tree is not None else []
                 contacts=set()
-                for candidate in candidates:
-                    plant=plants[candidate]
-                    clearance=swept_clearance(p0,rotations[previous],p1,rotations[index],halves[index],plant)
-                    if clearance>0:continue
+                for plant, clearance in tool_contacts(plants, tree, p0, rotations[previous], p1,
+                                                      rotations[index], halves[index]):
                     plant_id=plant['id'];contacts.add(plant_id);mark(plant_id,'first_contact_at',float(t))
                     if plant_id not in active:
                         record=records[plant_id]

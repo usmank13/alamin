@@ -10,6 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description="Load any MJCF scene and optionally insert stock robots")
     parser.add_argument("scene", type=Path)
     parser.add_argument("--robots", type=Path)
+    parser.add_argument("--adapter", metavar="MODULE:FACTORY", help="Import a robot controller factory")
     parser.add_argument("--viewer", action="store_true")
     parser.add_argument("--seconds", type=float, default=5, help="simulated seconds; viewer runs until closed unless --viewer-seconds is set")
     parser.add_argument("--viewer-seconds", type=float)
@@ -26,19 +27,28 @@ def main():
     if args.backend:
         os.environ["MUJOCO_GL"] = args.backend
 
-    import mujoco
-    import numpy as np
-    from PIL import Image
     from .scene import compose_scene
 
     load_start = time.monotonic()
     spec, model, data = compose_scene(args.scene, args.robots)
     load_seconds = time.monotonic() - load_start
-    from .ground_truth import contacts, snapshot
+    from .ground_truth import contacts
     initial_contacts = contacts(data)
     if args.export_mujoco:
         from .export import export_mujoco
         export_mujoco(spec, data, args.export_mujoco)
+    from .adapters import load_factory, stepping
+    controller = load_factory(args.adapter)(model, data) if args.adapter is not None else None
+    with stepping(model, data, controller) as step:
+        run(args, model, data, step, load_seconds, initial_contacts)
+
+
+def run(args, model, data, step, load_seconds, initial_contacts):
+    import mujoco
+    import numpy as np
+    from PIL import Image
+    from .ground_truth import contacts, snapshot
+
     camera = mujoco.MjvCamera()
     mujoco.mjv_defaultFreeCamera(model, camera)
     camera.lookat[:] = model.stat.center
@@ -59,7 +69,7 @@ def main():
                 if args.viewer_seconds is not None and time.monotonic() - start >= args.viewer_seconds:
                     break
                 tick = time.monotonic()
-                mujoco.mj_step(model, data)
+                step()
                 viewer.sync()
                 time.sleep(max(0, model.opt.timestep - (time.monotonic() - tick)))
         # MuJoCo's passive close requests exit but does not join its render thread.
@@ -74,7 +84,7 @@ def main():
     initial_time = data.time
     start = time.monotonic()
     for _ in range(steps):
-        mujoco.mj_step(model, data)
+        step()
         if not np.isfinite(data.qpos).all() or not np.isfinite(data.qvel).all():
             raise RuntimeError("Simulation produced nonfinite state")
     elapsed = time.monotonic() - start

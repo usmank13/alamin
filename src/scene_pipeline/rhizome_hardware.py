@@ -1,14 +1,14 @@
 """Bind the simulated robot's joints to the selected Rhizome hardware contract."""
+from contextlib import ExitStack
 import json
+import os
 from pathlib import Path
 
-import yaml
-
 from .external_motors import MotorBinding, MotorSocketServer, MujocoMotors
-from .rhizome_task import Task
 
 
 def description(config):
+    import yaml
     from robot_description.resolve import resolve
     root=Path(config['root'])
     return resolve(yaml.safe_load((root/'src/robot_description/robot_cad.yml').read_text()),
@@ -16,7 +16,7 @@ def description(config):
                    config['chassis_configuration'],config['payload_configuration'])
 
 
-def connect(model,data,profile,config):
+def motor_bindings(model, profile, config):
     from pyzome import core
     bindings={0:{}}
     for wheel in profile['wheels']:
@@ -24,6 +24,7 @@ def connect(model,data,profile,config):
         polarity=1 if wheel['id'].endswith('left') else -1
         bindings[0][0,mid]=MotorBinding('element/'+wheel['id'],int(wheel['drive_sign']*polarity))
     if config.get('weeding_test'):
+        from .rhizome_task import Task
         task=Task(config['root'],config['task'])
         resolved=json.loads(description(config).message()['description'])
         arms=[]
@@ -54,6 +55,50 @@ def connect(model,data,profile,config):
                 load_offset=cfg['zero']['yaw']['load']+cfg['mount']['yaw']['hardstop'] if axis=='yaw' else 0
                 mid=int(getattr(core.MotorPosition,node['motor_ids'][axis]))
                 bindings[pid][0,mid]=MotorBinding('element/'+physical[axis+'_joint'],sign,load_offset_rad=load_offset,encoder_zeroed=True)
-    adapters={pid:MujocoMotors(model,data,b) for pid,b in bindings.items()}
-    servers=[MotorSocketServer(f'/tmp/motors-{pid}.sock',adapter) for pid,adapter in adapters.items()]
-    return adapters,servers
+    return bindings
+
+
+class RhizomeMotorAdapter:
+    """One simulated motor endpoint per Rhizome device, polled on the physics thread."""
+
+    def __init__(self, model, data, bindings, socket_dir=Path('/tmp')):
+        self.devices = {}
+        self.servers = []
+        with ExitStack() as opening:
+            for device, joints in bindings.items():
+                motors = MujocoMotors(model, data, joints)
+                server = MotorSocketServer(socket_dir / f'motors-{device}.sock', motors)
+                self.servers.append(opening.enter_context(server))
+                self.devices[device] = motors
+            self._resources = opening.pop_all()
+
+    def before_step(self):
+        for motors in self.devices.values():
+            motors.apply()
+        self.poll()
+
+    def poll(self):
+        for server in self.servers:
+            server.poll(0)
+
+    def close(self):
+        try:
+            for motors in self.devices.values():
+                motors.stop(motors.motors)
+        finally:
+            self._resources.close()
+
+
+def from_launch(model, data):
+    """Open the motor endpoints specified by a native control run's launch file."""
+    from .rhizome_install import inspect_install
+
+    config = json.loads(Path(os.environ['ALAMIN_RHIZOME_LAUNCH']).read_text())
+    if not config.get('control_test'):
+        raise ValueError('The selected launch must enable native motor control')
+    install = inspect_install(config['root'], config['host_build'])
+    from pyzome import core
+    if not Path(core.__file__).resolve().is_relative_to(Path(install['host_build']) / 'py'):
+        raise ValueError('Set PYTHONPATH to the selected Rhizome host build and source')
+    profile = json.loads((Path(config['scene']) / 'robot_profile.json').read_text())
+    return RhizomeMotorAdapter(model, data, motor_bindings(model, profile, config))
