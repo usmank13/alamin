@@ -37,20 +37,10 @@ navigation cameras.
 
 ## Run an agent
 
-Use the setup from [agent navigation](agent_navigation.md), including matching
-Rhizome source/build paths, model package and credentials. For example:
-
-```bash
-.venv/bin/python scripts/run_agent_nav.py \
-  --scene outputs/two_fields_corner \
-  --seconds 240 --output outputs/two_fields_corner_agent \
-  --mission "Leave the west soybean plot, follow the dirt road past the parked tractor and turn left around the tree, enter the northeast soybean plot with north-south rows, and stop near its far end. Stay on the road between plots and avoid vegetation and equipment."
-```
-
-The agent runner records its usual trajectory and collision report. It does not
-consume `mission.json` or automatically score this positional goal; compare the
-final pose with that file's goal and tolerance. Do not use `--target` with a plot
-name: that option expects a physical manifest object.
+Use the [native mission drive](agent_navigation.md#native-mission-drive) on
+`outputs/two_fields_corner`. The point-to-point check uses the native agent and
+wheel controls on this plot. For a field traversal, compare the recorded final
+pose with the destination and tolerance in `mission.json`.
 
 For a supplied-waypoint LocalControl baseline, set `RHIZOME_ROOT` and
 `RHIZOME_HOST_BUILD` to a matching installed pair, then run:

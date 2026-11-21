@@ -11,7 +11,7 @@ motor feedback. Its motor simulation cannot replace physical arm feedback.
 
 The actual-node observation runner is now available as
 `python -m scene_pipeline.rhizome_agent`; see the
-[launch and credential handoff](agent_navigation.md#actual-node-observation-and-conversation-test).
+[launch and credential handoff](agent_navigation.md#stationary-observation).
 It runs the unmodified AiAgent entry point with live MuJoCo sensor topics and
 native RGB-D SHM streams. It is a stationary subset of the selected task, not
 yet full navigation or weeding integration. The existing navigation adapter
@@ -53,12 +53,10 @@ LocalControl. `nav-model-drive` enables NavModel driving and selects
 task, without overriding them to fit a scenario. Switching these startup modes
 during a run requires an explicit Rhizome-owned control interface.
 
-The existing `agriculture-drive` and `run_agent_nav.py` runners now share install
-selection and verification. LocalControl parameter overrides accept finite JSON
-instead of a six-key Alamin allowlist; their meaning belongs to Rhizome.
-They are still the legacy adapters; the task
-inspector does not make their copied agent policies or mixed clocks equivalent
-to running the real nodes.
+The agent mission drive runs the native node and wheel-control services in the
+same simulation. See the [mission drive setup](agent_navigation.md#native-mission-drive).
+The `agriculture-drive` runner also verifies the selected install and accepts
+finite JSON LocalControl overrides.
 
 ## Investigation: run the normal host processes
 
@@ -187,12 +185,9 @@ payload coordination. Alamin publishes measured sensors and motor feedback and
 applies commands from the host motor backend. Agent I/O must not block physical stepping;
 LLM latency must remain observable while the robot continues to move.
 
-Delete the reconstructed agent, private NavModel access, hard-coded task values,
-manual stopping/coverage logic only as the
-real-node path replaces them. The old runners can become thin command aliases
-after behavior is covered.
-
-Acceptance must demonstrate:
+The point-to-point mission now runs the checkout's agent, navigation and wheel
+controls against MuJoCo. The previous navigation CLI delegates to that launcher.
+The following broader scenarios remain separate acceptance targets:
 
 - The construction truck-then-loader mission through the actual AiAgent node.
 - A Python-only change under `src/ai_agent` picked up by a new rollout, with no

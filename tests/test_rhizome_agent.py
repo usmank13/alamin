@@ -56,3 +56,24 @@ def test_control_task_staging_does_not_inject_an_agent(tmp_path):
     runtime=stage(root,tmp_path/'run','drive',require_agent=False)
     task=json.loads((runtime/'opt/task/task.json').read_text())
     assert task['nodes']=={'drive_control':{'drive_limit_lease_sec':2}}
+
+
+def test_mission_drive_uses_native_source_agent_and_drive_task(tmp_path):
+    root = tmp_path/'rhizome'
+    rover = ['drive_control', 'drive_mux', 'local_control']
+    for name in [*rover, 'ai_agent', 'navigation']:
+        path = root/'src'/name/f'{name}.node.yml'
+        path.parent.mkdir(parents=True)
+        path.write_text('target_devices: [rover]\n---\n{}\n')
+    tasks = root/'src/tasks'
+    tasks.mkdir()
+    (tasks/'sim-drive.yml').write_text(json.dumps(dict(services=dict(rover=rover),
+        nodes=dict(local_control=dict(goals_stale_sec=.5, auto_speed_max_ms=.3)))))
+    runtime = stage(root, tmp_path/'run', 'sim-drive', mission_drive=True)
+    task = json.loads((runtime/'opt/task/task.json').read_text())
+    assert sorted(task['services']['rover']) == sorted([*rover, 'ai_agent', 'navigation'])
+    assert task['nodes']['local_control'] == {'auto_speed_max_ms': .3}
+    assert 'ai_agent' in task['nodes']
+    (tasks/'incomplete.yml').write_text('services: {rover: [ai_agent]}')
+    with pytest.raises(ValueError, match='isolated rover drive'):
+        stage(root, tmp_path/'bad-run', 'incomplete', mission_drive=True)

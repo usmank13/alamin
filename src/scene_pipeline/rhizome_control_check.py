@@ -56,9 +56,16 @@ def supervise_controls(config):
         report['build'] = build
         services = Task(config['root'],config['task']).services()
         nodes = services.get('rover',[])
+        if config.get('mission_drive'):
+            staged_task = json.loads((Path('/opt/aigen/task')/'task.json').read_text())
+            nodes = staged_task['services']['rover']
+            report.update(scope='Native agent mission, navigation and measured MuJoCo drive',
+                          actual_agent_entry_point=config['entry_point'], mission_submitted=False)
         expected = {'local_control','drive_mux','drive_control'}
+        if config.get('mission_drive'):
+            expected.update(('navigation', 'ai_agent'))
         if not config.get('weeding_test') and (set(nodes) != expected or any(v for k,v in services.items() if k!='rover')):
-            raise ValueError('Control check needs a task selecting local_control, drive_mux and drive_control only')
+            raise ValueError(f'Expected rover services {sorted(expected)} and no payload services')
         if config.get('weeding_test'):
             from .rhizome_hardware import description
             import yaml
@@ -96,6 +103,9 @@ def supervise_controls(config):
             for device in (1,2):
                 role('oracle',device)
             wait(lambda: all((output/f'oracle-ready@{d}').exists() for d in (1,2)))
+        if config.get('mission_drive'):
+            role('render')
+            wait(lambda: (output/'render.json').exists())
         for name in nodes:
             launch_node(name)
         if config.get('weeding_test'):
@@ -105,7 +115,8 @@ def supervise_controls(config):
         config['publisher_pid'] = publisher.pid
         save(output/'launch.json',config)
         checker = role('control-check')
-        until = time.monotonic()+(300 if config.get('weeding_test') else 90)
+        timeout = config['seconds'] + 90 if config.get('mission_drive') else 90
+        until = time.monotonic()+(300 if config.get('weeding_test') else timeout)
         while checker.poll() is None:
             for name,p,_ in children:
                 if name!='control-check' and p.poll() is not None:
@@ -149,6 +160,9 @@ def supervise_controls(config):
 
 
 def run(config):
+    if config.get('mission_drive'):
+        from .rhizome_mission_check import run as check_mission
+        return check_mission(config)
     if config.get('weeding_test'):
         from .rhizome_weeding_check import check
         return check(config)

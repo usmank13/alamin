@@ -1,7 +1,7 @@
 """Run Rhizome against live MuJoCo observations and measured motor hardware.
 
-The default agent mode is stationary. Explicit control/weeding checks start
-task-selected native control processes without invoking a language model.
+The default agent mode is stationary. Mission drive connects the native agent
+to the wheel controls. Isolated control and weeding checks run without the agent.
 """
 import argparse
 import hashlib
@@ -23,8 +23,22 @@ def save(path, value):
     Path(path).write_text(json.dumps(value, indent=2)+'\n')
 
 
-def stage(root, output, task_name, agent_config=None, *, require_agent=True):
+def stage(root, output, task_name, agent_config=None, *, require_agent=True, mission_drive=False):
     task = Task(root, task_name)
+    if mission_drive:
+        services = task.services()
+        required = {'local_control', 'drive_control', 'drive_mux'}
+        rover = set(services.get('rover', []))
+        if not required <= rover or rover - required - {'ai_agent', 'navigation'} or any(
+                names for device, names in services.items() if device != 'rover'):
+            raise ValueError('Mission drive requires an isolated rover drive task such as sim-drive')
+        add = {'ai_agent', 'navigation'}
+        if not add <= task.nodes.keys():
+            raise ValueError('Mission drive requires native ai_agent and navigation nodes')
+        task.config['services'] = {**services, 'rover': sorted(rover | add)}
+        # sim-drive streams test goals. A mission uses the rover's one-shot agent goal lifetime.
+        if task_name == 'sim-drive':
+            task.config.get('nodes', {}).get('local_control', {}).pop('goals_stale_sec', None)
     if require_agent and 'ai_agent' not in task.services().get('rover', []):
         raise ValueError(f'Task {task_name} does not select ai_agent on rover')
     runtime = output/'runtime'
@@ -84,7 +98,7 @@ def child(role, config):
                 super().__init__(core.NodeConfig('alamin_observer'))
                 log_dir = Path('/dev/shm') if config.get('control_test') else output
                 self.log = (log_dir/'topics.jsonl').open('w', buffering=1)
-                for topic in ('/agent/transcript','/agent/enable','/agent/busy','/nav/goals',
+                for topic in ('/agent/transcript','/agent/enable','/agent/busy','/nav/source','/nav/goals',
                               '/drive/limits','/drive','/nav/drive','drive_control/health','local_control/health',
                               '/drive_mux/state','/drive_mux/reason','/odom','/camera/nav/front/intrinsics/color','/frames/nav_front'):
                     self.Subscribe(topic, None, lambda msg, t=topic: self.log.write(
@@ -222,15 +236,17 @@ def supervise(config):
         save(output/'report.json',report)
 
 
-def main():
+def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--weeding-test',action='store_true',help='Native arm startup homing and oracle weeding bench')
-    p.add_argument('--control-test',action='store_true',help='Exercise task-selected native controls without starting the agent')
+    modes = p.add_mutually_exclusive_group()
+    modes.add_argument('--mission-drive',action='store_true',help='Run the native agent and drive controls on an operator mission')
+    modes.add_argument('--weeding-test',action='store_true',help='Native arm startup homing and oracle weeding bench')
+    modes.add_argument('--control-test',action='store_true',help='Exercise task-selected native controls without starting the agent')
     p.add_argument('--scene',type=Path)
     p.add_argument('--output',type=Path)
     p.add_argument('--rhizome',type=Path)
     p.add_argument('--host-build',type=Path)
-    p.add_argument('--task',default='dual-agent')
+    p.add_argument('--task',help='Rhizome task (defaults to sim-drive for mission drives, dual-agent otherwise)')
     p.add_argument('--agent-config',type=Path,help='JSON of native ai_agent config overrides, including credential FILE paths')
     p.add_argument('--mission',help='Sent through agent-send after sensor readiness; requires credentials')
     p.add_argument('--seconds',type=float,default=30,help='Wall seconds after readiness')
@@ -239,8 +255,9 @@ def main():
     p.add_argument('--payload-configuration',default='')
     p.add_argument('--runtime-config',type=Path,help=argparse.SUPPRESS)
     p.add_argument('--child',choices=['supervise','relay','sensors','render','publish','observe','camera-check','control-check','oracle'],help=argparse.SUPPRESS)
-    args = p.parse_args()
-    if args.weeding_test:
+    args = p.parse_args(argv)
+    args.task = args.task or ('sim-drive' if args.mission_drive else 'dual-agent')
+    if args.weeding_test or args.mission_drive:
         args.control_test = True
     if args.child:
         config = json.loads(args.runtime_config.read_text())
@@ -249,6 +266,10 @@ def main():
         p.error('--scene and --output are required')
     if not all(math.isfinite(v) and v > 0 for v in (args.seconds,args.camera_hz)):
         p.error('seconds and camera-hz must be finite and positive')
+    if args.mission_drive and not (args.mission or '').strip():
+        p.error('--mission-drive requires a nonempty --mission')
+    if args.control_test and args.mission and not args.mission_drive:
+        p.error('--mission is incompatible with the isolated control checks')
     if args.mission and not args.agent_config:
         p.error('--mission requires --agent-config with Rhizome credential-file paths')
     install = inspect_install(args.rhizome,args.host_build)
@@ -260,7 +281,8 @@ def main():
     if not isinstance(overrides,dict):
         p.error('agent-config must be a JSON object')
     output.mkdir(parents=True, exist_ok=False)
-    runtime = stage(root,output,args.task,overrides,require_agent=not args.control_test)
+    runtime = stage(root,output,args.task,overrides,require_agent=args.mission_drive or not args.control_test,
+                    mission_drive=args.mission_drive)
     for name in ('aigen','aigen_helpers.sh'):
         (runtime/'opt/image/bin'/name).symlink_to(root/'scripts'/name)
     programs = {}
@@ -272,7 +294,7 @@ def main():
     save(output/'cli_programs.json',programs)
     config = dict(scene=str(scene),output=str(output),root=str(root),host_build=str(host),
                   entry_point=str(root/'src/ai_agent/ai_agent.main.py'),task=args.task,
-                  seconds=args.seconds,camera_hz=args.camera_hz,mission=args.mission,control_test=args.control_test,weeding_test=args.weeding_test,
+                  seconds=args.seconds,camera_hz=args.camera_hz,mission=args.mission,mission_drive=args.mission_drive,control_test=args.control_test,weeding_test=args.weeding_test,
                   chassis_configuration=args.chassis_configuration,payload_configuration=args.payload_configuration)
     save(output/'launch.json',config)
     save(output/'install.json',install)
