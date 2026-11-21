@@ -152,7 +152,8 @@ class Navigation:
         start=time.perf_counter();node.Tick()
         prediction=self.messages.get('/nav_model/prediction',{})
         healthy=all(self.invariants.values())
-        goals=self.messages.get(node.goals_topic,{}) if healthy else {}
+        # Older NavModel revisions publish directly to /nav_model/goals.
+        goals=self.messages.get(getattr(node,'goals_topic','/nav_model/goals'),{}) if healthy else {}
         self.goals=p.WaypointsMsg(goals);self.last_capture=t
         self.result=dict(simulation_time=t,prediction=prediction,goals=json.loads(str(self.goals)),
             nav_goal=self.messages.get('/nav/goal'),invariants=self.invariants.copy(),
