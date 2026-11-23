@@ -58,6 +58,15 @@ def parse():
                    help="nav_model obstacle_max_height_m (the rover's default is 0.25; crops are ~0.15 m)")
     p.add_argument('--nav-params', type=json.loads, default={},
                    help='JSON of nav_model node.yml overrides, e.g. {"turn_first_side": "right"}')
+    p.add_argument('--field', type=json.loads,
+                   help="JSON field boundary [[x, y], ...] (world m) in place of the scene's plots, e.g. a coarse drawn one")
+    p.add_argument('--harness', choices=['ai_agent', 'stock'], default='ai_agent',
+                   help='stock: the baseline arm, the Agent SDK as Claude Code ships it (its own system prompt and '
+                        'file tools) plus the rover tools and a one-paragraph brief; no ai_agent prompt, world '
+                        'digest, memory or skills, and no frame or digest on wait_for_event results')
+    p.add_argument('--decision', type=json.loads, default={},
+                   help='JSON of ai_agent node.yml `decision` overrides (the wake gate), e.g. {"backend": "rules"}; '
+                        'for "jev" the key is read from $OPENROUTER_API_KEY')
     p.add_argument('--weed', action='store_true',
                    help='Run every payload arm through Rhizome weeding on oracle detections; arms weed while nav_model drives')
     return p.parse_args()
@@ -83,6 +92,7 @@ class SimState:
         self.delegated_at = None  # pose when NAV_MODEL took over
         self.fields = []  # plot bounds [[xmin, ymin], [xmax, ymax]]: routes the sim can load
         self.nav_change = None  # ai_agent.progress.SettledChange
+        self.edge_stop = None  # ai_agent.progress.EdgeStop
 
     def effective_goals(self):
         # Mirrors rover gating: only AGENT-sourced goals under AUTONOMY drive.
@@ -171,12 +181,13 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
     def set_enabled(on):
         state.enabled = bool(on)
 
-    def set_nav_source(name):
+    def set_nav_source(name, stop_before_edge_m=0.0):
         # AiAgent.set_nav_source + navigation's set-nav-source (clears /nav/goals).
         if not state.enabled:
             return '[refused: /agent/enable is false]'
         if name not in ('AGENT', 'NAV_MODEL', 'GPS_ROUTE', 'NONE'):
             return f'[refused: unknown source {name!r}]'
+        state.edge_stop.arm(stop_before_edge_m if name == 'NAV_MODEL' else 0)
         with state.lock:
             state.source = name
             state.goals = None
@@ -184,7 +195,7 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
             if name == 'NAV_MODEL':
                 state.delegated_at = state.pose
                 state.nav_change.reset()
-        log('nav_source', text=name)
+        log('nav_source', text=name, stop_before_edge_m=state.edge_stop.stop_m)
         return name
 
     def grab_frame(position='front'):
@@ -258,8 +269,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
     g = GeminiSelf()
 
     @latency
-    async def gemini_trajectory(jpeg, goal, constraints):
-        pts = await ai_main.AiAgent.gemini_trajectory(g, jpeg, goal, constraints)
+    async def gemini_trajectory(jpeg, goal, constraints, **kw):
+        pts = await ai_main.AiAgent.gemini_trajectory(g, jpeg, goal, constraints, **kw)
         log('gemini', text=f'{goal!r} -> {pts}')
         return pts
 
@@ -280,6 +291,15 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
                         nav_model=nav_facts(state),
                         working_memory=state.world.full(pose, state.t))
 
+    def record_field_map(lanes, meta):
+        # AiAgent.record_field_map; no map_creation node runs here, so the
+        # lanes it would get are written out (odom == world).
+        if not state.enabled:
+            return '[refused: /agent/enable is false]'
+        (out / 'field_map.json').write_text(json.dumps(dict(meta=meta, lanes=lanes), indent=2) + '\n')
+        log('field_map', lanes=lanes, meta=meta)
+        return f"Auto map saved: {meta.get('map_name')} ({len(lanes)} lanes)"
+
     async def reply(text, include_frame=False):
         log('agent_says', text=text)  # the operator channel
         return 'ok'
@@ -292,7 +312,8 @@ def make_host(state, log, out, cfg, ai_main, tools, Image, ImageDraw, latency, c
         start_capture=start_capture, stop_capture=stop_capture,
         check_coverage=lambda points, reverse: guard.check(state.pose, points, reverse, state.t),
         owns_goals=lambda: state.source == 'AGENT', reply=reply, robot_state=robot_state,
-        set_nav_source=set_nav_source)
+        set_nav_source=set_nav_source, record_field_map=record_field_map,
+        trace=lambda line: log('trace', text=line) if line.startswith(('gate ', 'until ')) else None)
 
 
 def nav_facts(state):
@@ -306,9 +327,8 @@ def nav_facts(state):
         out['row_heading_rel_deg'] = round((rel + 90) % 180 - 90)
     if state.fields and pose is not None:  # the loaded route: the nearest field, as in rhizome_nav
         from ai_agent.world import field_facts
-        from scene_pipeline.rhizome_nav import nearest_field
-        (x0, y0), (x1, y1) = nearest_field(state.fields, pose[0], pose[1])
-        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        from scene_pipeline.rhizome_nav import field_corners, nearest_field
+        corners = field_corners(nearest_field(state.fields, pose[0], pose[1]))
         out['field'] = {**field_facts(corners, pose), 'corners_odom': [list(c) for c in corners]}  # odom == world
     if state.source == 'NAV_MODEL' and state.delegated_at is not None and pose is not None:
         out['moved_m'] = round(math.dist(state.delegated_at[:2], pose[:2]), 1)
@@ -417,7 +437,9 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
         queue = asyncio.Queue()
         loop_box['queue'] = queue
         ctx = tools.ToolContext(memory=memory, event_queue=queue, agent=host, world=state.world,
-                                config={'scan': cfg.get('scan')})
+                                config={'scan': cfg.get('scan'),
+                                        'decision': {**cfg.get('decision', {}), **args.decision,
+                                                     'key': os.environ.get('OPENROUTER_API_KEY')}})
         conv = Conversation(client=AsyncAnthropic() if args.llm == 'api' else None, model=cfg['models']['claude'],
                             system_prompt=L1_SYSTEM_PROMPT, memory=memory, tool_ctx=ctx)
         if args.llm == 'api':
@@ -452,6 +474,17 @@ def run_agent(state, log, out, args, loop_box, ready, stop):
     asyncio.run(main())
 
 
+# The stock arm's rover tools: all but the ai_agent harness's own memory and skills.
+STOCK_WITHOUT = {'memory_read', 'memory_write', 'remember', 'run_skill'}
+STOCK_BRIEF = (
+    'You are the on-board agent of a four-wheel agricultural weeding rover. This is a simulation: no people are in '
+    'the scene and calls to Gemini are consented. The operator\'s messages and robot events arrive as user messages. '
+    'Use the rover tools to look through the cameras, read the robot\'s state and drive; their descriptions say how. '
+    'A mission takes many minutes: after starting a motion, call wait_for_event to wait for what happens next rather '
+    'than ending your turn, and end your turn with a short report to the operator only when the mission is done or '
+    'you cannot continue. Files in the working directory are yours for notes.')
+
+
 async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, args):
     """The agent loop on the Claude Agent SDK instead of the Messages API.
 
@@ -465,21 +498,28 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
     from ai_agent.conversation import mcp_content
     mark = {'t': 0.0, 'wall': time.perf_counter()}
 
+    stock = args.harness == 'stock'
+
     def make(name, desc, schema):
         @tool(name, desc, schema)
         async def handler(inp):
             await wait_until(mark['t'] + time.perf_counter() - mark['wall'])
             result = await tools.dispatch(ctx, name, inp)
+            if stock and name == 'wait_for_event':  # the event alone: no frame, no [world] digest
+                text = result if isinstance(result, str) else next(b['text'] for b in result if b['type'] == 'text')
+                result = text.split('\n[world]')[0]
             mark['t'], mark['wall'] = state.t, time.perf_counter()
             return {'content': mcp_content(result)}
         return handler
 
-    server = create_sdk_mcp_server('rover', tools=[make(d['name'], d['description'], d['input_schema'])
-                                                   for d in tools.TOOL_DEFS])
-    names = [f"mcp__rover__{d['name']}" for d in tools.TOOL_DEFS]
+    defs = [d for d in tools.TOOL_DEFS if not (stock and d['name'] in STOCK_WITHOUT)]
+    server = create_sdk_mcp_server('rover', tools=[make(d['name'], d['description'], d['input_schema']) for d in defs])
+    names = [f"mcp__rover__{d['name']}" for d in defs]
+    file_tools = ['Read', 'Write', 'Edit', 'Glob', 'Grep'] if stock else []
     options = ClaudeAgentOptions(
-        system_prompt=conv.system_prompt + '\n\n# Persistent memory index\n\n' + conv.memory.read_index(),
-        mcp_servers={'rover': server}, tools=[], allowed_tools=names, setting_sources=[],
+        system_prompt=({'type': 'preset', 'preset': 'claude_code', 'append': STOCK_BRIEF} if stock else
+                       conv.system_prompt + '\n\n# Persistent memory index\n\n' + conv.memory.read_index()),
+        mcp_servers={'rover': server}, tools=file_tools, allowed_tools=names + file_tools, setting_sources=[],
         permission_mode='bypassPermissions', model=args.claude_model or 'claude-sonnet-5',
         thinking={'type': 'adaptive', 'display': 'summarized'},  # as the rover's SdkConversation
         max_turns=200, cwd=str(out))
@@ -489,7 +529,8 @@ async def sdk_loop(conv, ctx, queue, tools, wait_until, state, log, out, stop, a
             ev = await queue.get()
             sent = len(conv.messages)
             await conv.add_user_event(ev)  # rover's event -> user text formatting
-            conv.add_text(state.world.digest(state.pose, state.t))  # AiAgent._agent_loop
+            if not stock:
+                conv.add_text(state.world.digest(state.pose, state.t))  # AiAgent._agent_loop
             mark['t'], mark['wall'] = state.t, time.perf_counter()
             started = time.perf_counter()
             await client.query('\n'.join(m['content'] for m in conv.messages[sent:]))
@@ -536,9 +577,10 @@ def surface_distance(model, target, max_m=50.0):
     return lambda data: min(mujoco.mj_geomDistance(model, data, a, b, max_m, fromto) for a in robot for b in goal)
 
 
-def agent_event(name, details, loop_box):
+def agent_event(name, details, loop_box, **extra):
     """System event into the agent's queue (what wait_for_event wakes on)."""
-    asyncio.run_coroutine_threadsafe(loop_box['queue'].put({'event': name, 'details': details}), loop_box['loop'])
+    asyncio.run_coroutine_threadsafe(loop_box['queue'].put({'event': name, 'details': details, **extra}),
+                                     loop_box['loop'])
 
 
 def operator_say(text, host_cancel, loop_box, log, stop_keywords):
@@ -629,13 +671,16 @@ def main():
     option.geomgroup[3:] = 0
 
     state = SimState()
-    state.fields = [plot['bounds_m'] for plot in manifest.get('plots', [])]
+    state.fields = [args.field] if args.field else [plot['bounds_m'] for plot in manifest.get('plots', [])]
     log = Log(out / 'events.jsonl', state)
     node_cfg = list(yaml.safe_load_all((args.rhizome / 'src/ai_agent/ai_agent.node.yml').read_text()))[1]
     stop_keywords = node_cfg['stop_keywords']
     from ai_agent.coverage import CoverageGuard
     from ai_agent.progress import ProgressMonitor, SettledChange, obstacle_event
     state.nav_change = SettledChange(node_cfg['nav_model_event_settle_s'])
+    from ai_agent.progress import EdgeStop
+    from ai_agent.events import nav_model_event
+    state.edge_stop = EdgeStop()
     from nav_model.swept_coverage import SeenMap
     from ai_agent.world import WorkingMemory
     state.world = WorkingMemory(robot_dimensions(profile)['robot']['length'] / 2,
@@ -659,7 +704,7 @@ def main():
                           # and otherwise watches the agent's goals for obstacles.
                           nav_model=dict(package=str(args.nav_package), device=args.nav_device, cameras=['front', 'rear'],
                                          depth=True, obstacle_detection=True, drive=True, arbitrated=True, threads=8,
-                                         fields=[plot['bounds_m'] for plot in manifest.get('plots', [])],
+                                         fields=state.fields,
                                          params=dict(obstacle_max_height_m=args.obstacle_max_height, seen_publish_hz=5.0, **args.nav_params),
                                          robot_dimensions=robot_dimensions(profile)))
     arms = {}
@@ -884,12 +929,27 @@ def main():
                     log(ev['event'], **ev['details'])
                     agent_event(ev['event'], ev['details'], loop_box)
                 if state.source == 'NAV_MODEL' and state.nav:  # AiAgent.Tick
-                    if state.nav_change.update((state.nav.get('gate'), bool(state.nav.get('driving')),
-                                                str(state.nav.get('steer_source')).endswith('TURN')), t):
-                        ev = dict(event='nav_model', details=nav_facts(state))
+                    turning = str(state.nav.get('steer_source')).endswith('TURN')
+                    wake = (str(state.nav.get('gate')).split('.')[-1], bool(state.nav.get('driving')), turning)
+                    edge = (nav_facts(state).get('field') or {}).get('edge_ahead_m')
+                    if state.edge_stop.update(edge, turning) and state.enabled:
+                        stop_m = state.edge_stop.stop_m
+                        state.edge_stop.arm(0)
+                        with state.lock:
+                            state.source, state.goals = 'AGENT', None
+                            state.progress.set_goal(None)
+                        log('nav_source', text='AGENT', by='edge_stop')
+                        ev = dict(event='edge_stop', details=dict(stop_before_edge_m=stop_m, source='AGENT')
+                                  | nav_facts(state))
+                        state.world.on_event(ev, state.pose, t)
+                        log('edge_stop', **ev['details'])
+                        agent_event('edge_stop', ev['details'], loop_box)
+                    elif state.nav_change.update(wake, t):
+                        ev = nav_model_event(nav_facts(state), (node_cfg.get('decision') or {}).get('nav_model_expect'))
                         state.world.on_event(ev, state.pose, t)
                         log('nav_model', **ev['details'])
-                        agent_event('nav_model', ev['details'], loop_box)
+                        agent_event('nav_model', ev['details'], loop_box,
+                                    **{k: v for k, v in ev.items() if k in ('routine', 'expect')})
                 if state.reengage_at is not None and t >= state.reengage_at:
                     with state.lock:
                         state.mux, state.reengage_at = 'AUTONOMY', None
@@ -987,7 +1047,8 @@ def main():
     positions = np.asarray(positions)
     trajectory_image(out / 'trajectory.png', positions, bounds, manifest['rows'])
     np.save(out / 'positions.npy', positions)  # chassis xyz at 100 Hz
-    (out / 'run.json').write_text(json.dumps(dict(scene=str(scene), spawn=spawn, target=args.target)))
+    (out / 'run.json').write_text(json.dumps(dict(scene=str(scene), spawn=spawn, target=args.target,
+                                                    harness=args.harness, decision=args.decision)))
     report = dict(failure=failure, sim_seconds=float(data.time), wall_seconds=round(wall, 1),
                   realtime_factor=round(float(data.time) / wall, 3), max_lag_s=round(lag_max, 3),
                   start_xy=positions[0, :2].round(3).tolist(), end_xy=positions[-1, :2].round(3).tolist(),
