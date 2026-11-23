@@ -1,0 +1,27 @@
+{
+  "record_nav_images": false,
+  "controller": {
+    "root": "../rhizome",
+    "host_build": "outputs/localization_host_1118/host",
+    "chassis_configuration": "gen-3.0",
+    "payload_configuration": "raptor_4x_30in_gen3",
+    "perception": "none",
+    "out_and_back_m": 40.0,
+    "parameters": {"auto_speed_max_ms": 0.45},
+    "localization": {
+      "mode": "odometry",
+      "chassis_pitch_deg": 0.0,
+      "imu_pitch_offset_deg": 0.0,
+      "rtk": {"noise_sigma_m": 0.007, "v_acc": 0.014, "outages": [], "blips": []},
+      "params": {}
+    },
+    "nav_model": {
+      "package": "outputs/nav_obstacle_package/nav_grid_4_nav",
+      "device": "cpu",
+      "drive": false,
+      "cameras": ["front", "rear"],
+      "depth": true,
+      "obstacle_detection": true
+    }
+  }
+}
