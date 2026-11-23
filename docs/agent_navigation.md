@@ -142,7 +142,19 @@ events, agent messages), the frames the agent looked at, the recorded state
 (`rollout_scene.mjz` + `data.h5`), `trajectory.png` and `report.json` (path
 length, camera coverage, objects seen, failure).
 
-- `scripts/replay_agent_nav.py RUN` renders a run to MP4.
+- `scripts/replay_video.py RUN` renders a run to a 1080p MP4: a chase view with
+  who is driving (agent / nav_model), a mission timeline and a minimap, and a
+  side panel with the robot's front nav camera (re-rendered at the run's own
+  settings, nav_model's row lines while it drives) and the agent's trace
+  (thinking, messages, tool calls, events). Playback runs at `--fast` (8x) and
+  drops to `--slow` (2x) around agent activity. `--start/--end` cut a clip;
+  `--scene DIR` draws the run in another build of the same layout; `--rhizome
+  ROOT` gives runs recorded before the production skin the real robot look.
+- For a photoreal chase view: `--export-hero DIR` writes the scene, poses and
+  camera path; `vendor/blender/.../blender --background --python
+  scripts/blender_hero.py -- DIR SKY.hdr SKY_YAW_RAD [--tree T.gltf --bush
+  B.gltf]` renders `DIR/frames`; `--hero-frames DIR/frames` composites them
+  under the same HUD. The robot-view panel always stays the simulator's image.
 - Splat captures (`capture_object`, `capture_area`) land in
   `RUN/captures/<name>`; `scripts/splat.py prep|train|eval` turns one into a
   Gaussian splat and scores it against MuJoCo ground truth.

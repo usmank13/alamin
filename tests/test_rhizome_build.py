@@ -95,6 +95,27 @@ def test_build_stamp_detects_changed_source_and_binary(tmp_path):
     with pytest.raises(ValueError,match='extension changed'):verify(host)
 
 
+def test_sim_clock_overlay_isolated_from_checkout(tmp_path):
+    from scene_pipeline.rhizome_sim_build import HOOKS, host_overlay
+
+    root = tmp_path/'rhizome'
+    for name, (anchor, _, _) in HOOKS.items():
+        source = root/name
+        source.parent.mkdir(parents=True)
+        source.write_text(anchor)
+    build = tmp_path/'build'
+    build.mkdir()
+    rules = host_overlay(root, build)
+    for name, (anchor, replacement, _) in HOOKS.items():
+        assert (root/name).read_text() == anchor
+        assert replacement in (rules.parent/(root/name).name).read_text()
+        assert f'$(BUILD_DIR_HOST)/{name}.o:' in rules.read_text()
+    (root/'src/time/robot_time.cpp').write_text('')
+    with pytest.raises(ValueError, match='does not match'):
+        host_overlay(root, build)
+
+
+
 def test_invalid_host_binary_leaves_output_available(install, tmp_path, monkeypatch):
     import sys
     from scene_pipeline.rhizome_build import main

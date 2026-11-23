@@ -43,8 +43,10 @@ class Runtime:
         meta,params=documents('src/nav/local_control.node.yml')
         params.update(auto_speed_max_ms=.25,turn_speed=.2,boost_speed_max_ms=0.,goals_stale_sec=0.)
         params.update(config.get('parameters',{}))
-        self.goals_topic='/nav_model/goals' if config.get('nav_model') else '/nav/goals'
+        self.switched=(config.get('nav_model') or {}).get('task')=='dual'
+        self.goals_topic='/nav_model/goals' if config.get('nav_model') and not self.switched else '/nav/goals'
         params['goals_topic']=self.goals_topic
+        if self.switched:params['model_goals_topic']='/nav_model/goals'
         # Every fixture tick runs once. Freshness is enforced by the parent RPC
         # deadline, not production wall-clock goals expiry or speed boosting.
         (conf/'nodes/local_control.json').write_text(json.dumps(dict(meta=meta,config=params)))
@@ -75,6 +77,22 @@ class Runtime:
             sys.path.insert(0,str(self.root/'src'))
             from rhizome_nav import Navigation
             self.navigation=Navigation(self,config['nav_model'])
+        self.estimator = None
+        localization = config.get('localization', {})
+        if localization.get('mode') == 'odometry':
+            sys.path.insert(0, str(self.root/'src'))
+            from rhizome_nav import sim_description
+            from rhizome_odometry import Odometry
+            description = sim_description(core, self, config['localization_dimensions'])
+            self.estimator = Odometry(self, localization, description)
+        self.course_distance = config.get('out_and_back_m')
+        self.pitch_course = self.course_distance is not None and (
+            localization.get('chassis_pitch_deg') or 'turnaround_pitch_deg' in localization
+            or 'reverse_pitch_deg' in localization)
+        self.leg_index = 0
+        self.has_reversed = False
+        self.course_leg = 'out'
+        self.course_endpoints = None
         if config.get('perception')=='neural':
             sys.path.insert(0,str(self.root/'src'))
             from rhizome_perception import NeuralPerception
@@ -97,6 +115,12 @@ class Runtime:
                                     'Native build hashes identify binaries independently of checkout revision',
                                     'Oracle detections are not neural inference; fixed 2 cm keypoint size',
                                     'Shadow arm uses Rhizome software motor model; no MuJoCo arm or soil contact'])
+        if self.estimator:
+            self.info['localization'] = localization
+            self.info['limitations'][1] = 'Odometry starts at zero translation in its local frame'
+            self.info['clocks'] = 'Native odometry runs at 100 Hz on simulation seconds + 1'
+            if self.navigation:
+                self.navigation.info['input'] = self.navigation.info['input'].replace('truth odometry', 'native Rhizome odometry')
         if self.arm:
             (Path(output)/'shadow_arm_config.json').write_text(json.dumps(self.arm_snapshot,indent=2))
         if config.get('physical_arm'):
@@ -188,15 +212,45 @@ class Runtime:
         if self.last_time is not None and not math.isclose(t-self.last_time,.01,abs_tol=1e-6):
             raise ValueError('Expected monotonically increasing 100 Hz simulation steps')
         self.last_time=t
-        x,y,z=msg['position'];qw,qx,qy,qz=msg['quaternion']
-        pose=dict(x=x,y=y,z=z,qw=qw,qx=qx,qy=qy,qz=qz,frame='odom')
-        self.pose=pose;self.forward_mps=msg['forward_mps']
+        if self.estimator:
+            self.estimator.tick(t, msg['sensors'])
+            odom = self.estimator.odom
+            self.odom_frame = self.estimator.frame
+            pose = json.loads(str(odom))['pose']
+            if self.navigation:
+                self.navigation.node.odom = odom
+                self.navigation.node._on_odom(odom)
+                # The capture graph selects samples strictly before the image timestamp.
+                frame = self.p.CoordinateFrame(json.loads(str(self.odom_frame)))
+                frame.header.timestamp = self.p.nanoseconds(odom.header.timestamp.nanoseconds() - 1)
+                self.navigation.node.transforms.update(frame)
+        else:
+            x,y,z=msg['position'];qw,qx,qy,qz=msg['quaternion']
+            pose=dict(x=x,y=y,z=z,qw=qw,qx=qx,qy=qy,qz=qz,frame='odom')
+        self.pose = pose
+        self.forward_mps = odom.twist.v if self.estimator else msg['forward_mps']
+        self.yaw_rps = odom.twist.w if self.estimator else msg.get('yaw_rps', 0.)
+        if self.course_distance is not None and self.navigation_enabled:
+            self.update_course(t, pose)
+        previous_speed = self.last_command[0]
         if self.navigation_enabled and round(t*100)%10==0:
-            odom=self.p.OdometryMsg(dict(pose=pose,twist=dict(v=msg['forward_mps'],w=0)))
+            if not self.estimator:
+                odom = self.p.OdometryMsg(dict(pose=pose, twist=dict(v=self.forward_mps, w=self.yaw_rps)))
             goals=self.navigation.command_goals(t) if self.navigation else self.goals
-            self.fixture.test_single({'/odom':odom,self.goals_topic:goals},lambda:None)
+            if self.switched:
+                # The plan is always there, as on the rover; native LocalControl
+                # picks the model's goals while nav_model publishes them.
+                messages={'/odom':odom,'/nav/goals':self.goals}
+                if self.navigation.node.drive:messages['/nav_model/goals']=goals
+                self.fixture.test_single(messages,lambda:None)
+            else:
+                self.fixture.test_single({'/odom':odom,self.goals_topic:goals},lambda:None)
             self.last_command=[self.command.lin,self.command.ang]
         if self.navigation and not self.navigation.command_goals(t).waypoints:self.last_command=[0.,0.]
+        if self.pitch_course and self.navigation_enabled:
+            # Step changes in wheel speed unload the rockers during pitch measurements.
+            target = self.command.lin if self.goals.waypoints else 0.
+            self.last_command[0] = previous_speed + max(-.008, min(.008, target - previous_speed))
         if self.navigation and (self.navigation.shadow or self.navigation.arbitrated):
             # drive_control: a blocked direction commanded zeroes lin + ang
             # (/vision/obstacle clip plus the OBSTACLE_* invariant).
@@ -205,13 +259,19 @@ class Runtime:
             if (obstacle(prediction,'fwd')['blocked'] and lin>0) or (obstacle(prediction,'rev')['blocked'] and lin<0):
                 self.last_command=[0.,0.]
         result=dict(twist=self.last_command)
+        if self.estimator or self.course_distance is not None:
+            result['localization'] = dict(pose=pose, twist=dict(v=self.forward_mps, w=self.yaw_rps),
+                stamp_ns=odom.header.timestamp.nanoseconds() if self.estimator else round((t + 1)*1e9),
+                path_offset=self.estimator.offset.y if self.estimator else None,
+                rtk=self.estimator.last_fix if self.estimator else None,
+                leg=self.course_leg if self.course_distance is not None else None, leg_index=self.leg_index, has_reversed=self.has_reversed)
         if self.navigation:
             enabled=bool(self.navigation.command_goals(t).waypoints)
             turn=self.navigation.result.get('prediction',{}).get('steer_source')=='TURN'
             # Arms weed only under nav_model's own NORMAL goals, as /nav/goal on the rover.
             own=not (self.navigation.shadow or self.navigation.arbitrated) or self.navigation.owns
             result['navigation']=dict(driving=enabled,arm_enabled=enabled and own and not turn)
-        if self.arm or self.neural or self.navigation:
+        if not self.estimator and (self.arm or self.neural or self.navigation):
             # Rhizome roots the graph at ROBOT: /frames/odom contains the
             # ODOM origin expressed in ROBOT, the inverse of MuJoCo's pose.
             r=((1-2*(qy*qy+qz*qz),2*(qx*qy-qz*qw),2*(qx*qz+qy*qw)),
@@ -223,7 +283,7 @@ class Runtime:
         if self.arm:
             self.graph.update(self.odom_frame)
             _,_,qy,qz=self.config['shadow_arm'].get('quaternion_chassis_wxyz',[1,0,0,0])
-            self.arm.set_robot_speed(msg['forward_mps']*(1-2*(qy*qy+qz*qz)))
+            self.arm.set_robot_speed(self.forward_mps*(1-2*(qy*qy+qz*qz)))
             if self.row_profile is not None:
                 # The native row-profile freshness guard uses host time. The
                 # synchronous simulator holds the latest capture until the next
@@ -281,6 +341,40 @@ class Runtime:
                     Image.fromarray(self.ph.debug_render(self.ph.DebugView(),self.arm)[:,:,::-1]).save(folder/f'{t:06.2f}.png')
         if not all(math.isfinite(v) for v in result['twist']):raise ValueError('Nonfinite native drive command')
         return result
+
+    def update_course(self, t, pose):
+        # Let the suspension settle before defining the start of the scored route.
+        if t < 1 or self.course_leg == 'done':
+            return
+        x, y = pose['x'], pose['y']
+        starting = self.course_endpoints is None
+        if starting:
+            yaw = math.atan2(2*(pose['qw']*pose['qz'] + pose['qx']*pose['qy']),
+                             1 - 2*(pose['qy']**2 + pose['qz']**2))
+            offsets = [0., self.course_distance] if self.course_distance else [0.]
+            if 'shuttle' in self.config:
+                length, cycles = self.config['shuttle']
+                offsets.extend([self.course_distance + length, self.course_distance] * cycles)
+            else:
+                offsets.append(0.)
+            self.course_endpoints = [(x + d*math.cos(yaw), y + d*math.sin(yaw)) for d in offsets]
+            self.course_reverse = [b < a for a, b in zip(offsets, offsets[1:])]
+        if not starting:
+            end = self.course_endpoints[self.leg_index + 1]
+            if math.dist((x, y), end) >= self.node.config_.get('arrival_distance'):
+                return
+            self.leg_index += 1
+        if self.leg_index + 1 == len(self.course_endpoints):
+            self.course_leg = 'done'
+            self.goals = self.p.WaypointsMsg()
+            return
+        points = self.course_endpoints[self.leg_index:self.leg_index + 2]
+        reverse = self.course_reverse[self.leg_index]
+        self.has_reversed |= reverse
+        self.course_leg = 'back' if reverse else 'out'
+        direction = 'REVERSE' if reverse else 'FORWARD'
+        self.goals = self.p.WaypointsMsg(dict(waypoints=[
+            dict(point=dict(x=u, y=v, frame='odom'), dir=direction, type='NORMAL') for u, v in points]))
 
     def observe(self,msg,inf=None,frames=()):
         from pyzome import tracker

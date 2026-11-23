@@ -20,12 +20,15 @@ from scipy.ndimage import gaussian_filter
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / 'src'))
+from scene_pipeline import polyhaven
 from scene_pipeline.agriculture import compile_environment, compose_robot, load_bundle, sha256
 from scene_pipeline.navigation import add_cameras
+from scene_pipeline.robot_skin import reskin
 from scene_pipeline.inspection import scene_page
 from sim_harness.export import export_mujoco
 from sim_harness.scene import _read_spec, load_scene
 from build_outdoor_scene import glb_prop, yawq
+from john_deere_asset import TRACTOR as JOHN_DEERE, METADATA as JOHN_DEERE_METADATA, prepare as prepare_john_deere
 
 # 10 m of headland west of the west plot: a 3.5 m K-turn fits past its end.
 BOUNDS = np.array([[-28., -14.], [14., 36.]])
@@ -87,31 +90,77 @@ def samples(axis, step):
     return int(round((BOUNDS[1, axis]-BOUNDS[0, axis])/step)) + 1
 
 
-def landscape_texture(path):
+SKY, SKY_YAW = 'meadow_2', math.radians(251)  # puts the sun in the south-west, behind a camera following the route
+
+
+def grass_colour(panorama):
+    """The sky panorama's meadow, just below its horizon: the scene's grass is tinted to it so the two meet."""
+    h = panorama.shape[0]
+    return panorama[int(h*.55):int(h*.66)].reshape(-1, 3).mean(0)
+
+
+def tinted(asset, x, y, panorama, cm_per_px=1.):
+    """A grass texture's detail in the panorama's grass colour."""
+    rgb = polyhaven.tiled(asset, x, y, cm_per_px)
+    return rgb * (grass_colour(panorama)/rgb.reshape(-1, 3).mean(0)).astype(np.float32)
+
+
+def landscape_texture(path, panorama):
+    """Ground colour at 1 cm/px, from scanned textures laid in world metres."""
     rng = np.random.default_rng(19)
-    x, y = np.meshgrid(np.linspace(*BOUNDS[:, 0], samples(0, .02)), np.linspace(*BOUNDS[::-1, 1], samples(1, .02)))
-    noise = rng.normal(0, 1, x.shape)
-    broad = gaussian_filter(noise, 25)
-    broad /= broad.std()
-    rgb = np.broadcast_to([93., 103., 51.], (*x.shape, 3)).copy()
-    rgb += (noise * 7 + broad * 8)[..., None]
+    x, y = np.meshgrid(np.linspace(*BOUNDS[:, 0], samples(0, .01), dtype=np.float32),
+                       np.linspace(*BOUNDS[::-1, 1], samples(1, .01), dtype=np.float32))
+    # Patchiness a few metres across hides the textures' repeat.
+    broad = gaussian_filter(rng.normal(0, 1, (x.shape[0]//10+1, x.shape[1]//10+1)), 25)
+    broad = np.kron(broad/broad.std(), np.ones((10, 10)))[:x.shape[0], :x.shape[1], None].astype(np.float32)
+    turned = rotation(37).astype(np.float32)
+    mix = np.clip(.5+.35*broad, 0, 1)
+    rgb = (tinted('leafy_grass', x, y, panorama)*mix
+           + tinted('sparse_grass', turned[0, 0]*x+turned[0, 1]*y, turned[1, 0]*x+turned[1, 1]*y, panorama)*(1-mix)) * (1+.06*broad)
+    soil = polyhaven.tiled('farm_soil', x, y)
     for plot in PLOTS:
         along, across = plot_coordinates(x, y, plot)
-        mask = (abs(along) <= 4) & (abs(across) <= 2.7)
-        furrow = 8 * np.cos(2*np.pi*(across-.381)/.762)
-        soil = np.array([105., 77., 49.]) + (noise*8 + furrow)[..., None]
-        rgb[mask] = soil[mask]
+        mask = (np.clip((4.1-abs(along))/.2, 0, 1) * np.clip((2.8-abs(across))/.2, 0, 1))[..., None]
+        furrow = 1 + .1*np.cos(2*np.pi*(across-.381)/.762)[..., None]
+        rgb = rgb*(1-mask) + soil*furrow*mask
     distance = road_distance(x, y)
     edge_noise = .055 * np.sin(9*x+7*y) + .035 * np.sin(23*x+19*y)
-    road = np.clip((ROAD_WIDTH/2 + edge_noise-distance)/.16, 0, 1) * road_fade(x, y)
-    # Pale compacted wheel tracks with a darker, partly grassy centre strip.
-    tracks = np.exp(-((distance-.85)/.28)**2)
-    dirt = np.array([144., 118., 81.]) + (noise*5 + tracks*12)[..., None]
-    rgb = rgb*(1-road[..., None]) + dirt*road[..., None]
-    # Gravelly parking pull-off joins the south shoulder.
-    pull_off = ((x+3)/3.5)**2 + ((y+4)/3.8)**2 < 1
-    rgb[pull_off] = (np.array([127., 108., 76.]) + noise[..., None]*8)[pull_off]
+    road = (np.clip((ROAD_WIDTH/2 + edge_noise-distance)/.16, 0, 1) * road_fade(x, y))[..., None]
+    # Pale compacted wheel tracks with a darker centre strip.
+    tracks = np.exp(-((distance-.85)/.28)**2)[..., None]
+    rgb = rgb*(1-road) + polyhaven.tiled('park_dirt', x, y)*(1.08+.14*tracks)*road
+    # Gravel parking pull-off joins the south shoulder.
+    pull_off = np.clip((1-np.sqrt(((x+1)/5.5)**2 + ((y+5.5)/6.)**2))/.06, 0, 1)[..., None]
+    rgb = rgb*(1-pull_off) + polyhaven.tiled('gravel_ground_01', x, y)*pull_off
     Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8)).save(path)
+
+
+def add_surroundings(spec, out, panorama):
+    """Grass to the horizon, the panorama as the sky, and its sun as the light."""
+    side = 8.  # one repeat of the outer grass: both grasses, mixed in patches that wrap
+    x, y = np.meshgrid(np.linspace(0, side, 2048, endpoint=False, dtype=np.float32), np.linspace(0, side, 2048, endpoint=False, dtype=np.float32))
+    mix = (.5+.35*np.sin(2*np.pi*x/side)*np.sin(2*np.pi*y/side))[..., None]
+    grass = tinted('leafy_grass', x, y, panorama, .4)*mix + tinted('sparse_grass', x+.7, y+1.3, panorama, .4)*(1-mix)
+    Image.fromarray(np.clip(grass, 0, 255).astype(np.uint8)).save(out/'outer_grass.png')
+    Image.fromarray(polyhaven.skybox(panorama, SKY_YAW)).save(out/'sky.png')
+    for name in ('outer_grass.png', 'sky.png'):
+        spec.assets[name] = (out/name).read_bytes()
+    spec.add_texture(name='outer_grass', type=mujoco.mjtTexture.mjTEXTURE_2D, file='outer_grass.png')
+    material = spec.add_material(name='outer_grass', specular=0, shininess=0, texrepeat=[600/side, 600/side])
+    material.textures[mujoco.mjtTextureRole.mjTEXROLE_RGB] = 'outer_grass'
+    # Visual only, under the terrain's deepest furrow; the terrain is still all that carries the rover.
+    spec.worldbody.add_geom(name='outer_grass', type=mujoco.mjtGeom.mjGEOM_PLANE, size=[300, 300, 1],
+                            pos=[*BOUNDS.mean(0), -.1], material='outer_grass', contype=0, conaffinity=0, group=2)
+    spec.add_texture(name='sky', type=mujoco.mjtTexture.mjTEXTURE_SKYBOX, file='sky.png',
+                     gridsize=[4, 3], gridlayout='.U..LFRB.D..')
+    azimuth, elevation = polyhaven.sun(panorama)
+    azimuth += SKY_YAW
+    sun = next(iter(spec.lights))
+    sun.dir = [-math.cos(elevation)*math.cos(azimuth), -math.cos(elevation)*math.sin(azimuth), -math.sin(elevation)]
+    sun.diffuse = [.95, .9, .8]
+    spec.visual.headlight.ambient = [.4, .43, .47]  # sky fill
+    spec.visual.headlight.diffuse = [.1, .1, .1]
+    spec.visual.headlight.specular = [0, 0, 0]
 
 
 def add_ground_visual(spec, xs, ys, z, texture):
@@ -272,6 +321,7 @@ def previews(out, model, data):
         for name, lookat, distance, azimuth, elevation in (
                 ('overview', [-3, 10, 0], 49, 115, -62),
                 ('road', [1, 5, 1], 27, 145, -40),
+                ('tractor', [-1, -8, 1.5], 16, 210, -25),
                 ('west_plot', [-14, 0, 0], 10, 135, -42)):
             camera = mujoco.MjvCamera(); camera.lookat[:] = lookat
             camera.distance, camera.azimuth, camera.elevation = distance, azimuth, elevation
@@ -282,8 +332,11 @@ def previews(out, model, data):
     shutil.copy(out/'overview.png', out/'preview.png')
 
 
-def build(source, tractor, out):
+def build(source, tractor, out, rhizome):
     source, tractor, out = Path(source), Path(tractor), Path(out)
+    john_deere = tractor.resolve() == JOHN_DEERE.resolve()
+    if john_deere:
+        prepare_john_deere()
     bundle = load_bundle(source/'bundle')
     profile = json.loads((source/'robot_profile.json').read_text())
     if not tractor.is_file():
@@ -295,8 +348,12 @@ def build(source, tractor, out):
     empty = dict(terrain=dict(file='terrain.npz', bounds_m=BOUNDS.tolist()), instances=[],
                  rows=[], class_names={**bundle['class_names'], '9': 'obstruction'})
     spec, manifest = compile_environment(empty, out)
-    landscape_texture(out/'ground.png')
-    add_ground_visual(spec, xs, ys, z, out/'ground.png')
+    panorama = polyhaven.sky(SKY)
+    landscape_texture(out/'ground.png', panorama)
+    skirt = z.copy()  # the drawn ground dips to the outer grass at its rim, so no lip shows
+    skirt[[0, -1]] = skirt[:, [0, -1]] = -.1
+    add_ground_visual(spec, xs, ys, skirt, out/'ground.png')
+    add_surroundings(spec, out, panorama)
     add_plants(spec, manifest, bundle, source/'bundle')
     # Nothing collides within a plot's K-turn reach: 6 m past the row ends, 4.5 m to the sides.
     props = [('oak_inside_corner', True, [-1, 5]), ('oak_north', True, [12.5, 9]),
@@ -305,17 +362,17 @@ def build(source, tractor, out):
              ('bush_5', False, [-19, 8]), ('bush_6', False, [-4, 27])]
     for i, (name, tree, xy) in enumerate(props):
         add_prop(spec, manifest, vegetation(tree, 40+i), name, xy)
-    tractor_mjz = Path(glb_prop(tractor, 4.2, out/'props/tractor.mjz'))
-    add_prop(spec, manifest, _read_spec(tractor_mjz), 'parked_tractor', [-1, -6], -15)
-    license_file = tractor.parents[2]/'License.txt'
+    tractor_mjz = Path(glb_prop(tractor, JOHN_DEERE_METADATA['length_m'] if john_deere else 4.2, out/'props/tractor.mjz'))
+    add_prop(spec, manifest, _read_spec(tractor_mjz), 'parked_tractor', [-1, -8], 75)
+    license_file = tractor.parent/'tractor_LICENSE.txt' if john_deere else tractor.parents[2]/'License.txt'
     shutil.copy(license_file, out/'props/tractor_LICENSE.txt')
-    spec.add_texture(name='sky', type=mujoco.mjtTexture.mjTEXTURE_SKYBOX,
-                     builtin=mujoco.mjtBuiltin.mjBUILTIN_GRADIENT, rgb1=[.42,.62,.82],
-                     rgb2=[.86,.89,.84], width=512, height=3072)
+    if john_deere:
+        shutil.copy(tractor.with_suffix('.json'), out/'props/tractor.json')
+        manifest['instances']['parked_tractor'].update(JOHN_DEERE_METADATA)
     spec.visual.quality.shadowsize = 4096
     spawn = dict(position_m=[-16.5, 0.], yaw_rad=0.)
     # Keep the robot-only bundle free of navigation cameras so run_agent_nav can add its own rig.
-    shutil.copy(source/'robot.mjz', out/'robot.mjz')
+    reskin(_read_spec(source/'robot.mjz'), rhizome).to_zip(str(out/'robot.mjz'))
     (out/'robot_profile.json').write_text(json.dumps(profile, indent=2)+'\n')
     robot = _read_spec(out/'robot.mjz')
     add_cameras(robot, profile, dict(cameras=['front', 'rear']))
@@ -339,11 +396,13 @@ def build(source, tractor, out):
         perception='none', waypoints=[dict(xy=xy) for xy in mission['reference_waypoints_m']],
         parameters=dict(auto_speed_max_ms=.3, arrival_distance=.15)))
     provenance = dict(source=str(source.resolve()), bundle_sha256=sha256(source/'bundle/bundle.json'),
-                      tractor_sha256=sha256(tractor), tractor_license='Kenney Car Kit, CC0', seed=19)
+                      tractor_sha256=sha256(tractor),
+                      tractor_license='CC BY 4.0, Daan van Leeuwen' if john_deere else 'Kenney Car Kit, CC0', seed=19)
     generation = dict(domain='agriculture', spawn=spawn, provenance=provenance,
                       limitations=['Rigid soil and tires; uncalibrated robot dynamics.',
                                    'Crops and foliage are visual; tree trunks, bush envelopes and tractor hull collide.',
-                                   'Procedural scenery and stylized tractor, not photorealistic assets.',
+                                   'Scanned ground textures and sky (Poly Haven, CC0); procedural trees.',
+                                   'Tractor appearance uses RGB only; collision is one conservative hull, with no tractor drivetrain.',
                                    'Repeated source plant tiles; terrain outside the supplied bounds is undefined.'])
     report.update(plots=2, rows=len(manifest['rows']), crop_count=sum(v.get('category')=='crop' for v in manifest['instances'].values()),
                   plot_edge_gap_m=PLOT_GAP, road_width_m=ROAD_WIDTH, archive_reload_passed=True, geoms=model.ngeom)
@@ -359,7 +418,9 @@ def build(source, tractor, out):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=REPO/'outputs/soybean30_early_gen3')
-    parser.add_argument('--tractor', type=Path, default=REPO/'outputs/outdoor_assets/kenney/kenney_car-kit/Models/GLB format/tractor.glb')
+    parser.add_argument('--tractor', type=Path, default=JOHN_DEERE)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--rhizome', type=Path, default=os.environ.get('RHIZOME_ROOT'), required='RHIZOME_ROOT' not in os.environ,
+                        help='rhizome checkout: the robot wears its production meshes and colours')
     args = parser.parse_args()
-    build(args.source, args.tractor, args.output)
+    build(args.source, args.tractor, args.output, args.rhizome)

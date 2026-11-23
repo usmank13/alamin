@@ -51,6 +51,10 @@ configure the installed arm count and lateral spacing.
 [Two connected soybean plots](docs/two_fields.md) provide an approximately 20 m gap,
 a dirt road with a 90-degree turn, trees, bushes and a parked tractor for
 navigation into a perpendicular field.
+[Staggered soybean blocks](outputs/staggered_soybean/index.html) form one stepped field:
+two adjoining blocks of six 10 m rows, offset lengthwise by 3 m, with continuous
+0.762 m row spacing. Rebuild with
+`MUJOCO_GL=egl .venv/bin/python scripts/build_staggered_fields.py --output outputs/staggered_soybean`.
 For branch-native camera-to-strike simulation on one soybean row, see the
 [native crop build and row-pass walkthrough](docs/native_crop_build.md).
 The [weeding acceptance benchmark](docs/weeding.md) adds paired oracle/neural

@@ -242,6 +242,17 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
     wheel_names=['element/'+w['id'] for w in profile['wheels']]
     controls=np.array([model.actuator(name).id for name in wheel_names])
     chassis=model.body('element/chassis').id
+    localization = (controller_config or {}).get('localization', {})
+    pitch_control = None
+    if localization.get('chassis_pitch_deg') or 'turnaround_pitch_deg' in localization or 'reverse_pitch_deg' in localization:
+        from .localization_sensors import ChassisPitch, pitch_at
+        pitch_control = ChassisPitch(model, data, profile, chassis)
+    sensors = None
+    if controller_config and controller_config.get('localization', {}).get('mode') == 'odometry':
+        from .localization_sensors import Sensors
+        from .navigation import robot_dimensions
+        controller_config['localization_dimensions'] = robot_dimensions(profile)
+        sensors = Sensors(model, profile, chassis, controller_config['localization'], seed)
     option=mujoco.MjvOption();option.geomgroup[3:]=0
     rng=np.random.default_rng(seed)
     frames={};neural_frames={};positions=[];failure=None;obstacle_contacts=set();max_contacts=0
@@ -278,12 +289,28 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
             if tick%5==0:
                 if controller:
                     velocity=np.zeros(6)
-                    mujoco.mj_objectVelocity(model,data,mujoco.mjtObj.mjOBJ_BODY,chassis,velocity,1)
+                    localized = 'localization' in controller_config or 'out_and_back_m' in controller_config
+                    # XBODY uses chassis axes; BODY uses the principal-inertia axes.
+                    origin = mujoco.mjtObj.mjOBJ_XBODY if localized else mujoco.mjtObj.mjOBJ_BODY
+                    mujoco.mj_objectVelocity(model,data,origin,chassis,velocity,1)
                     measured={name:np.asarray(payload['motor_to_joint_sign'])*[
                         data.joint('element/'+payload[key]).qpos[0] for key in ('yaw_joint','pitch_joint')]
                         for name,payload in physical_arms.items()}
                     native_result=controller.step(t,data.xpos[chassis],data.xquat[chassis],velocity[3],
+                        **({'sensors': sensors.sample(data, t)} if sensors else {}),
+                        **({'yaw_rps': float(velocity[2])} if localized and not sensors else {}),
                         **({'arm_measured':measured if multi else measured[physical_arm['id']]} if physical_arms else {}))
+                    if pitch_control:
+                        pitch_deg = pitch_at(localization['chassis_pitch_deg'], tick * .002)
+                        loc = native_result.get('localization', {})
+                        if 'reverse_pitch_deg' in localization:
+                            if loc.get('leg') == 'back':
+                                pitch_deg = localization['reverse_pitch_deg']
+                            elif loc.get('leg') == 'done':
+                                pitch_deg = pitch_control.target
+                        elif loc.get('has_reversed'):
+                            pitch_deg = localization.get('turnaround_pitch_deg', pitch_deg)
+                        pitch_control.apply(t, pitch_deg)
                     requested=native_result['twist']
                     results=native_result.get('arms',{}) if multi else ({physical_arm['id'] if physical_arm else 'shadow':native_result['arm']} if 'arm' in native_result else {})
                     for name,arm in results.items():
@@ -334,7 +361,10 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                 recorder.append('state',t,qpos=data.qpos.copy(),qvel=data.qvel.copy(),ctrl=data.ctrl.copy(),
                                 chassis_position=data.xpos[chassis].copy(),chassis_quaternion=data.xquat[chassis].copy(),
                                 wheel_position=wheel_pos,wheel_velocity=wheel_vel,actuator_force=data.actuator_force[controls].copy(),
-                                contact_count=data.ncon)
+                                contact_count=data.ncon, **(dict(
+                                    chassis_pitch_deg=math.degrees(math.asin(np.clip(-data.xmat[chassis, 6], -1., 1.))),
+                                    commanded_chassis_pitch_deg=pitch_control.target if pitch_control else 0.)
+                                    if localization else {}))
                 gyro=data.sensor('element/gyro').data.copy();accel=data.sensor('element/accelerometer').data.copy()
                 recorder.append('imu',t,gyro_truth=gyro,gyro=gyro+rng.normal(0,.002,3),
                                 accelerometer_truth=accel,accelerometer=accel+rng.normal(0,.03,3))
@@ -359,8 +389,9 @@ def run(scene, output, *, config=None, seconds=None, tier='full', seed=0, video=
                             values['depth']=raw_depth(depth)
                             depth_capture=dict(depth=depth,depth_raw=values['depth'])
                         nav_arrays.update({position+'_'+key:value for key,value in values.items()})
-                        recorder.append('camera_'+name,t,rgb=rgb,position_world=data.cam_xpos[cid].copy(),
-                                        rotation_world=data.cam_xmat[cid].reshape(3,3).copy(),**depth_capture)
+                        if config.get('record_nav_images', True):
+                            recorder.append('camera_'+name,t,rgb=rgb,position_world=data.cam_xpos[cid].copy(),
+                                            rotation_world=data.cam_xmat[cid].reshape(3,3).copy(),**depth_capture)
                         frames[name]=rgb
                         continue
                     renderer.update_scene(data,'element/'+name,scene_option=option)

@@ -21,7 +21,7 @@ def source_identity(root):
                 compiled_sources_sha256=digest.hexdigest())
 
 
-def stamp(root, host, identity, *, binaries=()):
+def stamp(root, host, identity, *, binaries=(), sim_odometry=False):
     root=Path(root).resolve();host=Path(host).resolve()
     if source_identity(root)!=identity:raise ValueError('Rhizome sources changed during build; rebuild in a fresh directory')
     modules={}
@@ -35,6 +35,10 @@ def stamp(root, host, identity, *, binaries=()):
             raise ValueError('Invalid executable name')
         executables[name]=hashlib.sha256((host/'bin'/name).read_bytes()).hexdigest()
     manifest=dict(source_root=str(root),**identity,modules_sha256=modules,binaries_sha256=executables)
+    if sim_odometry:
+        manifest['sim_odometry_hooks_sha256'] = {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted((host.parent/'sim-odometry').glob('*.cpp'))}
     (host/'build_manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return manifest
 
@@ -67,6 +71,8 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True,help='Fresh build directory; host modules go under output/host')
+    parser.add_argument('--sim-odometry', action='store_true',
+                        help='Build native simulation clock and Odometry description hooks')
     parser.add_argument('--jobs',type=int,default=4)
     selection=parser.add_mutually_exclusive_group()
     selection.add_argument('--binaries', nargs='+', metavar='NAME',
@@ -91,10 +97,14 @@ def main():
     binaries=sorted(native & names)
     targets.extend(str(host/'bin'/name) for name in binaries)
     output.mkdir(parents=True)
+    makefiles = []
+    if args.sim_odometry:
+        from .rhizome_sim_build import host_overlay
+        makefiles = ['-f', 'Makefile', '-f', str(host_overlay(root, output))]
     with (output/'build.log').open('w') as log:
-        subprocess.run(['make','-C',str(root),f'BUILD_DIR={output}',f'JOBS={args.jobs}','CCACHE=',*targets],
+        subprocess.run(['make','-C',str(root),*makefiles,f'BUILD_DIR={output}',f'JOBS={args.jobs}','CCACHE=',*targets],
                        stdout=log,stderr=subprocess.STDOUT,check=True)
-    print(json.dumps(stamp(root,host,identity,binaries=binaries),indent=2))
+    print(json.dumps(stamp(root,host,identity,binaries=binaries,sim_odometry=args.sim_odometry),indent=2))
 
 
 if __name__=='__main__':main()

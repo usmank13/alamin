@@ -22,6 +22,24 @@ def validate_config(config):
     if not isinstance(config,dict):
         raise PipelineError('RHIZOME_CONFIG','controller must be a JSON object')
     cfg = dict(config)
+    if 'shuttle' in cfg:
+        shuttle = cfg['shuttle']
+        if (not isinstance(shuttle, list) or len(shuttle) != 2 or type(shuttle[0]) not in (int, float)
+                or not math.isfinite(shuttle[0]) or shuttle[0] <= 0
+                or type(shuttle[1]) is not int or shuttle[1] < 1):
+            raise PipelineError('RHIZOME_CONFIG', 'shuttle requires a positive leg length and integer cycle count')
+        cfg.setdefault('out_and_back_m', 0.)
+    if 'localization' in cfg:
+        from .localization_sensors import validate_localization
+        cfg['localization'] = validate_localization(cfg['localization'])
+        if {'turnaround_pitch_deg', 'reverse_pitch_deg'} & cfg['localization'].keys() and 'out_and_back_m' not in cfg:
+            raise PipelineError('RHIZOME_CONFIG', 'direction-dependent pitch requires a scripted course')
+    if 'out_and_back_m' in cfg:
+        distance = cfg['out_and_back_m']
+        if not isinstance(distance, (float, int)) or not math.isfinite(distance) or distance < 0 or (distance == 0 and 'shuttle' not in cfg):
+            raise PipelineError('RHIZOME_CONFIG', 'Invalid outbound distance for the selected course')
+        if not isinstance(cfg.get('nav_model'), dict) or cfg['nav_model'].get('drive') is not False:
+            raise PipelineError('RHIZOME_CONFIG', 'The scripted route needs nav_model.drive=false')
     root,host=install_paths(cfg.get('root'),cfg.get('host_build'))
     cfg.update(root=str(root),host_build=str(host))
     cfg.setdefault('python',os.environ.get('RHIZOME_INFERENCE_PYTHON',sys.executable))
@@ -51,8 +69,15 @@ def validate_config(config):
                 or nav['arrangement'] not in (0,1,2,3) or nav['steer_source'] not in ('rows','vp','fused')
                 or not isinstance(nav['cameras'],list) or not nav['cameras'] or not all(isinstance(n,str) for n in nav['cameras'])
                 or len(set(nav['cameras']))!=len(nav['cameras']) or set(nav['cameras'])-{'front','rear'}
-                or nav.get('use_map',False)):
+                or nav.get('use_map',False) or nav.get('task','nav-model-drive') not in ('nav-model-drive','dual')):
             raise PipelineError('RHIZOME_CONFIG','Invalid nav_model options; this adapter uses mapless driving')
+        # dual: nav_model's nav_source picks between controller.waypoints (the
+        # RTK plan) and its own goals from /nav/route has_rows, given here as a
+        # bool or a [[time_s, bool], ...] schedule.
+        rows=nav.get('route_has_rows',False)
+        if not (isinstance(rows,bool) or (isinstance(rows,list) and rows and all(
+                isinstance(r,list) and len(r)==2 and isinstance(r[1],bool) for r in rows))):
+            raise PipelineError('RHIZOME_CONFIG','nav_model.route_has_rows must be a bool or [[time_s, bool], ...]')
         mounts=nav.get('mounts',{})
         if not isinstance(mounts,dict) or set(mounts)-set(nav['cameras']):
             raise PipelineError('RHIZOME_CONFIG','Nav mounts must name configured front/rear cameras')
@@ -67,7 +92,7 @@ def validate_config(config):
         cfg['nav_model']=nav
         cfg.setdefault('waypoints',[])
     waypoints = cfg.get('waypoints', [])
-    if cfg.get('nav_model') and waypoints:
+    if cfg.get('nav_model') and waypoints and cfg['nav_model'].get('task')!='dual':
         raise PipelineError('RHIZOME_CONFIG','Mapless nav_model replaces route waypoints; remove controller.waypoints')
     if not isinstance(waypoints, list) or (not waypoints and not cfg.get('nav_model')):
         raise PipelineError('RHIZOME_CONFIG', 'Provide nonempty controller.waypoints in world/odom metres')
@@ -214,8 +239,10 @@ class RhizomeController:
                                              input=message,output=result),allow_nan=False)+'\n')
         return result
 
-    def step(self, t, position, quaternion, forward_mps, arm_measured=None, arm_enabled=None):
+    def step(self, t, position, quaternion, forward_mps, arm_measured=None, arm_enabled=None, sensors=None, yaw_rps=None):
         message=dict(op='step',time=t,position=list(position),quaternion=list(quaternion),forward_mps=float(forward_mps))
+        if sensors is not None:message['sensors']=sensors
+        if yaw_rps is not None:message['yaw_rps']=yaw_rps
         if arm_measured is not None:message['arm_measured']=list(arm_measured)
         if arm_enabled is not None:message['arm_enabled']=bool(arm_enabled)
         return self.request(message)
@@ -308,14 +335,19 @@ class RhizomeMultiController:
                 raise PipelineError(exc.code,f'{name}: {exc}') from exc
             raise
 
-    def step(self,t,position,quaternion,forward_mps,arm_measured):
+    def step(self,t,position,quaternion,forward_mps,arm_measured, sensors=None, yaw_rps=None):
         if set(arm_measured)!=set(self.workers):
             raise PipelineError('RHIZOME_CONFIG','Measured feedback must cover every active arm exactly')
-        navigation=self._call('navigation','step',t,position,quaternion,forward_mps) if self.nav_worker else None
-        options=dict(arm_enabled=navigation['navigation']['arm_enabled']) if navigation else {}
+        options = {'sensors': sensors} if sensors is not None else {}
+        if yaw_rps is not None:options['yaw_rps']=yaw_rps
+        navigation=self._call('navigation','step',t,position,quaternion,forward_mps,**options) if self.nav_worker else None
+        if navigation:options['arm_enabled']=navigation['navigation']['arm_enabled']
         results={name:self._call(name,'step',t,position,quaternion,forward_mps,arm_measured[name],**options) for name in self.workers}
         navigation=navigation or results[self.navigation_arm]
-        return dict(twist=navigation['twist'],arms={name:r['arm'] for name,r in results.items()})
+        result = dict(twist=navigation['twist'],arms={name:r['arm'] for name,r in results.items()})
+        if 'localization' in navigation:
+            result['localization'] = navigation['localization']
+        return result
 
     def _owner(self,camera):
         if camera not in self.camera_owners:
